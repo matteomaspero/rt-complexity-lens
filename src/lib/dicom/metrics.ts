@@ -297,37 +297,73 @@ export function calculatePlanMetrics(plan: RTPlan): PlanMetrics {
 
 /**
  * Export metrics to CSV format
+ * @param metrics - The plan metrics to export
+ * @param enabledMetrics - Optional array of metric keys to include (defaults to all)
  */
-export function metricsToCSV(metrics: PlanMetrics): string {
+export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): string {
   const lines: string[] = [];
+  const isEnabled = (key: string) => !enabledMetrics || enabledMetrics.includes(key);
   
   // Header
-  lines.push('Plan Complexity Metrics Report');
-  lines.push(`Plan: ${metrics.planLabel}`);
-  lines.push(`Calculated: ${metrics.calculationDate.toISOString()}`);
+  lines.push('# RT Plan Complexity Metrics Report');
+  lines.push(`# Plan: ${metrics.planLabel}`);
+  lines.push(`# Exported: ${new Date().toISOString()}`);
+  lines.push(`# Calculated: ${metrics.calculationDate.toISOString()}`);
+  lines.push('# Tool: RT Plan Complexity Analyzer (UCoMX v1.1)');
   lines.push('');
   
   // Plan-level metrics
   lines.push('Plan-Level Metrics');
-  lines.push('Metric,Value,Unit');
-  lines.push(`MCS (Modulation Complexity Score),${metrics.MCS.toFixed(4)},`);
-  lines.push(`LSV (Leaf Sequence Variability),${metrics.LSV.toFixed(4)},`);
-  lines.push(`AAV (Aperture Area Variability),${metrics.AAV.toFixed(4)},`);
-  lines.push(`MFA (Mean Field Area),${metrics.MFA.toFixed(2)},cm²`);
-  lines.push(`LT (Leaf Travel),${metrics.LT.toFixed(1)},mm`);
-  lines.push(`LTMCS,${metrics.LTMCS.toFixed(4)},`);
-  lines.push(`Total MU,${metrics.totalMU.toFixed(1)},MU`);
+  lines.push('Metric,Full Name,Value,Unit');
+  
+  if (isEnabled('MCS')) {
+    lines.push(`MCS,Modulation Complexity Score,${metrics.MCS.toFixed(4)},`);
+  }
+  if (isEnabled('LSV')) {
+    lines.push(`LSV,Leaf Sequence Variability,${metrics.LSV.toFixed(4)},`);
+  }
+  if (isEnabled('AAV')) {
+    lines.push(`AAV,Aperture Area Variability,${metrics.AAV.toFixed(4)},`);
+  }
+  if (isEnabled('MFA')) {
+    lines.push(`MFA,Mean Field Area,${metrics.MFA.toFixed(2)},cm²`);
+  }
+  if (isEnabled('LT')) {
+    lines.push(`LT,Leaf Travel,${metrics.LT.toFixed(1)},mm`);
+  }
+  if (isEnabled('LTMCS')) {
+    lines.push(`LTMCS,Leaf Travel-weighted MCS,${metrics.LTMCS.toFixed(4)},`);
+  }
+  if (isEnabled('totalMU')) {
+    lines.push(`Total MU,Total Monitor Units,${metrics.totalMU.toFixed(1)},MU`);
+  }
   lines.push('');
   
-  // Beam-level metrics
+  // Build dynamic header for beam metrics
+  const beamHeaders = ['Beam'];
+  if (isEnabled('MCS')) beamHeaders.push('MCS');
+  if (isEnabled('LSV')) beamHeaders.push('LSV');
+  if (isEnabled('AAV')) beamHeaders.push('AAV');
+  if (isEnabled('MFA')) beamHeaders.push('MFA (cm²)');
+  if (isEnabled('LT')) beamHeaders.push('LT (mm)');
+  if (isEnabled('beamMU')) beamHeaders.push('MU');
+  if (isEnabled('numberOfControlPoints')) beamHeaders.push('Control Points');
+  if (isEnabled('arcLength')) beamHeaders.push('Arc Length (°)');
+  
   lines.push('Beam-Level Metrics');
-  lines.push('Beam,MCS,LSV,AAV,MFA (cm²),LT (mm),MU,Control Points');
+  lines.push(beamHeaders.join(','));
   
   for (const bm of metrics.beamMetrics) {
-    lines.push(
-      `${bm.beamName},${bm.MCS.toFixed(4)},${bm.LSV.toFixed(4)},${bm.AAV.toFixed(4)},` +
-      `${bm.MFA.toFixed(2)},${bm.LT.toFixed(1)},${bm.beamMU.toFixed(1)},${bm.numberOfControlPoints}`
-    );
+    const values: string[] = [bm.beamName];
+    if (isEnabled('MCS')) values.push(bm.MCS.toFixed(4));
+    if (isEnabled('LSV')) values.push(bm.LSV.toFixed(4));
+    if (isEnabled('AAV')) values.push(bm.AAV.toFixed(4));
+    if (isEnabled('MFA')) values.push(bm.MFA.toFixed(2));
+    if (isEnabled('LT')) values.push(bm.LT.toFixed(1));
+    if (isEnabled('beamMU')) values.push(bm.beamMU.toFixed(1));
+    if (isEnabled('numberOfControlPoints')) values.push(bm.numberOfControlPoints.toString());
+    if (isEnabled('arcLength')) values.push(bm.arcLength?.toFixed(1) ?? '');
+    lines.push(values.join(','));
   }
   
   return lines.join('\n');
