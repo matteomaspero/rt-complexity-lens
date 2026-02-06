@@ -109,7 +109,7 @@ export interface BeamMetrics {
   beamNumber: number;
   beamName: string;
   
-  // UCoMX Metrics
+  // UCoMX Primary Metrics
   MCS: number; // Modulation Complexity Score
   LSV: number; // Leaf Sequence Variability (beam average)
   AAV: number; // Aperture Area Variability
@@ -117,11 +117,35 @@ export interface BeamMetrics {
   LT: number; // Leaf Travel (mm)
   LTMCS: number; // Combined Leaf Travel + MCS
   
+  // UCoMX Accuracy Metrics
+  LG?: number; // Leaf Gap - average gap between opposing leaf pairs (mm)
+  MAD?: number; // Mean Asymmetry Distance (mm)
+  EFS?: number; // Equivalent Field Size (mm)
+  psmall?: number; // Percentage of small fields (ratio 0-1)
+  
   // Additional metrics
   beamMU: number;
   arcLength?: number; // degrees, for VMAT
   numberOfControlPoints: number;
   averageGantrySpeed?: number; // deg/s
+  
+  // UCoMX Deliverability Metrics
+  MUCA?: number; // MU per Control Arc (MU/CP)
+  LTMU?: number; // Leaf Travel per MU (mm/MU)
+  LTNLMU?: number; // Leaf Travel per Leaf and MU (mm/(leaf·MU))
+  LNA?: number; // Leaf Travel per Leaf and CA (mm/(leaf·CP))
+  LTAL?: number; // Leaf Travel per Arc Length (mm/°)
+  mDRV?: number; // Mean Dose Rate Variation (MU/min)
+  GT?: number; // Gantry Travel (degrees)
+  GS?: number; // Gantry Speed (deg/s)
+  mGSV?: number; // Mean Gantry Speed Variation (deg/s)
+  LS?: number; // Leaf Speed (mm/s)
+  PA?: number; // Plan Area / BEV Area (cm²)
+  JA?: number; // Jaw Area (cm²)
+  PM?: number; // Plan Modulation (1 - MCS)
+  TG?: number; // Tongue-and-Groove Index (ratio 0-1)
+  MD?: number; // Modulation Degree
+  MI?: number; // Modulation Index
   
   // Delivery time metrics
   estimatedDeliveryTime?: number; // seconds
@@ -155,10 +179,34 @@ export interface PlanMetrics {
   LT: number; // mm
   LTMCS: number;
   
+  // UCoMX Accuracy Metrics (aggregate)
+  LG?: number; // Average Leaf Gap (mm)
+  MAD?: number; // Mean Asymmetry Distance (mm)
+  EFS?: number; // Equivalent Field Size (mm)
+  psmall?: number; // Percentage of small fields
+  
   // Plan-level metrics
   totalMU: number;
   prescribedDose?: number;
   MUperGy?: number;
+  
+  // UCoMX Deliverability Metrics (aggregate)
+  MUCA?: number; // MU per Control Arc
+  LTMU?: number; // Leaf Travel per MU
+  LTNLMU?: number; // Leaf Travel per Leaf and MU
+  LNA?: number; // Leaf Travel per Leaf and CA
+  LTAL?: number; // Leaf Travel per Arc Length
+  mDRV?: number; // Mean Dose Rate Variation
+  GT?: number; // Total Gantry Travel
+  GS?: number; // Average Gantry Speed
+  mGSV?: number; // Mean Gantry Speed Variation
+  LS?: number; // Average Leaf Speed
+  PA?: number; // Total Plan Area
+  JA?: number; // Average Jaw Area
+  PM?: number; // Plan Modulation
+  TG?: number; // Tongue-and-Groove Index
+  MD?: number; // Modulation Degree
+  MI?: number; // Modulation Index
   
   // Delivery time (aggregate)
   totalDeliveryTime?: number; // seconds

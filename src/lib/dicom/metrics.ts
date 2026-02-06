@@ -87,6 +87,104 @@ function calculateAperturePerimeter(
 }
 
 /**
+ * Calculate average leaf gap (LG) for a control point
+ */
+function calculateLeafGap(mlcPositions: MLCLeafPositions): number {
+  const { bankA, bankB } = mlcPositions;
+  if (bankA.length === 0 || bankB.length === 0) return 0;
+
+  let totalGap = 0;
+  let openCount = 0;
+
+  for (let i = 0; i < Math.min(bankA.length, bankB.length); i++) {
+    const gap = bankB[i] - bankA[i];
+    if (gap > 0) {
+      totalGap += gap;
+      openCount++;
+    }
+  }
+
+  return openCount > 0 ? totalGap / openCount : 0;
+}
+
+/**
+ * Calculate Mean Asymmetry Distance (MAD)
+ */
+function calculateMAD(mlcPositions: MLCLeafPositions): number {
+  const { bankA, bankB } = mlcPositions;
+  if (bankA.length === 0 || bankB.length === 0) return 0;
+
+  let totalAsymmetry = 0;
+  let openCount = 0;
+  const centralAxis = 0; // Assume isocenter at 0
+
+  for (let i = 0; i < Math.min(bankA.length, bankB.length); i++) {
+    const gap = bankB[i] - bankA[i];
+    if (gap > 0) {
+      const centerPosition = (bankA[i] + bankB[i]) / 2;
+      totalAsymmetry += Math.abs(centerPosition - centralAxis);
+      openCount++;
+    }
+  }
+
+  return openCount > 0 ? totalAsymmetry / openCount : 0;
+}
+
+/**
+ * Calculate Equivalent Field Size (EFS) using Sterling's formula
+ */
+function calculateEFS(area: number, perimeter: number): number {
+  if (perimeter <= 0) return 0;
+  return (4 * area) / perimeter;
+}
+
+/**
+ * Calculate Jaw Area (JA)
+ */
+function calculateJawArea(jawPositions: { x1: number; x2: number; y1: number; y2: number }): number {
+  const width = jawPositions.x2 - jawPositions.x1;
+  const height = jawPositions.y2 - jawPositions.y1;
+  return (width * height) / 100; // mm² to cm²
+}
+
+/**
+ * Calculate Tongue-and-Groove index
+ * T&G effect occurs when adjacent leaves have different positions creating exposed regions
+ */
+function calculateTongueAndGroove(mlcPositions: MLCLeafPositions, leafWidths: number[]): number {
+  const { bankA, bankB } = mlcPositions;
+  if (bankA.length < 2 || bankB.length < 2) return 0;
+
+  let tgExposure = 0;
+  let totalArea = 0;
+  const numPairs = Math.min(bankA.length, bankB.length);
+
+  for (let i = 0; i < numPairs - 1; i++) {
+    const gapCurrent = bankB[i] - bankA[i];
+    const gapNext = bankB[i + 1] - bankA[i + 1];
+    const leafWidth = leafWidths[i] || 5;
+
+    // T&G exposure occurs when one leaf is open and adjacent is closed or at different position
+    if (gapCurrent > 0) {
+      totalArea += gapCurrent * leafWidth;
+
+      // Check for T&G between adjacent leaves
+      if (gapNext <= 0) {
+        // Adjacent leaf is closed - T&G exposure along the entire current opening
+        tgExposure += gapCurrent * 0.5; // Approximate T&G width ~0.5mm
+      } else {
+        // Both open but at different positions
+        const positionDiffA = Math.abs(bankA[i + 1] - bankA[i]);
+        const positionDiffB = Math.abs(bankB[i + 1] - bankB[i]);
+        tgExposure += (positionDiffA + positionDiffB) * 0.25;
+      }
+    }
+  }
+
+  return totalArea > 0 ? tgExposure / totalArea : 0;
+}
+
+/**
  * Check for small apertures (for SAS calculation)
  */
 function checkSmallApertures(
@@ -375,12 +473,23 @@ function calculateBeamMetrics(
   let weightedLSV = 0;
   let weightedAAV = 0;
   let weightedPI = 0;
+  let weightedLG = 0;
+  let weightedMAD = 0;
+  let weightedEFS = 0;
+  let weightedTG = 0;
   let totalArea = 0;
   let totalPerimeter = 0;
   let totalLeafTravel = 0;
   let areaCount = 0;
   let sas5Count = 0;
   let sas10Count = 0;
+  let smallFieldCount = 0; // area < 400 mm² (4 cm²)
+  let totalJawArea = 0;
+  
+  // For dose rate and gantry speed variation
+  const doseRates: number[] = [];
+  const gantryAngles: number[] = [];
+  const segmentTimes: number[] = [];
   
   for (let i = 0; i < controlPointMetrics.length; i++) {
     const cpm = controlPointMetrics[i];
@@ -388,9 +497,21 @@ function calculateBeamMetrics(
     const weight = cpm.metersetWeight;
     totalMetersetWeight += weight;
     
+    // Calculate per-CP accuracy metrics
+    const lg = calculateLeafGap(cp.mlcPositions);
+    const mad = calculateMAD(cp.mlcPositions);
+    const perimeter = cpm.aperturePerimeter || 0;
+    const efs = calculateEFS(cpm.apertureArea, perimeter);
+    const tg = calculateTongueAndGroove(cp.mlcPositions, beam.mlcLeafWidths);
+    const jawArea = calculateJawArea(cp.jawPositions);
+    
     if (weight > 0) {
       weightedLSV += cpm.apertureLSV * weight;
       weightedAAV += cpm.apertureAAV * weight;
+      weightedLG += lg * weight;
+      weightedMAD += mad * weight;
+      weightedEFS += efs * weight;
+      weightedTG += tg * weight;
       
       // Calculate PI contribution
       const ai = calculateApertureIrregularity(
@@ -403,23 +524,39 @@ function calculateBeamMetrics(
     
     if (cpm.apertureArea > 0) {
       totalArea += cpm.apertureArea;
-      totalPerimeter += cpm.aperturePerimeter || 0;
+      totalPerimeter += perimeter;
       areaCount++;
+      
+      // Small field detection (< 4 cm² = 400 mm²)
+      if (cpm.apertureArea < 400) {
+        smallFieldCount++;
+      }
     }
+    
+    totalJawArea += jawArea;
     
     if (cpm.smallApertureFlags?.below5mm) sas5Count++;
     if (cpm.smallApertureFlags?.below10mm) sas10Count++;
     
     totalLeafTravel += cpm.leafTravel;
+    
+    gantryAngles.push(cp.gantryAngle);
   }
   
   // Normalize weighted averages
   const LSV = totalMetersetWeight > 0 ? weightedLSV / totalMetersetWeight : 0;
   const AAV = totalMetersetWeight > 0 ? weightedAAV / totalMetersetWeight : 0;
   const PI = totalMetersetWeight > 0 ? weightedPI / totalMetersetWeight : 1;
+  const LG = totalMetersetWeight > 0 ? weightedLG / totalMetersetWeight : 0;
+  const MAD = totalMetersetWeight > 0 ? weightedMAD / totalMetersetWeight : 0;
+  const EFS = totalMetersetWeight > 0 ? weightedEFS / totalMetersetWeight : 0;
+  const TG = totalMetersetWeight > 0 ? weightedTG / totalMetersetWeight : 0;
   
   // MCS = LSV × AAV (simplified UCoMX formulation)
   const MCS = LSV * (1 - AAV);
+  
+  // PM = 1 - MCS
+  const PM = 1 - MCS;
   
   // Mean Field Area in cm²
   const MFA = areaCount > 0 ? (totalArea / areaCount) / 100 : 0;
@@ -427,10 +564,17 @@ function calculateBeamMetrics(
   // Edge Metric: perimeter / area (mm⁻¹)
   const EM = totalArea > 0 ? totalPerimeter / totalArea : 0;
   
+  // Plan Area in cm² (total aperture area weighted by meterset)
+  const PA = totalArea / 100;
+  
+  // Jaw Area in cm²
+  const JA = areaCount > 0 ? totalJawArea / areaCount : 0;
+  
   // Small Aperture Scores
   const totalCPs = controlPointMetrics.length;
   const SAS5 = totalCPs > 0 ? sas5Count / totalCPs : 0;
   const SAS10 = totalCPs > 0 ? sas10Count / totalCPs : 0;
+  const psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
   
   // Leaf Travel
   const LT = totalLeafTravel;
@@ -463,6 +607,101 @@ function calculateBeamMetrics(
     averageGantrySpeed = arcLength ? arcLength / deliveryEstimate.deliveryTime : undefined;
   }
   
+  // Calculate UCoMX deliverability metrics
+  const beamMU = beam.beamDose || 0;
+  const numCPs = beam.numberOfControlPoints;
+  const numLeaves = beam.numberOfLeaves || 60;
+  
+  // MUCA - MU per Control Arc
+  const MUCA = numCPs > 0 ? beamMU / numCPs : 0;
+  
+  // LTMU - Leaf Travel per MU
+  const LTMU = beamMU > 0 ? LT / beamMU : 0;
+  
+  // LTNLMU - Leaf Travel per Leaf and MU
+  const LTNLMU = (numLeaves > 0 && beamMU > 0) ? LT / (numLeaves * beamMU) : 0;
+  
+  // LNA - Leaf Travel per Leaf and CA
+  const LNA = (numLeaves > 0 && numCPs > 0) ? LT / (numLeaves * numCPs) : 0;
+  
+  // LTAL - Leaf Travel per Arc Length
+  const LTAL = (arcLength && arcLength > 0) ? LT / arcLength : undefined;
+  
+  // GT - Gantry Travel (same as arc length for arcs)
+  const GT = arcLength;
+  
+  // GS - Gantry Speed
+  const GS = (arcLength && deliveryEstimate.deliveryTime > 0) 
+    ? arcLength / deliveryEstimate.deliveryTime 
+    : undefined;
+  
+  // LS - Leaf Speed (alias for avgMLCSpeed)
+  const LS = deliveryEstimate.avgMLCSpeed;
+  
+  // Calculate dose rate and gantry speed variations
+  let mDRV: number | undefined;
+  let mGSV: number | undefined;
+  
+  if (beam.controlPoints.length > 1 && deliveryEstimate.deliveryTime > 0) {
+    // Estimate per-segment dose rates
+    const segmentDoseRates: number[] = [];
+    const segmentGantrySpeeds: number[] = [];
+    
+    for (let i = 1; i < beam.controlPoints.length; i++) {
+      const cpm = controlPointMetrics[i];
+      const segmentMU = cpm.metersetWeight * beamMU;
+      const gantryDiff = Math.abs(beam.controlPoints[i].gantryAngle - beam.controlPoints[i-1].gantryAngle);
+      
+      // Estimate segment time based on average
+      const avgSegmentTime = deliveryEstimate.deliveryTime / (beam.controlPoints.length - 1);
+      
+      if (avgSegmentTime > 0) {
+        segmentDoseRates.push((segmentMU / avgSegmentTime) * 60); // MU/min
+        if (beam.isArc && gantryDiff > 0) {
+          segmentGantrySpeeds.push(gantryDiff / avgSegmentTime);
+        }
+      }
+    }
+    
+    // Mean Dose Rate Variation
+    if (segmentDoseRates.length > 1) {
+      let drvSum = 0;
+      for (let i = 1; i < segmentDoseRates.length; i++) {
+        drvSum += Math.abs(segmentDoseRates[i] - segmentDoseRates[i-1]);
+      }
+      mDRV = drvSum / (segmentDoseRates.length - 1);
+    }
+    
+    // Mean Gantry Speed Variation
+    if (segmentGantrySpeeds.length > 1) {
+      let gsvSum = 0;
+      for (let i = 1; i < segmentGantrySpeeds.length; i++) {
+        gsvSum += Math.abs(segmentGantrySpeeds[i] - segmentGantrySpeeds[i-1]);
+      }
+      mGSV = gsvSum / (segmentGantrySpeeds.length - 1);
+    }
+  }
+  
+  // MD - Modulation Degree (simplified: based on MU distribution variance)
+  let MD: number | undefined;
+  if (controlPointMetrics.length > 1) {
+    const metersetWeights = controlPointMetrics.map(cpm => cpm.metersetWeight);
+    const avgWeight = metersetWeights.reduce((a, b) => a + b, 0) / metersetWeights.length;
+    if (avgWeight > 0) {
+      const variance = metersetWeights.reduce((sum, w) => sum + Math.pow(w - avgWeight, 2), 0) / metersetWeights.length;
+      MD = Math.sqrt(variance) / avgWeight; // Coefficient of variation
+    }
+  }
+  
+  // MI - Modulation Index (simplified: based on fluence gradients)
+  let MI: number | undefined;
+  if (controlPointMetrics.length > 1 && totalLeafTravel > 0) {
+    // Simplified MI based on normalized leaf travel and area changes
+    const normalizedLT = LT / (numLeaves * numCPs);
+    const avgAreaChange = controlPointMetrics.reduce((sum, cpm) => sum + cpm.apertureAAV, 0) / controlPointMetrics.length;
+    MI = normalizedLT * (1 + avgAreaChange);
+  }
+  
   return {
     beamNumber: beam.beamNumber,
     beamName: beam.beamName,
@@ -472,7 +711,30 @@ function calculateBeamMetrics(
     MFA,
     LT,
     LTMCS,
-    beamMU: beam.beamDose || 0,
+    // Accuracy metrics
+    LG,
+    MAD,
+    EFS,
+    psmall,
+    // Deliverability metrics
+    MUCA,
+    LTMU,
+    LTNLMU,
+    LNA,
+    LTAL,
+    mDRV,
+    GT,
+    GS,
+    mGSV,
+    LS,
+    PA,
+    JA,
+    PM,
+    TG,
+    MD,
+    MI,
+    // Basic metrics
+    beamMU,
     arcLength,
     numberOfControlPoints: beam.numberOfControlPoints,
     averageGantrySpeed,
@@ -512,8 +774,36 @@ export function calculatePlanMetrics(
   let weightedSAS10 = 0;
   let weightedEM = 0;
   let weightedPI = 0;
+  // New accuracy metrics
+  let weightedLG = 0;
+  let weightedMAD = 0;
+  let weightedEFS = 0;
+  let weightedPsmall = 0;
+  // New deliverability metrics
+  let weightedMUCA = 0;
+  let weightedLTMU = 0;
+  let weightedLTNLMU = 0;
+  let weightedLNA = 0;
+  let weightedLTAL = 0;
+  let weightedMDRV = 0;
+  let weightedGS = 0;
+  let weightedMGSV = 0;
+  let weightedLS = 0;
+  let weightedPM = 0;
+  let weightedTG = 0;
+  let weightedMD = 0;
+  let weightedMI = 0;
   let totalLT = 0;
   let totalDeliveryTime = 0;
+  let totalGT = 0;
+  let totalPA = 0;
+  let totalJA = 0;
+  let countLTAL = 0;
+  let countGS = 0;
+  let countMGSV = 0;
+  let countMDRV = 0;
+  let countMD = 0;
+  let countMI = 0;
   
   for (const bm of beamMetrics) {
     const mu = bm.beamMU || 1;
@@ -527,8 +817,54 @@ export function calculatePlanMetrics(
     weightedSAS10 += (bm.SAS10 || 0) * mu;
     weightedEM += (bm.EM || 0) * mu;
     weightedPI += (bm.PI || 1) * mu;
+    
+    // Accuracy metrics
+    weightedLG += (bm.LG || 0) * mu;
+    weightedMAD += (bm.MAD || 0) * mu;
+    weightedEFS += (bm.EFS || 0) * mu;
+    weightedPsmall += (bm.psmall || 0) * mu;
+    
+    // Deliverability metrics
+    weightedMUCA += (bm.MUCA || 0) * mu;
+    weightedLTMU += (bm.LTMU || 0) * mu;
+    weightedLTNLMU += (bm.LTNLMU || 0) * mu;
+    weightedLNA += (bm.LNA || 0) * mu;
+    weightedPM += (bm.PM || 0) * mu;
+    weightedTG += (bm.TG || 0) * mu;
+    
+    if (bm.LTAL !== undefined) {
+      weightedLTAL += bm.LTAL * mu;
+      countLTAL += mu;
+    }
+    if (bm.GS !== undefined) {
+      weightedGS += bm.GS * mu;
+      countGS += mu;
+    }
+    if (bm.mGSV !== undefined) {
+      weightedMGSV += bm.mGSV * mu;
+      countMGSV += mu;
+    }
+    if (bm.mDRV !== undefined) {
+      weightedMDRV += bm.mDRV * mu;
+      countMDRV += mu;
+    }
+    if (bm.LS !== undefined) {
+      weightedLS += bm.LS * mu;
+    }
+    if (bm.MD !== undefined) {
+      weightedMD += bm.MD * mu;
+      countMD += mu;
+    }
+    if (bm.MI !== undefined) {
+      weightedMI += bm.MI * mu;
+      countMI += mu;
+    }
+    
     totalLT += bm.LT;
     totalDeliveryTime += bm.estimatedDeliveryTime || 0;
+    totalGT += bm.GT || 0;
+    totalPA += bm.PA || 0;
+    totalJA += bm.JA || 0;
   }
   
   const MCS = totalMU > 0 ? weightedMCS / totalMU : 0;
@@ -542,6 +878,30 @@ export function calculatePlanMetrics(
   const LT = totalLT;
   const LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
   
+  // Accuracy metrics
+  const LG = totalMU > 0 ? weightedLG / totalMU : undefined;
+  const MAD = totalMU > 0 ? weightedMAD / totalMU : undefined;
+  const EFS = totalMU > 0 ? weightedEFS / totalMU : undefined;
+  const psmall = totalMU > 0 ? weightedPsmall / totalMU : undefined;
+  
+  // Deliverability metrics
+  const MUCA = totalMU > 0 ? weightedMUCA / totalMU : undefined;
+  const LTMU = totalMU > 0 ? weightedLTMU / totalMU : undefined;
+  const LTNLMU = totalMU > 0 ? weightedLTNLMU / totalMU : undefined;
+  const LNA = totalMU > 0 ? weightedLNA / totalMU : undefined;
+  const LTAL = countLTAL > 0 ? weightedLTAL / countLTAL : undefined;
+  const mDRV = countMDRV > 0 ? weightedMDRV / countMDRV : undefined;
+  const GT = totalGT > 0 ? totalGT : undefined;
+  const GS = countGS > 0 ? weightedGS / countGS : undefined;
+  const mGSV = countMGSV > 0 ? weightedMGSV / countMGSV : undefined;
+  const LS = totalMU > 0 ? weightedLS / totalMU : undefined;
+  const PA = totalPA > 0 ? totalPA : undefined;
+  const JA = totalMU > 0 ? totalJA / beamMetrics.length : undefined;
+  const PM = totalMU > 0 ? weightedPM / totalMU : undefined;
+  const TG = totalMU > 0 ? weightedTG / totalMU : undefined;
+  const MD = countMD > 0 ? weightedMD / countMD : undefined;
+  const MI = countMI > 0 ? weightedMI / countMI : undefined;
+  
   return {
     planLabel: plan.planLabel,
     MCS,
@@ -550,6 +910,29 @@ export function calculatePlanMetrics(
     MFA,
     LT,
     LTMCS,
+    // Accuracy metrics
+    LG,
+    MAD,
+    EFS,
+    psmall,
+    // Deliverability metrics
+    MUCA,
+    LTMU,
+    LTNLMU,
+    LNA,
+    LTAL,
+    mDRV,
+    GT,
+    GS,
+    mGSV,
+    LS,
+    PA,
+    JA,
+    PM,
+    TG,
+    MD,
+    MI,
+    // Basic metrics
     totalMU: plan.totalMU,
     totalDeliveryTime,
     SAS5,
@@ -582,6 +965,7 @@ export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): s
   lines.push('Plan-Level Metrics');
   lines.push('Metric,Full Name,Value,Unit');
   
+  // Primary metrics
   if (isEnabled('MCS')) {
     lines.push(`MCS,Modulation Complexity Score,${metrics.MCS.toFixed(4)},`);
   }
@@ -600,11 +984,25 @@ export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): s
   if (isEnabled('LTMCS')) {
     lines.push(`LTMCS,Leaf Travel-weighted MCS,${metrics.LTMCS.toFixed(4)},`);
   }
-  if (isEnabled('totalMU')) {
-    lines.push(`Total MU,Total Monitor Units,${metrics.totalMU.toFixed(1)},MU`);
+  
+  // Accuracy metrics
+  if (isEnabled('LG') && metrics.LG !== undefined) {
+    lines.push(`LG,Leaf Gap,${metrics.LG.toFixed(2)},mm`);
   }
-  if (isEnabled('totalDeliveryTime') && metrics.totalDeliveryTime) {
-    lines.push(`Total Delivery Time,Estimated Beam-On Time,${metrics.totalDeliveryTime.toFixed(1)},s`);
+  if (isEnabled('MAD') && metrics.MAD !== undefined) {
+    lines.push(`MAD,Mean Asymmetry Distance,${metrics.MAD.toFixed(2)},mm`);
+  }
+  if (isEnabled('EFS') && metrics.EFS !== undefined) {
+    lines.push(`EFS,Equivalent Field Size,${metrics.EFS.toFixed(2)},mm`);
+  }
+  if (isEnabled('psmall') && metrics.psmall !== undefined) {
+    lines.push(`psmall,Percentage Small Fields,${metrics.psmall.toFixed(4)},`);
+  }
+  if (isEnabled('EM') && metrics.EM !== undefined) {
+    lines.push(`EM,Edge Metric,${metrics.EM.toFixed(4)},mm⁻¹`);
+  }
+  if (isEnabled('PI') && metrics.PI !== undefined) {
+    lines.push(`PI,Plan Irregularity,${metrics.PI.toFixed(4)},`);
   }
   if (isEnabled('SAS5') && metrics.SAS5 !== undefined) {
     lines.push(`SAS5,Small Aperture Score (5mm),${metrics.SAS5.toFixed(4)},`);
@@ -612,11 +1010,61 @@ export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): s
   if (isEnabled('SAS10') && metrics.SAS10 !== undefined) {
     lines.push(`SAS10,Small Aperture Score (10mm),${metrics.SAS10.toFixed(4)},`);
   }
-  if (isEnabled('EM') && metrics.EM !== undefined) {
-    lines.push(`EM,Edge Metric,${metrics.EM.toFixed(4)},mm⁻¹`);
+  
+  // Deliverability metrics
+  if (isEnabled('totalMU')) {
+    lines.push(`Total MU,Total Monitor Units,${metrics.totalMU.toFixed(1)},MU`);
   }
-  if (isEnabled('PI') && metrics.PI !== undefined) {
-    lines.push(`PI,Plan Irregularity,${metrics.PI.toFixed(4)},`);
+  if (isEnabled('totalDeliveryTime') && metrics.totalDeliveryTime) {
+    lines.push(`Total Delivery Time,Estimated Beam-On Time,${metrics.totalDeliveryTime.toFixed(1)},s`);
+  }
+  if (isEnabled('MUCA') && metrics.MUCA !== undefined) {
+    lines.push(`MUCA,MU per Control Arc,${metrics.MUCA.toFixed(4)},MU/CP`);
+  }
+  if (isEnabled('LTMU') && metrics.LTMU !== undefined) {
+    lines.push(`LTMU,Leaf Travel per MU,${metrics.LTMU.toFixed(4)},mm/MU`);
+  }
+  if (isEnabled('LTNLMU') && metrics.LTNLMU !== undefined) {
+    lines.push(`LTNLMU,Leaf Travel per Leaf and MU,${metrics.LTNLMU.toFixed(6)},mm/(leaf·MU)`);
+  }
+  if (isEnabled('LNA') && metrics.LNA !== undefined) {
+    lines.push(`LNA,Leaf Travel per Leaf and CA,${metrics.LNA.toFixed(4)},mm/(leaf·CP)`);
+  }
+  if (isEnabled('LTAL') && metrics.LTAL !== undefined) {
+    lines.push(`LTAL,Leaf Travel per Arc Length,${metrics.LTAL.toFixed(2)},mm/°`);
+  }
+  if (isEnabled('GT') && metrics.GT !== undefined) {
+    lines.push(`GT,Gantry Travel,${metrics.GT.toFixed(1)},°`);
+  }
+  if (isEnabled('GS') && metrics.GS !== undefined) {
+    lines.push(`GS,Gantry Speed,${metrics.GS.toFixed(2)},deg/s`);
+  }
+  if (isEnabled('mDRV') && metrics.mDRV !== undefined) {
+    lines.push(`mDRV,Mean Dose Rate Variation,${metrics.mDRV.toFixed(2)},MU/min`);
+  }
+  if (isEnabled('mGSV') && metrics.mGSV !== undefined) {
+    lines.push(`mGSV,Mean Gantry Speed Variation,${metrics.mGSV.toFixed(4)},deg/s`);
+  }
+  if (isEnabled('LS') && metrics.LS !== undefined) {
+    lines.push(`LS,Leaf Speed,${metrics.LS.toFixed(2)},mm/s`);
+  }
+  if (isEnabled('PA') && metrics.PA !== undefined) {
+    lines.push(`PA,Plan Area,${metrics.PA.toFixed(2)},cm²`);
+  }
+  if (isEnabled('JA') && metrics.JA !== undefined) {
+    lines.push(`JA,Jaw Area,${metrics.JA.toFixed(2)},cm²`);
+  }
+  if (isEnabled('PM') && metrics.PM !== undefined) {
+    lines.push(`PM,Plan Modulation,${metrics.PM.toFixed(4)},`);
+  }
+  if (isEnabled('TG') && metrics.TG !== undefined) {
+    lines.push(`TG,Tongue-and-Groove Index,${metrics.TG.toFixed(4)},`);
+  }
+  if (isEnabled('MD') && metrics.MD !== undefined) {
+    lines.push(`MD,Modulation Degree,${metrics.MD.toFixed(4)},`);
+  }
+  if (isEnabled('MI') && metrics.MI !== undefined) {
+    lines.push(`MI,Modulation Index,${metrics.MI.toFixed(4)},`);
   }
   lines.push('');
   
@@ -627,10 +1075,23 @@ export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): s
   if (isEnabled('AAV')) beamHeaders.push('AAV');
   if (isEnabled('MFA')) beamHeaders.push('MFA (cm²)');
   if (isEnabled('LT')) beamHeaders.push('LT (mm)');
+  if (isEnabled('LG')) beamHeaders.push('LG (mm)');
+  if (isEnabled('MAD')) beamHeaders.push('MAD (mm)');
+  if (isEnabled('EFS')) beamHeaders.push('EFS (mm)');
+  if (isEnabled('psmall')) beamHeaders.push('psmall');
   if (isEnabled('beamMU')) beamHeaders.push('MU');
   if (isEnabled('numberOfControlPoints')) beamHeaders.push('Control Points');
   if (isEnabled('arcLength')) beamHeaders.push('Arc Length (°)');
   if (isEnabled('estimatedDeliveryTime')) beamHeaders.push('Est. Time (s)');
+  if (isEnabled('MUCA')) beamHeaders.push('MUCA');
+  if (isEnabled('LTMU')) beamHeaders.push('LTMU');
+  if (isEnabled('GT')) beamHeaders.push('GT (°)');
+  if (isEnabled('GS')) beamHeaders.push('GS (deg/s)');
+  if (isEnabled('LS')) beamHeaders.push('LS (mm/s)');
+  if (isEnabled('PA')) beamHeaders.push('PA (cm²)');
+  if (isEnabled('JA')) beamHeaders.push('JA (cm²)');
+  if (isEnabled('PM')) beamHeaders.push('PM');
+  if (isEnabled('TG')) beamHeaders.push('TG');
   if (isEnabled('SAS5')) beamHeaders.push('SAS5');
   if (isEnabled('SAS10')) beamHeaders.push('SAS10');
   if (isEnabled('EM')) beamHeaders.push('EM (mm⁻¹)');
@@ -647,10 +1108,23 @@ export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): s
     if (isEnabled('AAV')) values.push(bm.AAV.toFixed(4));
     if (isEnabled('MFA')) values.push(bm.MFA.toFixed(2));
     if (isEnabled('LT')) values.push(bm.LT.toFixed(1));
+    if (isEnabled('LG')) values.push(bm.LG?.toFixed(2) ?? '');
+    if (isEnabled('MAD')) values.push(bm.MAD?.toFixed(2) ?? '');
+    if (isEnabled('EFS')) values.push(bm.EFS?.toFixed(2) ?? '');
+    if (isEnabled('psmall')) values.push(bm.psmall?.toFixed(4) ?? '');
     if (isEnabled('beamMU')) values.push(bm.beamMU.toFixed(1));
     if (isEnabled('numberOfControlPoints')) values.push(bm.numberOfControlPoints.toString());
     if (isEnabled('arcLength')) values.push(bm.arcLength?.toFixed(1) ?? '');
     if (isEnabled('estimatedDeliveryTime')) values.push(bm.estimatedDeliveryTime?.toFixed(1) ?? '');
+    if (isEnabled('MUCA')) values.push(bm.MUCA?.toFixed(4) ?? '');
+    if (isEnabled('LTMU')) values.push(bm.LTMU?.toFixed(4) ?? '');
+    if (isEnabled('GT')) values.push(bm.GT?.toFixed(1) ?? '');
+    if (isEnabled('GS')) values.push(bm.GS?.toFixed(2) ?? '');
+    if (isEnabled('LS')) values.push(bm.LS?.toFixed(2) ?? '');
+    if (isEnabled('PA')) values.push(bm.PA?.toFixed(2) ?? '');
+    if (isEnabled('JA')) values.push(bm.JA?.toFixed(2) ?? '');
+    if (isEnabled('PM')) values.push(bm.PM?.toFixed(4) ?? '');
+    if (isEnabled('TG')) values.push(bm.TG?.toFixed(4) ?? '');
     if (isEnabled('SAS5')) values.push(bm.SAS5?.toFixed(4) ?? '');
     if (isEnabled('SAS10')) values.push(bm.SAS10?.toFixed(4) ?? '');
     if (isEnabled('EM')) values.push(bm.EM?.toFixed(4) ?? '');
