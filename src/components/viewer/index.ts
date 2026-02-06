@@ -10,3 +10,6 @@ export { CumulativeMUChart, GantrySpeedChart } from './Charts';
 export { BeamSelector } from './BeamSelector';
 export { InteractiveViewer } from './InteractiveViewer';
 export { DemoLoader } from './DemoLoader';
+export { AngularDistributionChart } from './AngularDistributionChart';
+export { DeliveryTimelineChart } from './DeliveryTimelineChart';
+export { ComplexityHeatmap } from './ComplexityHeatmap';

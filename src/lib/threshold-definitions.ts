@@ -74,12 +74,14 @@ const VERSA_HD_THRESHOLDS: ThresholdSet = {
 };
 
 // Machine delivery parameters
-const GENERIC_DELIVERY: MachineDeliveryParams = {
+export const DEFAULT_MACHINE_PARAMS: MachineDeliveryParams = {
   maxDoseRate: 600,
   maxGantrySpeed: 4.8,
   maxMLCSpeed: 25,
   mlcType: 'MLCX',
 };
+
+const GENERIC_DELIVERY: MachineDeliveryParams = DEFAULT_MACHINE_PARAMS;
 
 const TRUEBEAM_DELIVERY: MachineDeliveryParams = {
   maxDoseRate: 600,
