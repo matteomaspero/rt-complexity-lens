@@ -138,8 +138,8 @@ function parseMLCPositions(
         }
       }
     }
-  } catch (e) {
-    console.warn('Error parsing MLC positions:', e);
+  } catch {
+    // Silent fallback - MLC positions will use empty default
   }
   
   return result;
@@ -171,8 +171,8 @@ function parseJawPositions(dataSet: dicomParser.DataSet): { x1: number; x2: numb
         }
       }
     }
-  } catch (e) {
-    console.warn('Error parsing jaw positions:', e);
+  } catch {
+    // Silent fallback - jaw positions will use zero defaults
   }
   
   return result;
@@ -275,8 +275,8 @@ function getLeafWidths(beamDataSet: dicomParser.DataSet): { widths: number[]; nu
         return { widths, numLeaves: numPairs || widths.length };
       }
     }
-  } catch (e) {
-    console.warn('Error getting leaf widths:', e);
+  } catch {
+    // Silent fallback - will use default Millennium 120 configuration
   }
   
   // Default: Varian Millennium 120 leaf configuration

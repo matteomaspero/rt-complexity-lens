@@ -103,7 +103,6 @@ async function extractDicomFilesFromZip(zipFile: File): Promise<File[]> {
 
   await Promise.all(filePromises);
   
-  console.log(`Extracted ${dicomFiles.length} DICOM files from ${zipFile.name}`);
   return dicomFiles;
 }
 
