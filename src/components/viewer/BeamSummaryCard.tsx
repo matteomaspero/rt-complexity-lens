@@ -105,7 +105,7 @@ export function BeamSummaryCard({
         </div>
       </div>
 
-      {/* Info grid */}
+      {/* Info grid - Row 1: Delivery parameters */}
       <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4 lg:grid-cols-6">
         <div>
           <span className="text-xs text-muted-foreground">Control Points</span>
@@ -138,6 +138,46 @@ export function BeamSummaryCard({
           <p className="font-mono font-semibold">
             {stats.avgGantrySpeed.toFixed(1)}{' '}
             <span className="text-xs text-muted-foreground">°/s</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Info grid - Row 2: Geometric parameters */}
+      <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4 lg:grid-cols-4 border-t pt-2">
+        <div>
+          <span className="text-xs text-muted-foreground">Isocenter</span>
+          <p className="font-mono font-semibold">
+            {beam.controlPoints[0]?.isocenterPosition 
+              ? `(${beam.controlPoints[0].isocenterPosition[0].toFixed(1)}, ${beam.controlPoints[0].isocenterPosition[1].toFixed(1)}, ${beam.controlPoints[0].isocenterPosition[2].toFixed(1)}) mm`
+              : '—'}
+          </p>
+        </div>
+        <div>
+          <span className="text-xs text-muted-foreground">Table Angle</span>
+          <p className="font-mono font-semibold">
+            {beam.controlPoints[0]?.patientSupportAngle !== undefined
+              ? `${beam.controlPoints[0].patientSupportAngle.toFixed(1)}°`
+              : '0.0°'}
+          </p>
+        </div>
+        <div>
+          <span className="text-xs text-muted-foreground">Collimator</span>
+          <p className="font-mono font-semibold">
+            {beam.controlPoints[0]?.beamLimitingDeviceAngle.toFixed(1)}°
+            {beam.controlPoints.length > 1 && 
+             beam.controlPoints[0]?.beamLimitingDeviceAngle !== beam.controlPoints[beam.controlPoints.length - 1]?.beamLimitingDeviceAngle
+              ? ` → ${beam.controlPoints[beam.controlPoints.length - 1]?.beamLimitingDeviceAngle.toFixed(1)}°`
+              : ''}
+          </p>
+        </div>
+        <div>
+          <span className="text-xs text-muted-foreground">Table Position</span>
+          <p className="font-mono font-semibold text-xs">
+            {beam.controlPoints[0]?.tableTopVertical !== undefined ||
+             beam.controlPoints[0]?.tableTopLongitudinal !== undefined ||
+             beam.controlPoints[0]?.tableTopLateral !== undefined
+              ? `V:${(beam.controlPoints[0]?.tableTopVertical ?? 0).toFixed(0)} L:${(beam.controlPoints[0]?.tableTopLongitudinal ?? 0).toFixed(0)} Lat:${(beam.controlPoints[0]?.tableTopLateral ?? 0).toFixed(0)}`
+              : '—'}
           </p>
         </div>
       </div>

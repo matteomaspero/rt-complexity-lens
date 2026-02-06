@@ -52,6 +52,12 @@ const TAGS = {
   LeafPositionBoundaries: 'x300a00be',
   LeafJawPositions: 'x300a011c',
   
+  // Patient/Table Position
+  PatientSupportAngle: 'x300a0122',
+  TableTopVerticalPosition: 'x300a0128',
+  TableTopLongitudinalPosition: 'x300a0129',
+  TableTopLateralPosition: 'x300a012a',
+  
   // Fraction Group
   FractionGroupNumber: 'x300a0071',
   NumberOfFractionsPlanned: 'x300a0078',
@@ -201,6 +207,33 @@ function parseControlPoint(
     jawPositions = previousCP.jawPositions;
   }
   
+  // Parse isocenter position (may inherit from previous CP)
+  let isocenterPosition: [number, number, number] | undefined;
+  const isocenterArr = getFloatArray(cpDataSet, TAGS.IsocenterPosition);
+  if (isocenterArr.length === 3) {
+    isocenterPosition = [isocenterArr[0], isocenterArr[1], isocenterArr[2]];
+  } else if (previousCP?.isocenterPosition) {
+    isocenterPosition = previousCP.isocenterPosition;
+  }
+  
+  // Parse patient support (table) angle (may inherit from previous CP)
+  const patientSupportAngle = cpDataSet.elements[TAGS.PatientSupportAngle] !== undefined
+    ? getFloat(cpDataSet, TAGS.PatientSupportAngle)
+    : previousCP?.patientSupportAngle;
+  
+  // Parse table top positions (may inherit from previous CP)
+  const tableTopVertical = cpDataSet.elements[TAGS.TableTopVerticalPosition] !== undefined
+    ? getFloat(cpDataSet, TAGS.TableTopVerticalPosition)
+    : previousCP?.tableTopVertical;
+  
+  const tableTopLongitudinal = cpDataSet.elements[TAGS.TableTopLongitudinalPosition] !== undefined
+    ? getFloat(cpDataSet, TAGS.TableTopLongitudinalPosition)
+    : previousCP?.tableTopLongitudinal;
+  
+  const tableTopLateral = cpDataSet.elements[TAGS.TableTopLateralPosition] !== undefined
+    ? getFloat(cpDataSet, TAGS.TableTopLateralPosition)
+    : previousCP?.tableTopLateral;
+  
   return {
     index,
     gantryAngle: hasGantryAngle ? gantryAngle : (previousCP?.gantryAngle ?? 0),
@@ -211,6 +244,11 @@ function parseControlPoint(
     cumulativeMetersetWeight: cumulativeMW,
     mlcPositions,
     jawPositions,
+    isocenterPosition,
+    patientSupportAngle,
+    tableTopVertical,
+    tableTopLongitudinal,
+    tableTopLateral,
   };
 }
 

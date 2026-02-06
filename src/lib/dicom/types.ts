@@ -19,6 +19,10 @@ export interface ControlPoint {
     y2: number;
   };
   isocenterPosition?: [number, number, number];
+  patientSupportAngle?: number; // Table rotation (degrees)
+  tableTopVertical?: number; // mm
+  tableTopLongitudinal?: number; // mm
+  tableTopLateral?: number; // mm
 }
 
 export interface Beam {
