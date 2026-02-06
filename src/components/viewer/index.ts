@@ -13,3 +13,4 @@ export { DemoLoader } from './DemoLoader';
 export { AngularDistributionChart } from './AngularDistributionChart';
 export { DeliveryTimelineChart } from './DeliveryTimelineChart';
 export { ComplexityHeatmap } from './ComplexityHeatmap';
+export { BeamSummaryCard } from './BeamSummaryCard';

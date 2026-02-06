@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -59,46 +61,67 @@ export function DeliveryTimelineChart({
     });
   }, [segments]);
 
-  const totalTime = timelineData.length > 0
-    ? timelineData[timelineData.length - 1].endTime
-    : 0;
+  const totalTime =
+    timelineData.length > 0 ? timelineData[timelineData.length - 1].endTime : 0;
 
   // Current segment timing
-  const currentSegment = timelineData[Math.min(currentIndex - 1, timelineData.length - 1)];
-  const currentTime = currentSegment?.startTime ?? 0;
+  const currentSegment =
+    timelineData[Math.min(currentIndex - 1, timelineData.length - 1)];
+  const currentAngle = currentSegment?.gantryAngle ?? '0';
+
+  const tooltipStyle = {
+    backgroundColor: 'hsl(var(--card))',
+    border: '1px solid hsl(var(--border))',
+    borderRadius: '6px',
+    fontSize: '12px',
+  };
+
+  const chartHeight = 90;
 
   return (
-    <div className="space-y-4">
-      {/* Segment Duration Bar Chart with Limiting Factor Colors */}
-      <div className="rounded-lg border bg-card p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-medium">Segment Duration</h4>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: LIMITING_FACTOR_COLORS.doseRate }}
-              />
-              Dose Rate
-            </span>
-            <span className="flex items-center gap-1">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: LIMITING_FACTOR_COLORS.gantrySpeed }}
-              />
-              Gantry
-            </span>
-            <span className="flex items-center gap-1">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: LIMITING_FACTOR_COLORS.mlcSpeed }}
-              />
-              MLC
-            </span>
-          </div>
+    <div className="space-y-3">
+      {/* Legend */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          Total Est. Time: <span className="font-mono font-medium">{totalTime.toFixed(1)}s</span>
+        </span>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="flex items-center gap-1">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: LIMITING_FACTOR_COLORS.doseRate }}
+            />
+            Dose Rate
+          </span>
+          <span className="flex items-center gap-1">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: LIMITING_FACTOR_COLORS.gantrySpeed }}
+            />
+            Gantry
+          </span>
+          <span className="flex items-center gap-1">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: LIMITING_FACTOR_COLORS.mlcSpeed }}
+            />
+            MLC
+          </span>
         </div>
-        <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={timelineData} margin={{ top: 5, right: 5, bottom: 20, left: 5 }}>
+      </div>
+
+      {/* Segment Duration Bar Chart */}
+      <div className="rounded-lg border bg-card p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-xs font-medium text-muted-foreground">
+            Segment Duration (colored by limiting factor)
+          </h4>
+          <span className="font-mono text-sm font-medium">
+            {currentSegment?.duration.toFixed(2) ?? 0}s
+          </span>
+        </div>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="hsl(var(--chart-grid))"
@@ -109,31 +132,18 @@ export function DeliveryTimelineChart({
               tick={{ fontSize: 9 }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
-              label={{
-                value: 'Gantry Angle (°)',
-                position: 'insideBottom',
-                offset: -10,
-                fontSize: 10,
-                fill: 'hsl(var(--muted-foreground))',
-              }}
+              tickFormatter={(v) => `${v}°`}
             />
             <YAxis
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 9 }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v.toFixed(1)}s`}
+              width={35}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px',
-                fontSize: '12px',
-              }}
-              formatter={(value: number, name: string) => {
-                if (name === 'duration') return [`${value.toFixed(2)}s`, 'Duration'];
-                return [value, name];
-              }}
+              contentStyle={tooltipStyle}
+              formatter={(value: number) => [`${value.toFixed(2)}s`, 'Duration']}
               labelFormatter={(label) => `Angle: ${label}°`}
             />
             <Bar dataKey="duration" radius={[2, 2, 0, 0]}>
@@ -146,7 +156,7 @@ export function DeliveryTimelineChart({
               ))}
             </Bar>
             <ReferenceLine
-              x={currentSegment?.gantryAngle ?? '0'}
+              x={currentAngle}
               stroke="hsl(var(--foreground))"
               strokeWidth={2}
               strokeDasharray="4 2"
@@ -155,28 +165,159 @@ export function DeliveryTimelineChart({
         </ResponsiveContainer>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-4 gap-3 rounded-lg border bg-card p-4">
-        <div>
-          <span className="text-xs text-muted-foreground">Total Time</span>
-          <p className="font-mono text-sm font-semibold">{totalTime.toFixed(1)}s</p>
+      {/* Dose Rate Chart */}
+      <div className="rounded-lg border bg-card p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-xs font-medium text-muted-foreground">Dose Rate</h4>
+          <span className="font-mono text-sm font-medium">
+            {currentSegment?.doseRate.toFixed(0) ?? 0} MU/min
+          </span>
         </div>
-        <div>
-          <span className="text-xs text-muted-foreground">Current</span>
-          <p className="font-mono text-sm font-semibold">{currentTime.toFixed(1)}s</p>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="hsl(var(--chart-grid))"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="gantryAngle"
+              tick={{ fontSize: 9 }}
+              tickLine={false}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
+              tickFormatter={(v) => `${v}°`}
+            />
+            <YAxis
+              tick={{ fontSize: 9 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `${v}`}
+              width={35}
+            />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              formatter={(value: number) => [`${value.toFixed(0)} MU/min`, 'Dose Rate']}
+              labelFormatter={(label) => `Angle: ${label}°`}
+            />
+            <Line
+              type="monotone"
+              dataKey="doseRate"
+              stroke={LIMITING_FACTOR_COLORS.doseRate}
+              strokeWidth={2}
+              dot={false}
+            />
+            <ReferenceLine
+              x={currentAngle}
+              stroke="hsl(var(--foreground))"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Gantry Speed Chart (only for arcs) */}
+      {beam.isArc && (
+        <div className="rounded-lg border bg-card p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="text-xs font-medium text-muted-foreground">Gantry Speed</h4>
+            <span className="font-mono text-sm font-medium">
+              {currentSegment?.gantrySpeed.toFixed(1) ?? 0} °/s
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--chart-grid))"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="gantryAngle"
+                tick={{ fontSize: 9 }}
+                tickLine={false}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
+                tickFormatter={(v) => `${v}°`}
+              />
+              <YAxis
+                tick={{ fontSize: 9 }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => `${v}`}
+                width={35}
+              />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                formatter={(value: number) => [`${value.toFixed(2)} °/s`, 'Gantry Speed']}
+                labelFormatter={(label) => `Angle: ${label}°`}
+              />
+              <Line
+                type="monotone"
+                dataKey="gantrySpeed"
+                stroke={LIMITING_FACTOR_COLORS.gantrySpeed}
+                strokeWidth={2}
+                dot={false}
+              />
+              <ReferenceLine
+                x={currentAngle}
+                stroke="hsl(var(--foreground))"
+                strokeWidth={2}
+                strokeDasharray="4 2"
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
-        <div>
-          <span className="text-xs text-muted-foreground">Avg Segment</span>
-          <p className="font-mono text-sm font-semibold">
-            {(totalTime / Math.max(timelineData.length, 1)).toFixed(2)}s
-          </p>
+      )}
+
+      {/* MLC Speed Chart */}
+      <div className="rounded-lg border bg-card p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-xs font-medium text-muted-foreground">Max MLC Speed</h4>
+          <span className="font-mono text-sm font-medium">
+            {currentSegment?.mlcSpeed.toFixed(1) ?? 0} mm/s
+          </span>
         </div>
-        <div>
-          <span className="text-xs text-muted-foreground">Limiting Factor</span>
-          <p className="text-sm font-semibold capitalize">
-            {currentSegment?.limitingFactor.replace('Speed', ' Spd') ?? '-'}
-          </p>
-        </div>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="hsl(var(--chart-grid))"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="gantryAngle"
+              tick={{ fontSize: 9 }}
+              tickLine={false}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
+              tickFormatter={(v) => `${v}°`}
+            />
+            <YAxis
+              tick={{ fontSize: 9 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `${v}`}
+              width={35}
+            />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              formatter={(value: number) => [`${value.toFixed(1)} mm/s`, 'MLC Speed']}
+              labelFormatter={(label) => `Angle: ${label}°`}
+            />
+            <Line
+              type="monotone"
+              dataKey="mlcSpeed"
+              stroke={LIMITING_FACTOR_COLORS.mlcSpeed}
+              strokeWidth={2}
+              dot={false}
+            />
+            <ReferenceLine
+              x={currentAngle}
+              stroke="hsl(var(--foreground))"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
