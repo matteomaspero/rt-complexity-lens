@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, forwardRef } from 'react';
 import type { SessionPlan, Beam, ControlPoint } from '@/lib/dicom/types';
 import {
   FileUploadZone,
@@ -9,11 +9,13 @@ import {
   CumulativeMUChart,
   GantrySpeedChart,
   BeamSelector,
+  DemoLoader,
 } from '@/components/viewer';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
-export function InteractiveViewer() {
+export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
+  function InteractiveViewer(_props, ref) {
   const [sessionPlan, setSessionPlan] = useState<SessionPlan | null>(null);
   const [selectedBeamIndex, setSelectedBeamIndex] = useState(0);
   const [currentCPIndex, setCurrentCPIndex] = useState(0);
@@ -89,6 +91,20 @@ export function InteractiveViewer() {
           onPlanLoaded={handlePlanLoaded}
           className="w-full max-w-md"
         />
+        <div className="mt-6 w-full max-w-md">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+          <DemoLoader
+            onPlanLoaded={handlePlanLoaded}
+            className="mt-4"
+          />
+        </div>
         <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>Supports VMAT and IMRT plans • Browser-based processing</p>
           <p className="mt-1">UCoMX v1.1 complexity metrics</p>
@@ -229,4 +245,4 @@ export function InteractiveViewer() {
       </div>
     </div>
   );
-}
+});
