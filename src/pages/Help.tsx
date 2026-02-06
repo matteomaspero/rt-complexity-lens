@@ -320,7 +320,7 @@ export default function Help() {
                     This tool is based on the UCoMX v1.1 MATLAB implementation.
                   </p>
                   <a
-                    href="https://zenodo.org/records/7672823"
+                    href="https://zenodo.org/records/8276837"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline"
@@ -386,12 +386,12 @@ export default function Help() {
                       pre-treatment quality assurance results." <em>Australas Phys Eng Sci Med.</em> 2014;37:475-482.
                       <br />
                       <a
-                        href="https://doi.org/10.1007/s13246-014-0271-5"
+                        href="https://doi.org/10.1007/s13246-014-0274-9"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        DOI: 10.1007/s13246-014-0271-5<ExternalLinkIcon />
+                        DOI: 10.1007/s13246-014-0274-9<ExternalLinkIcon />
                       </a>
                     </li>
                     <li>
@@ -431,12 +431,12 @@ export default function Help() {
                       delivery accuracy of VMAT." <em>Brit J Radiol.</em> 2015.
                       <br />
                       <a
-                        href="https://doi.org/10.1259/bjr.20150040"
+                        href="https://doi.org/10.1259/bjr.20140698"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        DOI: 10.1259/bjr.20150040<ExternalLinkIcon />
+                        DOI: 10.1259/bjr.20140698<ExternalLinkIcon />
                       </a>
                     </li>
                   </ul>

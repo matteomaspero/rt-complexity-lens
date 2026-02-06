@@ -108,8 +108,8 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     fullDescription: 'Estimated beam delivery time based on MU, gantry speed, and MLC speed limits. Calculated per beam using machine parameters.',
     unit: 's',
     category: 'delivery',
-    reference: 'Park et al., 2015',
-    doi: '10.1259/bjr.20150040',
+    reference: 'Park et al., 2014',
+    doi: '10.1259/bjr.20140698',
   },
   totalDeliveryTime: {
     key: 'totalDeliveryTime',
@@ -161,7 +161,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     unit: null,
     category: 'secondary',
     reference: 'Crowe et al., 2014',
-    doi: '10.1007/s13246-014-0271-5',
+    doi: '10.1007/s13246-014-0274-9',
   },
   SAS10: {
     key: 'SAS10',
@@ -171,7 +171,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     unit: null,
     category: 'secondary',
     reference: 'Crowe et al., 2014',
-    doi: '10.1007/s13246-014-0271-5',
+    doi: '10.1007/s13246-014-0274-9',
   },
   
   // UCoMX Accuracy Metrics
