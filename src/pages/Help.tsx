@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { METRIC_DEFINITIONS, METRIC_CATEGORIES, type MetricCategory } from '@/lib/metrics-definitions';
-import { TableOfContents } from '@/components/help';
+import { TableOfContents, IEC61217Diagram, PatientAxesDiagram } from '@/components/help';
 
 function ExternalLinkIcon() {
   return <ExternalLink className="ml-1 inline h-3 w-3" />;
@@ -173,46 +173,134 @@ export default function Help() {
               </CardHeader>
               <CardContent className="prose prose-sm dark:prose-invert max-w-none">
                 <p>
-                  DICOM-RT uses the <strong>IEC 61217</strong> coordinate system standard for radiotherapy equipment.
-                  All gantry, collimator, and patient coordinates follow this convention.
+                  The <strong>IEC 61217</strong> standard defines coordinate systems and angle conventions 
+                  used universally in radiotherapy equipment. DICOM-RT files encode all geometric 
+                  information using these conventions. Understanding this system is essential for 
+                  correctly interpreting gantry angles, collimator rotations, and patient positioning 
+                  in treatment plans.
                 </p>
 
                 <h4>Gantry Angle</h4>
+                <p className="text-sm text-muted-foreground">
+                  Gantry angle describes the rotation of the treatment head around the patient. 
+                  The angle is measured from the viewer's perspective facing the gantry. At 0°, 
+                  the radiation source is directly above the patient (superior), with the beam 
+                  directed downward. Rotation proceeds <strong>clockwise</strong> from this position.
+                </p>
+                
+                <div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
+                  <IEC61217Diagram className="shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-20">Angle</TableHead>
+                          <TableHead>Beam Direction</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-mono font-medium">0°</TableCell>
+                          <TableCell>From above (superior) — beam vertical down toward patient</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono font-medium">90°</TableCell>
+                          <TableCell>From patient's left — beam horizontal toward right</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono font-medium">180°</TableCell>
+                          <TableCell>From below (inferior) — beam vertical up toward patient</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono font-medium">270°</TableCell>
+                          <TableCell>From patient's right — beam horizontal toward left</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                <h4>Collimator Angle</h4>
+                <p className="text-sm text-muted-foreground">
+                  The collimator (beam-limiting device) can rotate independently within the gantry head. 
+                  At 0°, the MLC leaves are perpendicular to the gantry rotation axis. Rotation is 
+                  <strong> counter-clockwise</strong> when viewed from the radiation source (beam's-eye view).
+                </p>
+                <ul>
+                  <li><strong>0°</strong> — MLC leaves perpendicular to gantry rotation axis</li>
+                  <li><strong>Positive rotation</strong> — Counter-clockwise when viewed from the radiation source (BEV)</li>
+                </ul>
+
+                <h4>Couch (Table) Angle</h4>
+                <p className="text-sm text-muted-foreground">
+                  Couch rotation allows non-coplanar beam arrangements. The angle is measured 
+                  as viewed from above the patient.
+                </p>
                 <Table>
                   <TableBody>
                     <TableRow>
-                      <TableCell className="font-mono font-medium">0°</TableCell>
-                      <TableCell>Beam from above (superior, vertical down)</TableCell>
+                      <TableCell className="font-mono font-medium w-20">0°</TableCell>
+                      <TableCell>Couch parallel to gantry rotation axis (standard position)</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-mono font-medium">90°</TableCell>
-                      <TableCell>Beam from patient's left (lateral)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono font-medium">180°</TableCell>
-                      <TableCell>Beam from below (inferior, vertical up)</TableCell>
+                      <TableCell>Counter-clockwise rotation (patient's head toward 90° gantry position)</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-mono font-medium">270°</TableCell>
-                      <TableCell>Beam from patient's right (lateral)</TableCell>
+                      <TableCell>Clockwise rotation (patient's head toward 270° gantry position)</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
 
-                <h4>Collimator Angle</h4>
-                <ul>
-                  <li><strong>0°</strong> — MLC leaves perpendicular to gantry rotation axis</li>
-                  <li><strong>Positive rotation</strong> — Clockwise when viewed from the radiation source</li>
-                </ul>
-
                 <h4>Patient Coordinate System</h4>
-                <ul>
-                  <li><strong>X-axis</strong> — Patient left (+) / right (-)</li>
-                  <li><strong>Y-axis</strong> — Posterior (+) / anterior (-)</li>
-                  <li><strong>Z-axis</strong> — Superior (+) / inferior (-)</li>
-                </ul>
+                <p className="text-sm text-muted-foreground">
+                  The patient coordinate system assumes a supine (face-up) patient position with 
+                  head toward the gantry (head-first supine, HFS). The origin is at the machine 
+                  isocenter. This is a <strong>right-handed</strong> coordinate system.
+                </p>
+                
+                <div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
+                  <PatientAxesDiagram className="shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-16">Axis</TableHead>
+                          <TableHead>Positive (+)</TableHead>
+                          <TableHead>Negative (−)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-mono font-bold text-[hsl(0,84%,60%)]">X</TableCell>
+                          <TableCell>Patient's Left</TableCell>
+                          <TableCell>Patient's Right</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono font-bold text-[hsl(142,71%,45%)]">Y</TableCell>
+                          <TableCell>Posterior (back)</TableCell>
+                          <TableCell>Anterior (front)</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-mono font-bold text-[hsl(217,91%,60%)]">Z</TableCell>
+                          <TableCell>Superior (head)</TableCell>
+                          <TableCell>Inferior (feet)</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Note: This differs from medical imaging conventions (LPS/RAS). 
+                      DICOM-RT patient coordinates follow IEC 61217 for consistency with machine geometry.
+                    </p>
+                  </div>
+                </div>
 
                 <h4>Machine-Specific Variations</h4>
+                <p className="text-sm text-muted-foreground">
+                  While IEC 61217 defines the coordinate system, different linac manufacturers 
+                  use varying MLC and jaw configurations:
+                </p>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -224,22 +312,35 @@ export default function Help() {
                     </TableHeader>
                     <TableBody>
                       <TableRow>
-                        <TableCell>Varian C-arm</TableCell>
-                        <TableCell>MLCX (leaves move in X)</TableCell>
-                        <TableCell>ASYMX, ASYMY</TableCell>
+                        <TableCell>Varian C-arm (TrueBeam, Clinac)</TableCell>
+                        <TableCell>MLCX (leaves move in X-direction)</TableCell>
+                        <TableCell>ASYMX, ASYMY jaws</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell>Varian Halcyon</TableCell>
+                        <TableCell>Varian Halcyon/Ethos</TableCell>
                         <TableCell>Dual-layer stacked MLC</TableCell>
-                        <TableCell>No jaws</TableCell>
+                        <TableCell>No physical jaws</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell>Elekta Agility</TableCell>
-                        <TableCell>MLCY (leaves move in Y)</TableCell>
-                        <TableCell>X, Y jaws</TableCell>
+                        <TableCell>Elekta Agility/Versa HD</TableCell>
+                        <TableCell>MLCY (leaves move in Y-direction)</TableCell>
+                        <TableCell>X, Y jaw pairs</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
+                </div>
+
+                <div className="mt-6 p-3 rounded-md bg-muted/50 text-sm">
+                  <strong>References:</strong> For complete technical specifications, see the{' '}
+                  <a
+                    href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.8.25.6.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    DICOM PS3.3 Coordinate Systems<ExternalLinkIcon />
+                  </a>{' '}
+                  and the IEC 61217:2011 standard for radiotherapy equipment coordinates.
                 </div>
               </CardContent>
             </Card>
