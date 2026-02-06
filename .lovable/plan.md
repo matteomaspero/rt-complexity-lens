@@ -1,252 +1,242 @@
 
-# Improved Angular Analysis Layout and Beam Summary Card
+# Add Isocenter/Table Position and Audit All Test Plans
 
 ## Overview
 
-This plan addresses three main improvements:
-1. Replace tabbed Angular Analysis with fixed separate charts (no dropdown/tabs)
-2. Split the Timeline chart into separate charts for better clarity
-3. Add a Beam Summary Card at the top with key beam/arc information
+This plan addresses two tasks:
+1. Add isocenter position and patient support angle (table) to the BeamSummaryCard
+2. Audit all test plans to verify metrics and charts render correctly
 
 ---
 
-## Part 1: Beam Summary Card
+## Part 1: Add Isocenter and Table Position
 
-Add a new component that displays key information about the currently selected beam to help users quickly understand what they're viewing.
+### 1.1 DICOM Tags to Parse
 
-### 1.1 Information to Display
+The following DICOM tags need to be added to the parser:
 
-| Field | Description | Example |
-|-------|-------------|---------|
-| Beam Name | The beam's label | "Arc1_CW" |
-| Type | Arc or Static | "VMAT Arc" |
-| Control Points | Number of CPs | "178 CPs" |
-| Gantry Range | Start to end angles | "181.0° to 179.0°" |
-| Rotation | Direction | "CW" (clockwise) |
-| MU | Beam MU | "324.5 MU" |
-| Est. Time | Delivery time | "0:52" (mm:ss) |
-| Dose Rate | Min-Max range | "145-580 MU/min" |
+| Tag | Keyword | Description | VR |
+|-----|---------|-------------|-----|
+| (300A,012C) | IsocenterPosition | X, Y, Z coordinates in mm | DS |
+| (300A,0122) | PatientSupportAngle | Table rotation angle | DS |
+| (300A,0128) | TableTopVerticalPosition | Vertical position | DS |
+| (300A,0129) | TableTopLongitudinalPosition | Longitudinal position | DS |
+| (300A,012A) | TableTopLateralPosition | Lateral position | DS |
 
-### 1.2 Component Design
+### 1.2 Type Updates
+
+Update `src/lib/dicom/types.ts`:
+
+```typescript
+// Add to ControlPoint interface
+export interface ControlPoint {
+  // ... existing fields ...
+  isocenterPosition?: [number, number, number];
+  patientSupportAngle?: number;        // Table rotation (degrees)
+  tableTopVertical?: number;           // mm
+  tableTopLongitudinal?: number;       // mm
+  tableTopLateral?: number;            // mm
+}
+```
+
+### 1.3 Parser Updates
+
+Update `src/lib/dicom/parser.ts`:
+
+Add new DICOM tags:
+```typescript
+const TAGS = {
+  // ... existing tags ...
+  PatientSupportAngle: 'x300a0122',
+  TableTopVerticalPosition: 'x300a0128',
+  TableTopLongitudinalPosition: 'x300a0129',
+  TableTopLateralPosition: 'x300a012a',
+};
+```
+
+Update `parseControlPoint()` to extract these values.
+
+### 1.4 BeamSummaryCard Updates
+
+Update `src/components/viewer/BeamSummaryCard.tsx` to display:
 
 ```text
 +------------------------------------------------------------------+
 | Beam: Arc1_CW                                    VMAT Arc | CW   |
 +------------------------------------------------------------------+
 | CPs: 178  |  181.0° → 179.0° (358°)  |  324.5 MU  |  Est: 0:52   |
-| Dose Rate: 145 - 580 MU/min          |  Avg Gantry: 5.8 °/s      |
+| Dose Rate: 145 – 580 MU/min          |  Avg Gantry: 5.8 °/s      |
++------------------------------------------------------------------+
+| Isocenter: (0.0, -50.0, 100.0) mm    |  Table: 0.0°              |
 +------------------------------------------------------------------+
 ```
 
-### 1.3 New File
-
-Create `src/components/viewer/BeamSummaryCard.tsx`
-
----
-
-## Part 2: Fixed Separate Charts (No Tabs)
-
-Replace the tabbed interface with a vertically stacked layout where all charts are always visible.
-
-### 2.1 Current Layout (Tabbed)
-
-```text
-[ MU Distribution ] [ Timeline ] [ Complexity ]
-+----------------------------------------+
-|   Only one tab content visible at      |
-|   a time - requires user to switch     |
-+----------------------------------------+
-```
-
-### 2.2 New Layout (Fixed Sections)
-
-```text
-+-- Beam Summary Card ---------------------------+
-| Arc1_CW | VMAT | 178 CPs | 181° → 179° | CW   |
-| 324.5 MU | Est: 0:52 | DR: 145-580 MU/min     |
-+-----------------------------------------------+
-
-+-- MU Distribution -----------------------------+
-| [Polar Chart]       [Dose Rate vs Angle]      |
-+-----------------------------------------------+
-
-+-- Delivery Analysis ---------------------------+
-| Segment Duration (bar chart)                   |
-+-----------------------------------------------+
-| Dose Rate vs Angle                             |
-+-----------------------------------------------+
-| Gantry Speed vs Angle                          |
-+-----------------------------------------------+
-| MLC Speed vs Angle                             |
-+-----------------------------------------------+
-
-+-- Complexity Analysis -------------------------+
-| LSV vs Angle                                   |
-+-----------------------------------------------+
-| AAV vs Angle                                   |
-+-----------------------------------------------+
-| Aperture Area vs CP                            |
-+-----------------------------------------------+
-```
+New fields in the info grid:
+- **Isocenter**: X, Y, Z coordinates from first control point
+- **Table Angle**: Patient support angle (rotation)
 
 ---
 
-## Part 3: Split Timeline Chart
+## Part 2: File Changes Summary
 
-Currently the timeline shows segment duration colored by limiting factor. To improve clarity, split into separate focused charts.
-
-### 3.1 Current Timeline (Combined)
-
-- Single bar chart with duration colored by limiting factor
-- Difficult to see individual Dose Rate, Gantry Speed, MLC Speed values
-
-### 3.2 New Split Layout
-
-| Chart | Data | Purpose |
-|-------|------|---------|
-| Segment Duration | Duration (s) with limiting factor colors | Overview of time distribution |
-| Dose Rate vs Angle | MU/min at each segment | See dose rate variation |
-| Gantry Speed vs Angle | deg/s at each segment | See gantry speed pattern |
-| MLC Speed vs Angle | mm/s at each segment | See MLC speed bottlenecks |
-
-Each chart is compact (80-100px height) to allow all to fit vertically.
+| File | Changes |
+|------|---------|
+| `src/lib/dicom/types.ts` | Add table position fields to ControlPoint |
+| `src/lib/dicom/parser.ts` | Parse isocenter, patient support angle, table positions |
+| `src/components/viewer/BeamSummaryCard.tsx` | Display isocenter and table position |
 
 ---
 
-## Part 4: File Changes Summary
+## Part 3: BeamSummaryCard Layout Update
 
-| Action | File | Description |
-|--------|------|-------------|
-| Create | `src/components/viewer/BeamSummaryCard.tsx` | New beam info display |
-| Update | `src/components/viewer/InteractiveViewer.tsx` | Replace tabs with fixed sections, add BeamSummaryCard |
-| Update | `src/components/viewer/DeliveryTimelineChart.tsx` | Split into 4 separate charts |
-| Update | `src/components/viewer/AngularDistributionChart.tsx` | Keep as-is (polar + dose rate) |
-| Update | `src/components/viewer/index.ts` | Export new component |
-
----
-
-## Part 5: Implementation Details
-
-### 5.1 BeamSummaryCard Component
+Add a second row to the info grid for geometric parameters:
 
 ```typescript
-interface BeamSummaryCardProps {
-  beam: Beam;
-  beamMetrics: BeamMetrics;
-  segments: ControlPointSegment[];
-}
-```
+// Row 1: Delivery parameters (existing)
+<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+  <div>Control Points: 178</div>
+  <div>Gantry: 181.0° → 179.0° (358°)</div>
+  <div>MU: 324.5</div>
+  <div>Est. Time: 0:52</div>
+  <div>Dose Rate: 145 – 580 MU/min</div>
+  <div>Avg Gantry: 5.8 °/s</div>
+</div>
 
-Display:
-- Beam name and type (Arc/Static)
-- Rotation direction with icon
-- Gantry angle range and arc length
-- MU and estimated delivery time
-- Dose rate range (min - max across segments)
-- Average gantry and MLC speeds
-
-### 5.2 Updated DeliveryTimelineChart
-
-Split into four separate card sections:
-
-```typescript
-// 1. Segment Duration (existing bar chart with limiting factor colors)
-<Card>
-  <h4>Segment Duration</h4>
-  <BarChart data={...} /> // 100px height
-</Card>
-
-// 2. Dose Rate Line Chart
-<Card>
-  <h4>Dose Rate</h4>
-  <LineChart data={...} /> // 80px height
-</Card>
-
-// 3. Gantry Speed Line Chart (if arc)
-<Card>
-  <h4>Gantry Speed</h4>
-  <LineChart data={...} /> // 80px height
-</Card>
-
-// 4. MLC Speed Line Chart
-<Card>
-  <h4>MLC Speed</h4>
-  <LineChart data={...} /> // 80px height
-</Card>
-```
-
-### 5.3 Updated InteractiveViewer Layout
-
-Replace the collapsible tabbed section with:
-
-```text
-<BeamSummaryCard />
-
-<div className="space-y-4">
-  <Section title="MU Distribution">
-    <AngularDistributionChart />
-  </Section>
-  
-  <Section title="Delivery Analysis">
-    <DeliveryTimelineChart />  // Now contains 4 separate charts
-  </Section>
-  
-  <Section title="Complexity Analysis">
-    <ComplexityHeatmap />  // Already has 3 separate charts
-  </Section>
+// Row 2: Geometric parameters (new)
+<div className="grid grid-cols-2 md:grid-cols-3">
+  <div>Isocenter: (0.0, -50.0, 100.0) mm</div>
+  <div>Table Angle: 0.0°</div>
+  <div>Collimator: 5.0° → 5.0°</div>  // Optional: add collimator range
 </div>
 ```
 
 ---
 
-## Part 6: Dose Rate Range Calculation
+## Part 4: Audit All Test Plans
 
-Add utility to calculate dose rate statistics from segments:
+After implementing the isocenter/table changes, systematically test each plan:
+
+### 4.1 Test Files to Audit
+
+| File | Type | Expected Characteristics |
+|------|------|-------------------------|
+| `RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm` | VMAT | Complex arc, multiple control points |
+| `RTPLAN_MO_PT_01.dcm` | Monaco VMAT | Single arc |
+| `RTPLAN_MO_PT_02.dcm` | Monaco VMAT | Single arc |
+| `RTPLAN_MO_PT_03.dcm` | Monaco VMAT | Single arc |
+| `RTPLAN_MO_PT_04.dcm` | Monaco VMAT | Single arc |
+| `RTPLAN_MR_PT_01_PENALTY.dcm` | Monaco VMAT | Plan with penalty optimization |
+| `RP.TG119.PR_ETH_7F.dcm` | IMRT | 7-field static beams |
+| `RP.TG119.PR_ETH_2A_2.dcm` | VMAT | 2-arc plan |
+
+### 4.2 Verification Checklist Per Plan
+
+For each plan, verify:
+
+**Beam Summary Card:**
+- Beam name displays correctly
+- Beam type (Arc/Static/IMRT) is correct
+- Gantry range shows start → end with arc length
+- MU matches fraction group reference
+- Estimated time is reasonable (< 5 min typical)
+- Dose rate range is valid (50-600 MU/min typical)
+- Isocenter position displays (if present)
+- Table angle displays (if present)
+
+**Visualizations:**
+- Gantry viewer shows correct angle and direction
+- Collimator viewer shows correct angle and jaw positions
+- MLC aperture renders without errors
+- All control points can be scrubbed
+
+**Charts:**
+- Cumulative MU chart shows monotonic increase
+- Gantry speed chart renders for arcs
+- MU Distribution polar chart renders
+- Delivery Analysis shows all 4 sub-charts
+- Complexity Analysis shows LSV, AAV, Aperture Area
+
+**Metrics Panel:**
+- All UCoMX metrics display (MCS, LSV, AAV, MFA, LT)
+- SAS5, SAS10, EM, PI metrics display
+- Values are in expected ranges
+
+### 4.3 Expected Metric Ranges
+
+| Metric | Valid Range | Typical Range |
+|--------|-------------|---------------|
+| MCS | 0 - 1 | 0.2 - 0.8 |
+| LSV | 0 - 1 | 0.7 - 0.99 |
+| AAV | 0 - 1 | 0.1 - 0.5 |
+| MFA | 0 - 500 cm^2 | 5 - 50 cm^2 |
+| LT | >= 0 mm | 1000 - 50000 mm |
+| SAS5 | 0 - 1 | 0 - 0.1 |
+| SAS10 | 0 - 1 | 0 - 0.3 |
+| EM | >= 0 mm^-1 | 0.1 - 1.0 mm^-1 |
+| PI | >= 1 | 1 - 50 |
+
+### 4.4 Known Edge Cases
+
+| Plan | Expected Behavior |
+|------|-------------------|
+| TG119_7F (7-field IMRT) | Static beams, no arc length, gantry speed N/A |
+| TG119_2A (2-arc) | Multiple beams, beam selector should work |
+| MONACO_PENALTY | May have unusual aperture shapes |
+
+---
+
+## Part 5: Implementation Sequence
+
+1. **Update types** - Add table position fields to ControlPoint interface
+2. **Update parser** - Parse isocenter and table position tags from DICOM
+3. **Update BeamSummaryCard** - Add display for isocenter and table position
+4. **Manual audit** - Load each test plan and verify all components
+
+---
+
+## Part 6: Technical Details
+
+### 6.1 Isocenter Position Extraction
+
+The isocenter is typically defined in the first control point only. If not present in subsequent control points, inherit from CP 0:
 
 ```typescript
-function getDoseRateStats(segments: ControlPointSegment[]): {
-  min: number;
-  max: number;
-  avg: number;
-} {
-  const rates = segments.map(s => s.doseRate);
-  return {
-    min: Math.min(...rates),
-    max: Math.max(...rates),
-    avg: rates.reduce((a, b) => a + b, 0) / rates.length,
-  };
+// In parseControlPoint
+const isocenterStr = dataSet.string(TAGS.IsocenterPosition);
+let isocenterPosition: [number, number, number] | undefined;
+
+if (isocenterStr) {
+  const coords = isocenterStr.split('\\').map(v => parseFloat(v.trim()));
+  if (coords.length === 3) {
+    isocenterPosition = [coords[0], coords[1], coords[2]];
+  }
+} else if (previousCP?.isocenterPosition) {
+  isocenterPosition = previousCP.isocenterPosition;
 }
 ```
 
+### 6.2 Table Position Display
+
+For the BeamSummaryCard, extract isocenter and table angle from the first control point:
+
+```typescript
+const firstCP = beam.controlPoints[0];
+const isocenter = firstCP.isocenterPosition;
+const tableAngle = firstCP.patientSupportAngle ?? 0;
+```
+
+Display format:
+- Isocenter: `(X, Y, Z) mm` with values rounded to 1 decimal
+- Table: `N.N°` 
+
 ---
 
-## Part 7: Success Criteria
+## Success Criteria
 
-- Beam Summary Card displays at the top with key beam information
-- All Angular Analysis charts are visible without tabs (no switching required)
-- Timeline section shows 4 separate charts for duration, dose rate, gantry speed, MLC speed
-- Each chart has a clear title and current value display
-- Charts sync with control point scrubber
-- Responsive layout works on different screen sizes
-
----
-
-## Part 8: Post-Implementation - Audit All Test Plans
-
-After implementing the UI changes, load each test plan and verify:
-
-| Test File | Check | Purpose |
-|-----------|-------|---------|
-| VMAT_1 | Complex VMAT arc | Multi-segment delivery |
-| MONACO_PT_01-04 | Monaco optimizer plans | Different complexity levels |
-| MONACO_PENALTY | Plan with penalty | Edge case handling |
-| TG119_7F | 7-field IMRT | Static field behavior |
-| TG119_2A | 2-arc VMAT | Multi-arc display |
-
-For each plan, verify:
-1. Beam summary shows correct angles, MU, time
-2. All charts render without errors
-3. Metrics calculate correctly
-4. Control point scrubber updates all charts
-5. No overlapping or cluttered data
-
+- Isocenter position displays in BeamSummaryCard (when available in DICOM)
+- Table angle displays in BeamSummaryCard
+- All 8 test plans load without errors
+- All charts render correctly for each plan type
+- Metrics are within expected ranges
+- Static IMRT plans display appropriately (no arc-specific metrics)
+- Multi-arc plans allow beam switching
