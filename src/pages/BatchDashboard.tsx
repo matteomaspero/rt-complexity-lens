@@ -1,7 +1,17 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Trash2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Trash2, HelpCircle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useBatch } from '@/contexts/BatchContext';
+import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
+import { BUILTIN_PRESETS } from '@/lib/threshold-definitions';
+import { PresetManager } from '@/components/settings';
 import {
   BatchUploadZone,
   BatchProgressBar,
@@ -13,7 +23,10 @@ import {
 
 export default function BatchDashboard() {
   const { plans, clearAll, isProcessing } = useBatch();
+  const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
   const hasPlans = plans.length > 0;
+
+  const builtInOptions = Object.values(BUILTIN_PRESETS);
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,6 +43,41 @@ export default function BatchDashboard() {
             <h1 className="text-lg font-semibold">Batch Analysis</h1>
           </div>
           <div className="flex items-center gap-2">
+            {/* Machine Preset Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground hidden sm:inline">Machine:</span>
+              <Select value={selectedPreset} onValueChange={setPreset}>
+                <SelectTrigger className="h-8 w-[180px]">
+                  <SelectValue placeholder={getPresetName()} />
+                </SelectTrigger>
+                <SelectContent>
+                  {builtInOptions.map((preset) => (
+                    <SelectItem key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </SelectItem>
+                  ))}
+                  {userPresets.length > 0 && (
+                    <>
+                      <div className="px-2 py-1 text-xs text-muted-foreground border-t mt-1 pt-1">
+                        Your Presets
+                      </div>
+                      {userPresets.map((preset) => (
+                        <SelectItem key={preset.id} value={preset.id}>
+                          {preset.name}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+              <PresetManager
+                trigger={
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            </div>
             {hasPlans && (
               <Button
                 variant="outline"

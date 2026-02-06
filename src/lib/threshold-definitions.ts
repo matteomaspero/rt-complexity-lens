@@ -5,7 +5,7 @@
 
 export type ThresholdDirection = 'high' | 'low';
 export type ThresholdStatus = 'normal' | 'warning' | 'critical';
-export type MachinePreset = 'generic' | 'truebeam' | 'halcyon' | 'versa_hd' | 'custom';
+export type MachinePreset = 'generic' | 'truebeam' | 'halcyon' | 'versa_hd' | 'custom' | string;
 
 export interface ThresholdDefinition {
   metricKey: string;
@@ -26,11 +26,25 @@ export interface MachineDeliveryParams {
 }
 
 export interface MachinePresetConfig {
-  id: MachinePreset;
+  id: string;
   name: string;
   description: string;
   thresholds: ThresholdSet;
   deliveryParams: MachineDeliveryParams;
+  isBuiltIn?: boolean;
+}
+
+// User-created preset interface
+export interface UserPreset extends MachinePresetConfig {
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Export format for presets
+export interface PresetExportFormat {
+  version: string;
+  exportDate: string;
+  presets: UserPreset[];
 }
 
 // Generic / Conservative - Safe baseline for any modern linac
@@ -105,13 +119,14 @@ const VERSA_HD_DELIVERY: MachineDeliveryParams = {
   mlcType: 'MLCY',
 };
 
-export const MACHINE_PRESETS: Record<MachinePreset, MachinePresetConfig> = {
+export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
   generic: {
     id: 'generic',
     name: 'Generic (Conservative)',
     description: 'Safe baseline values for any modern linac',
     thresholds: GENERIC_THRESHOLDS,
     deliveryParams: GENERIC_DELIVERY,
+    isBuiltIn: true,
   },
   truebeam: {
     id: 'truebeam',
@@ -119,6 +134,7 @@ export const MACHINE_PRESETS: Record<MachinePreset, MachinePresetConfig> = {
     description: 'Optimized for TrueBeam with Millennium MLC',
     thresholds: TRUEBEAM_THRESHOLDS,
     deliveryParams: TRUEBEAM_DELIVERY,
+    isBuiltIn: true,
   },
   halcyon: {
     id: 'halcyon',
@@ -126,6 +142,7 @@ export const MACHINE_PRESETS: Record<MachinePreset, MachinePresetConfig> = {
     description: 'Stricter thresholds for dual-layer MLC',
     thresholds: HALCYON_THRESHOLDS,
     deliveryParams: HALCYON_DELIVERY,
+    isBuiltIn: true,
   },
   versa_hd: {
     id: 'versa_hd',
@@ -133,15 +150,12 @@ export const MACHINE_PRESETS: Record<MachinePreset, MachinePresetConfig> = {
     description: 'Optimized for Agility MLC',
     thresholds: VERSA_HD_THRESHOLDS,
     deliveryParams: VERSA_HD_DELIVERY,
-  },
-  custom: {
-    id: 'custom',
-    name: 'Custom',
-    description: 'User-defined threshold values',
-    thresholds: { ...GENERIC_THRESHOLDS },
-    deliveryParams: GENERIC_DELIVERY,
+    isBuiltIn: true,
   },
 };
+
+// Legacy export for backwards compatibility
+export const MACHINE_PRESETS = BUILTIN_PRESETS;
 
 /**
  * Get the threshold status for a given metric value
@@ -181,4 +195,113 @@ export function formatThresholdInfo(
  */
 export function getDefaultCustomThresholds(): ThresholdSet {
   return JSON.parse(JSON.stringify(GENERIC_THRESHOLDS));
+}
+
+/**
+ * Get default delivery params (copy of generic)
+ */
+export function getDefaultDeliveryParams(): MachineDeliveryParams {
+  return JSON.parse(JSON.stringify(DEFAULT_MACHINE_PARAMS));
+}
+
+/**
+ * Validate an imported preset
+ */
+export function validatePreset(preset: unknown): preset is UserPreset {
+  if (!preset || typeof preset !== 'object') return false;
+  const p = preset as Record<string, unknown>;
+  
+  if (typeof p.id !== 'string' || !p.id) return false;
+  if (typeof p.name !== 'string' || !p.name) return false;
+  if (!p.thresholds || typeof p.thresholds !== 'object') return false;
+  if (!p.deliveryParams || typeof p.deliveryParams !== 'object') return false;
+  
+  return true;
+}
+
+/**
+ * Export presets to JSON string
+ */
+export function exportPresetsToJSON(presets: UserPreset[]): string {
+  const exportData: PresetExportFormat = {
+    version: '1.0',
+    exportDate: new Date().toISOString(),
+    presets,
+  };
+  return JSON.stringify(exportData, null, 2);
+}
+
+/**
+ * Import presets from JSON string
+ */
+export function importPresetsFromJSON(json: string): UserPreset[] {
+  try {
+    const data = JSON.parse(json);
+    
+    // Handle both formats: array or wrapped object
+    let presets: unknown[];
+    if (Array.isArray(data)) {
+      presets = data;
+    } else if (data.presets && Array.isArray(data.presets)) {
+      presets = data.presets;
+    } else {
+      throw new Error('Invalid preset format');
+    }
+    
+    // Validate and map presets
+    const validPresets: UserPreset[] = [];
+    for (const preset of presets) {
+      if (validatePreset(preset)) {
+        // Ensure timestamps exist
+        const now = new Date().toISOString();
+        validPresets.push({
+          ...preset,
+          createdAt: preset.createdAt || now,
+          updatedAt: preset.updatedAt || now,
+        });
+      }
+    }
+    
+    return validPresets;
+  } catch (e) {
+    console.error('Failed to import presets:', e);
+    throw new Error('Invalid preset file format');
+  }
+}
+
+/**
+ * Create a new user preset from a built-in preset
+ */
+export function duplicateBuiltInPreset(builtInId: string, newName: string): UserPreset {
+  const builtIn = BUILTIN_PRESETS[builtInId];
+  if (!builtIn) {
+    throw new Error(`Built-in preset "${builtInId}" not found`);
+  }
+  
+  const now = new Date().toISOString();
+  return {
+    id: `user_${Date.now()}`,
+    name: newName,
+    description: `Based on ${builtIn.name}`,
+    thresholds: JSON.parse(JSON.stringify(builtIn.thresholds)),
+    deliveryParams: JSON.parse(JSON.stringify(builtIn.deliveryParams)),
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * Create a new empty user preset
+ */
+export function createEmptyUserPreset(name: string): UserPreset {
+  const now = new Date().toISOString();
+  return {
+    id: `user_${Date.now()}`,
+    name,
+    description: 'Custom machine preset',
+    thresholds: getDefaultCustomThresholds(),
+    deliveryParams: getDefaultDeliveryParams(),
+    createdAt: now,
+    updatedAt: now,
+  };
 }
