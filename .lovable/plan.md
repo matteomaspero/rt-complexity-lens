@@ -1,153 +1,160 @@
 
+# Test Plan: RT Plan Complexity Analyzer Verification
 
-# RT Plan Complexity Analyzer
-## A Browser-Based DICOM-RT Plan Analysis Tool for Radiation Oncology
-
----
-
-### Overview
-
-A minimal, functional web application that enables radiation oncology physicists and planners to upload DICOM-RT PLAN files and interactively visualize delivery complexity metrics directly in the browser. The tool will prioritize the **Interactive Single-Plan Viewer** as the centerpiece, with clean data visualization and control-point-by-control-point exploration.
+## Overview
+This plan covers testing the viewer by integrating the provided DICOM-RT test files and creating an automated test suite to verify parsing and visualization work correctly.
 
 ---
 
-### Core Architecture
+## Part 1: Fix Console Errors
 
-**Fully Browser-Based Processing**
-- All DICOM parsing and metric calculations happen client-side using JavaScript/TypeScript
-- No backend server required - works offline after initial load
-- Uses `dicomParser` library for DICOM file parsing
-- Custom TypeScript implementation of UCoMX complexity metrics
+The console shows React warnings about function components not being able to receive refs. This needs to be fixed first to ensure clean operation:
 
-**Session-Only Storage**
-- Plans are stored in browser memory during the session
-- No user accounts or persistent cloud storage
-- Export capabilities for saving results
+### 1.1 Add forwardRef to FileUploadZone
+The `FileUploadZone` component is being passed a ref from somewhere in the component tree. Wrap it with `React.forwardRef` to properly handle refs.
+
+### 1.2 Add forwardRef to InteractiveViewer
+Similarly wrap `InteractiveViewer` with `forwardRef` to eliminate the warning.
 
 ---
 
-### Phase 1: Interactive Single-Plan Viewer (Priority)
+## Part 2: Test Data Integration
 
-The heart of the application — a deep-dive analysis screen for individual plans.
+Copy the provided DICOM test files to the project's `public/test-data/` directory so they can be used for:
+- Manual testing (downloadable from the app)
+- Automated unit/integration tests
+- Demo purposes
 
-**1.1 DICOM-RT Plan Upload**
-- Drag-and-drop zone for .dcm files
-- File validation and parsing status indicator
-- Automatic extraction of plan metadata (Patient ID anonymized, Plan Name, Technique)
-
-**1.2 Control Point Navigator**
-- Interactive timeline/scrubber showing all control points for each beam/arc
-- Beam selector for multi-beam plans
-- Current control point indicator with jump-to functionality
-- Play/pause button for automatic progression through control points
-
-**1.3 Synchronized Visualizations**
-Real-time updates as the user navigates control points:
-
-- **Gantry Angle Display**: Top-down schematic showing current gantry position with rotation animation
-- **MLC Aperture Viewer**: Dynamic 2D visualization of leaf bank positions (Bank A & B), showing the aperture shape at each control point
-- **Cumulative MU Chart**: Line graph tracking Monitor Units over the arc/beam progression
-- **Gantry Speed Plot**: Visualization of angular velocity (degrees/sec) across control points
-
-**1.4 Complexity Metrics Panel**
-Fixed sidebar displaying calculated metrics (aligned with UCoMX nomenclature):
-
-- **MCS (Modulation Complexity Score)**: Overall plan modulation indicator
-- **LSV (Leaf Sequence Variability)**: Variability in leaf positions
-- **AAV (Aperture Area Variability)**: Changes in aperture area
-- **MFA (Mean Field Area)**: Average aperture size
-- **LT (Leaf Travel)**: Total leaf movement distance
-- **LTMCS**: Combined Leaf Travel + MCS metric
-- **MU/Gy**: Monitor units per Gray
-- Per-control-point metrics (when applicable)
+### Files to Copy
+```text
+public/test-data/
+├── RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm
+├── RTPLAN_MO_PT_01.dcm
+├── RTPLAN_MO_PT_02.dcm
+├── RTPLAN_MO_PT_03.dcm
+├── RTPLAN_MO_PT_04.dcm
+├── RTPLAN_MR_PT_01_PENALTY.dcm
+├── RP.TG119.PR_ETH_7F.dcm
+└── RP.TG119.PR_ETH_2A_2.dcm
+```
 
 ---
 
-### Phase 2: Plan Library Dashboard
+## Part 3: Automated Test Suite
 
-**2.1 Session Plan List**
-- Table view of all uploaded plans in current session
-- Columns: Plan Name, Patient ID (anonymized), Technique (VMAT/IMRT), Upload Time, Status
-- Quick-view complexity score badges
-- Click to open Interactive Viewer
+Create comprehensive tests for the DICOM parsing and metrics calculation.
 
-**2.2 Plan Management**
-- Remove plans from session
-- Re-analyze with different parameters
-- Quick comparison view (side-by-side metrics for 2 plans)
+### 3.1 DICOM Parser Tests (`src/test/dicom-parser.test.ts`)
+Test the parsing logic with real DICOM files:
 
----
+- **File loading**: Verify files can be read as ArrayBuffer
+- **Basic parsing**: Confirm `parseRTPlan()` returns valid `RTPlan` objects
+- **Plan metadata extraction**: Verify patient ID, plan label, technique detection
+- **Beam extraction**: Check beam count, beam names, control point counts
+- **MLC position parsing**: Verify Bank A/B leaf positions are extracted
+- **Jaw position parsing**: Verify X1, X2, Y1, Y2 jaw positions
+- **Control point inheritance**: Verify MLC positions are inherited when not redefined
+- **Fraction group parsing**: Verify MU values are correctly extracted
 
-### Phase 3: Batch Analysis & Reporting
+### 3.2 Metrics Calculation Tests (`src/test/dicom-metrics.test.ts`)
+Test the UCoMX complexity metric calculations:
 
-**3.1 Multi-Plan Selection**
-- Checkbox selection from plan library
-- "Analyze Batch" action button
+- **MCS calculation**: Verify Modulation Complexity Score is computed
+- **LSV calculation**: Verify Leaf Sequence Variability is in valid range [0,1]
+- **AAV calculation**: Verify Aperture Area Variability computation
+- **MFA calculation**: Verify Mean Field Area is positive and reasonable
+- **Leaf Travel**: Verify total leaf travel is positive
+- **LTMCS**: Verify combined metric is computed correctly
+- **Per-beam metrics**: Verify each beam has its own metrics
+- **MU-weighted aggregation**: Verify plan-level metrics aggregate correctly
 
-**3.2 Batch Summary Dashboard**
-- Comparative table of key metrics across all selected plans
-- Sortable columns for identifying outliers
-- Visual indicators (color coding for complexity ranges)
+### 3.3 Test Utilities (`src/test/test-utils.ts`)
+Helper functions for loading test data:
 
-**3.3 Export Functionality**
-- **CSV Export**: Full metric data for all plans
-- **PDF Report**: Formatted summary with charts (single plan or batch)
-- Copy-to-clipboard for quick data transfer
-
----
-
-### Design Principles
-
-**Minimal & Functional**
-- Clean white/light gray interface with purposeful accent colors
-- Clear typography optimized for data readability
-- No decorative elements — every pixel serves a purpose
-- Responsive but desktop-first (primary use case is workstation)
-
-**Data-Forward Visualization**
-- Recharts library for clean, interactive charts
-- High-contrast colors for MLC visualization (distinct Bank A/B colors)
-- Tooltips with precise values on hover
-- Accessible color palette
+- `loadTestFile(filename)`: Fetch file from `/test-data/` and return ArrayBuffer
+- `parseTestPlan(filename)`: Load and parse a test DICOM file
+- `TEST_FILES`: Constants with all available test file names
 
 ---
 
-### Technical Implementation Notes
+## Part 4: Demo Mode with Test Data
 
-**DICOM Parsing**
-- `dicomParser` library for reading DICOM byte streams
-- Extract BeamSequence, ControlPointSequence, MLC positions, gantry angles
-- Handle both VMAT (continuous arcs) and IMRT (step-and-shoot) plans
+Add a "Load Demo Plan" feature to the upload zone for users who don't have DICOM files handy:
 
-**Metric Calculations**
-Ported from UCoMX MATLAB logic to TypeScript:
-- LSV: Calculated from leaf position variability between adjacent control points
-- AAV: Derived from aperture area changes
-- MCS: Product of LSV and AAV per control point, weighted by MU
-- Additional metrics following UCoMX v1.1 formulations
+### 4.1 Demo Button Component
+Add a button below the upload zone that says "Load Demo Plan" which fetches one of the test files automatically.
 
-**State Management**
-- React state for current control point index
-- Synchronized updates across all visualization components
-- Smooth animations for control point transitions
+### 4.2 Quick Access Test Panel (Development Only)
+For development/testing, add a collapsible panel showing all available test files with one-click loading.
 
 ---
 
-### What's NOT Included (Future Enhancements)
+## Technical Details
 
-- Backend API integration (can be added later for institutional deployments)
-- Persistent database storage with user accounts
-- Helical tomotherapy support (VMAT/IMRT only for v1)
-- 3D dose visualization
-- Direct TPS integration
+### Test File Structure
+```text
+src/test/
+├── setup.ts              # Existing test setup
+├── example.test.ts       # Existing placeholder
+├── test-utils.ts         # NEW: Test utilities for loading files
+├── dicom-parser.test.ts  # NEW: Parser unit tests
+└── dicom-metrics.test.ts # NEW: Metrics calculation tests
+```
+
+### Sample Test Cases
+
+**Parser Test Example:**
+```typescript
+describe('parseRTPlan', () => {
+  it('should parse VMAT plan with multiple control points', async () => {
+    const plan = await parseTestPlan('RP.TG119.PR_ETH_7F.dcm');
+    
+    expect(plan.beams.length).toBeGreaterThan(0);
+    expect(plan.technique).toBe('VMAT');
+    expect(plan.totalMU).toBeGreaterThan(0);
+    
+    const beam = plan.beams[0];
+    expect(beam.controlPoints.length).toBeGreaterThan(2);
+    expect(beam.isArc).toBe(true);
+  });
+});
+```
+
+**Metrics Test Example:**
+```typescript
+describe('calculatePlanMetrics', () => {
+  it('should compute valid UCoMX metrics', async () => {
+    const plan = await parseTestPlan('RTPLAN_MO_PT_01.dcm');
+    const metrics = calculatePlanMetrics(plan);
+    
+    expect(metrics.MCS).toBeGreaterThanOrEqual(0);
+    expect(metrics.MCS).toBeLessThanOrEqual(1);
+    expect(metrics.LSV).toBeGreaterThanOrEqual(0);
+    expect(metrics.MFA).toBeGreaterThan(0);
+    expect(metrics.LT).toBeGreaterThanOrEqual(0);
+  });
+});
+```
 
 ---
 
-### Success Criteria
+## Implementation Sequence
 
-1. ✅ Upload a DICOM-RT PLAN file and see it parsed within 2 seconds
-2. ✅ Navigate through control points and see MLC apertures update in real-time
-3. ✅ View all core UCoMX complexity metrics calculated correctly
-4. ✅ Export analysis results as CSV
-5. ✅ Clean, functional UI that clinical staff find intuitive
+1. **Copy test files** to `public/test-data/`
+2. **Fix forwardRef warnings** in viewer components
+3. **Create test utilities** for loading DICOM files in tests
+4. **Write parser tests** covering all extraction logic
+5. **Write metrics tests** verifying UCoMX calculations
+6. **Add demo button** for quick manual testing
+7. **Run full test suite** and verify all tests pass
 
+---
+
+## Success Criteria
+
+- All 8 DICOM test files parse without errors
+- Parser extracts beam, control point, and MLC data correctly
+- UCoMX metrics are calculated within expected ranges
+- No console errors or warnings in the application
+- Automated tests can be run with `npm test`
+- Demo mode allows instant testing without file upload
