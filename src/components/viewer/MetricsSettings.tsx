@@ -2,6 +2,7 @@ import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import {
   Collapsible,
   CollapsibleContent,
@@ -14,6 +15,7 @@ import {
   getMetricsByCategory,
   type MetricCategory,
 } from '@/lib/metrics-definitions';
+import { ThresholdSettings } from './ThresholdSettings';
 
 interface MetricsSettingsProps {
   className?: string;
@@ -94,6 +96,11 @@ export function MetricsSettings({ className }: MetricsSettingsProps) {
         <p className="text-xs text-muted-foreground">
           Selected metrics will be shown in the panel and included in CSV exports.
         </p>
+
+        <Separator />
+
+        {/* Threshold Settings Section */}
+        <ThresholdSettings />
       </CollapsibleContent>
     </Collapsible>
   );
