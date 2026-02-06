@@ -1,265 +1,339 @@
 
 
-# Metrics Threshold System
+# Enhanced Metrics: Delivery Time, Collimator Data, and Additional Complexity Indices
 
 ## Overview
 
-Add a configurable threshold system that highlights concerning metric values in red (critical) and yellow (warning) based on machine-specific limits. The system will be toggleable and include presets for common radiotherapy linacs.
+This plan expands the RT Plan Complexity Analyzer with delivery time estimation, collimator angle/position display, coordinate system specification, and additional complexity metrics from UCoMX and literature sources.
 
 ---
 
-## Architecture
+## Part 1: Delivery Time Estimation
 
-### New Files
+Based on the UCoMX framework and TPS validation, delivery time can be estimated from control point data using machine parameters.
 
-| File | Purpose |
-|------|---------|
-| `src/lib/threshold-definitions.ts` | Machine presets and threshold type definitions |
-| `src/contexts/ThresholdConfigContext.tsx` | Context for threshold state management |
-| `src/components/viewer/ThresholdSettings.tsx` | UI for configuring thresholds |
+### 1.1 Delivery Time Calculation
 
-### Modified Files
+Add estimated beam delivery time calculation based on:
+- **MU and dose rate**: Time = MU / DoseRate
+- **Gantry speed limiting**: For VMAT arcs, check if gantry speed limits delivery
+- **MLC speed limiting**: Check if MLC leaf travel limits delivery
 
-| File | Changes |
-|------|---------|
-| `src/components/viewer/MetricsPanel.tsx` | Apply threshold styling to metric values |
-| `src/components/viewer/MetricsSettings.tsx` | Add threshold toggle and machine selector |
-| `src/index.css` | Add threshold-related CSS classes |
-| `src/App.tsx` | Wrap app with ThresholdConfigProvider |
-
----
-
-## Part 1: Threshold Definitions
-
-### 1.1 Threshold Types
-
-Each metric can have:
-- **Warning threshold**: Yellow highlight (approaching limits)
-- **Critical threshold**: Red highlight (exceeds recommended limits)
-- **Direction**: Whether high or low values are concerning
-
+**Formula per control point:**
 ```text
-ThresholdDefinition = {
-  metricKey: string
-  warningThreshold: number
-  criticalThreshold: number
-  direction: 'high' | 'low'  // 'high' = values above threshold are bad
-                              // 'low' = values below threshold are bad
+Time_CP = max(
+  MU_CP / MaxDoseRate,
+  GantryAngle_CP / MaxGantrySpeed,
+  MaxLeafTravel_CP / MaxMLCSpeed
+)
+```
+
+**Machine parameters (configurable by preset):**
+
+| Machine | Max Dose Rate | Max Gantry Speed | Max MLC Speed |
+|---------|---------------|------------------|---------------|
+| Generic | 600 MU/min | 4.8 °/s | 25 mm/s |
+| TrueBeam | 600 MU/min | 6.0 °/s | 25 mm/s |
+| TrueBeam FFF | 1400 MU/min | 6.0 °/s | 25 mm/s |
+| Halcyon | 800 MU/min | 4.0 °/s | 50 mm/s |
+| Elekta Versa HD | 600 MU/min | 6.0 °/s | 35 mm/s |
+
+### 1.2 New Metrics
+
+| Metric | Name | Unit | Description |
+|--------|------|------|-------------|
+| `estimatedDeliveryTime` | Est. Delivery Time | s | Estimated beam-on time per beam |
+| `totalDeliveryTime` | Total Delivery Time | s | Sum across all beams |
+| `MUperDegree` | MU per Degree | MU/° | Average MU delivered per degree of arc |
+| `avgDoseRate` | Avg Dose Rate | MU/min | Average dose rate during delivery |
+| `avgGantrySpeed` | Avg Gantry Speed | °/s | Average gantry rotation speed |
+| `avgMLCSpeed` | Avg MLC Speed | mm/s | Average leaf speed during delivery |
+
+---
+
+## Part 2: Collimator Angles and Positions
+
+### 2.1 Display Collimator Angle
+
+The `beamLimitingDeviceAngle` is already parsed in control points. Add display components:
+
+**Current ControlPoint type already has:**
+```typescript
+beamLimitingDeviceAngle: number; // collimator angle
+```
+
+### 2.2 Collimator Visualization
+
+Create a `CollimatorViewer` component similar to `GantryViewer`:
+- Display current collimator angle
+- Show rotation indicator
+- Display alongside gantry viewer
+
+### 2.3 Jaw Positions Display
+
+Jaw positions are already parsed. Add a card showing:
+- X1, X2 (asymmetric X jaws)
+- Y1, Y2 (asymmetric Y jaws)
+- Field size calculation: (X2-X1) × (Y2-Y1)
+
+### 2.4 Machine-Specific Collimator Types
+
+Different machines use different collimator configurations:
+
+| Machine | MLC Type | Jaw Configuration |
+|---------|----------|-------------------|
+| Varian C-arm | MLCX | ASYMX, ASYMY |
+| Varian Halcyon | MLCX (dual-layer) | No jaws |
+| Elekta Agility | MLCY | X, Y |
+| Elekta MLCi2 | MLCX | X, Y |
+
+---
+
+## Part 3: Coordinate System Reference
+
+### 3.1 IEC 61217 Standard
+
+DICOM-RT uses the IEC 61217 coordinate system. Add display and documentation:
+
+**Gantry coordinate system:**
+- 0° = beam from above (superior)
+- 90° = beam from patient's left
+- 180° = beam from below (posterior)
+- 270° = beam from patient's right
+
+**Collimator coordinate system:**
+- 0° = leaves perpendicular to gantry rotation axis
+- Positive rotation = clockwise looking from source
+
+**Patient coordinate system:**
+- X = left (positive) / right (negative)
+- Y = posterior (positive) / anterior (negative)  
+- Z = superior (positive) / inferior (negative)
+
+### 3.2 UI Updates
+
+Add to the viewer:
+- Info tooltip on gantry viewer explaining IEC 61217
+- Coordinate system legend in Help page
+- Isocenter position display when available
+
+---
+
+## Part 4: Additional Complexity Metrics
+
+Based on literature review (PMC6774599, Du et al., Crowe et al., Younge et al.), add these metrics:
+
+### 4.1 Aperture-Based Metrics
+
+| Metric | Name | Formula/Description | Reference |
+|--------|------|---------------------|-----------|
+| `SAS` | Small Aperture Score | Fraction of segments with aperture < threshold (5mm default) | Crowe et al., 2014 |
+| `EM` | Edge Metric | Ratio of MLC edge length to aperture area | Younge et al., 2016 |
+| `PI` | Plan Irregularity | Average deviation of aperture from circular shape | Du et al., 2014 |
+| `PM` | Plan Modulation | Variation in fluence across apertures | Du et al., 2014 |
+| `CoA` | Circumference over Area | Aperture perimeter / area ratio | Literature |
+
+### 4.2 Delivery Parameter Metrics
+
+| Metric | Name | Unit | Description |
+|--------|------|------|-------------|
+| `MUperGy` | MU per Gy | MU/Gy | Plan efficiency metric |
+| `MUCP` | MU per Control Point | MU | Average MU between control points |
+| `DRV` | Dose Rate Variation | - | Coefficient of variation in dose rate |
+| `GSV` | Gantry Speed Variation | - | Coefficient of variation in gantry speed |
+
+### 4.3 Calculation Updates
+
+**Small Aperture Score (SAS):**
+```typescript
+SAS = Σ (apertures with any leaf gap < threshold) / total_apertures
+// Thresholds: 2mm, 5mm, 10mm, 20mm
+```
+
+**Edge Metric (EM):**
+```typescript
+EM = Σ (leaf_pair_edge_length) / aperture_area
+// Higher EM = more irregular aperture edges
+```
+
+**Plan Irregularity (PI):**
+```typescript
+AI = aperture_perimeter² / (4π × aperture_area)  // = 1 for circle
+PI = MU-weighted average of AI across all control points
+```
+
+---
+
+## Part 5: Updated Types and Definitions
+
+### 5.1 Types Updates (`src/lib/dicom/types.ts`)
+
+Add to `BeamMetrics`:
+```typescript
+// Delivery time metrics
+estimatedDeliveryTime?: number;  // seconds
+MUperDegree?: number;
+avgDoseRate?: number;  // MU/min
+avgMLCSpeed?: number;  // mm/s
+
+// Collimator info
+collimatorAngleStart?: number;
+collimatorAngleEnd?: number;
+
+// Additional complexity
+SAS5?: number;   // Small Aperture Score (5mm threshold)
+SAS10?: number;  // Small Aperture Score (10mm threshold)
+EM?: number;     // Edge Metric
+PI?: number;     // Plan Irregularity
+CoA?: number;    // Circumference over Area
+```
+
+Add to `PlanMetrics`:
+```typescript
+totalDeliveryTime?: number;  // seconds
+MUperGy?: number;
+SAS5?: number;
+SAS10?: number;
+EM?: number;
+PI?: number;
+```
+
+### 5.2 Metric Definitions Updates
+
+Add to `METRIC_DEFINITIONS`:
+
+| Key | Category | Reference |
+|-----|----------|-----------|
+| `estimatedDeliveryTime` | delivery | UCoMX validation |
+| `totalDeliveryTime` | delivery | - |
+| `MUperDegree` | delivery | Miura et al. |
+| `avgGantrySpeed` | delivery | - |
+| `avgMLCSpeed` | delivery | Park et al. |
+| `SAS5` | secondary | Crowe et al., 2014 |
+| `SAS10` | secondary | Crowe et al., 2014 |
+| `EM` | secondary | Younge et al., 2016 |
+| `PI` | secondary | Du et al., 2014 |
+| `collimatorAngle` | delivery | IEC 61217 |
+
+---
+
+## Part 6: UI Components
+
+### 6.1 New Components
+
+**CollimatorViewer.tsx**
+- Similar design to GantryViewer
+- Show collimator angle with rotation
+- Include field rectangle representation
+
+**DeliveryTimeCard.tsx**
+- Display estimated delivery time per beam
+- Show limiting factor (MLC, gantry, or dose rate)
+- Total plan delivery time
+
+**CoordinateSystemInfo.tsx**
+- Expandable info panel explaining IEC 61217
+- Visual diagram of patient/gantry orientation
+
+### 6.2 Updated Components
+
+**MetricsPanel.tsx**
+- Add new metrics to appropriate sections
+- New "Delivery Time" subsection
+- New "Aperture Analysis" subsection for SAS, EM, PI
+
+**GantryViewer.tsx**
+- Add collimator angle display (small overlay)
+- Optional isocenter marker
+
+**InteractiveViewer.tsx**
+- Add collimator viewer alongside gantry viewer
+- Add delivery time summary card
+
+---
+
+## Part 7: Machine Configuration Integration
+
+### 7.1 Link to Threshold Presets
+
+Reuse machine presets from `threshold-definitions.ts` and extend with delivery parameters:
+
+```typescript
+interface MachineDeliveryParams {
+  maxDoseRate: number;        // MU/min
+  maxDoseRateFFF?: number;    // MU/min for FFF beams
+  maxGantrySpeed: number;     // deg/s
+  maxMLCSpeed: number;        // mm/s
+  mlcType: 'MLCX' | 'MLCY' | 'DUAL';
 }
 ```
 
-### 1.2 Machine Presets
+### 7.2 Automatic Detection
 
-Predefined threshold configurations for common linacs:
-
-**Generic / Conservative**
-- Safe baseline values for any modern linac
-- Most restrictive thresholds
-
-**Varian TrueBeam**
-- MCS: warning < 0.3, critical < 0.2
-- MFA: warning < 5 cm², critical < 2 cm²
-- LT: warning > 15000 mm, critical > 25000 mm
-
-**Varian Halcyon**
-- Stricter thresholds due to dual-layer MLC
-- MCS: warning < 0.35, critical < 0.25
-- MFA: warning < 4 cm², critical < 2 cm²
-
-**Elekta Versa HD**
-- Agility MLC-specific thresholds
-- Slightly different MFA ranges
-
-**Custom**
-- User-defined thresholds
-- Editable input fields for each metric
+When possible, detect machine from DICOM:
+- `TreatmentMachineName` tag
+- `Manufacturer` tag
+- Number of leaves / leaf widths
 
 ---
 
-## Part 2: Threshold Configuration Context
+## File Changes Summary
 
-### 2.1 Context State
-
-```text
-ThresholdConfig = {
-  enabled: boolean                    // Master toggle
-  selectedPreset: string              // 'generic' | 'truebeam' | 'halcyon' | 'versa_hd' | 'custom'
-  customThresholds: ThresholdSet      // User-defined values
-  
-  // Methods
-  setEnabled(enabled: boolean)
-  setPreset(preset: string)
-  updateCustomThreshold(metricKey, values)
-  getThresholdStatus(metricKey, value) -> 'normal' | 'warning' | 'critical'
-}
-```
-
-### 2.2 Persistence
-
-- Save to localStorage with key `rtplan-threshold-config`
-- Store: enabled flag, selected preset, custom threshold values
-- Load on app initialization
-
----
-
-## Part 3: Threshold Settings UI
-
-### 3.1 Integration with MetricsSettings
-
-Add a new collapsible section within or below the existing Metrics Settings:
-
-```text
-+------------------------------------------+
-| [Toggle] Enable Threshold Alerts         |
-|                                          |
-| Machine Preset: [Dropdown v]             |
-|   - Generic (Conservative)               |
-|   - Varian TrueBeam                      |
-|   - Varian Halcyon                       |
-|   - Elekta Versa HD                      |
-|   - Custom...                            |
-|                                          |
-| [Only shown if Custom selected]          |
-| +--------------------------------------+ |
-| | MCS:  Warning [____] Critical [____] | |
-| | MFA:  Warning [____] Critical [____] | |
-| | LT:   Warning [____] Critical [____] | |
-| +--------------------------------------+ |
-|                                          |
-| Legend: [Yellow] Warning  [Red] Critical |
-+------------------------------------------+
-```
-
-### 3.2 Toggle Behavior
-
-When disabled:
-- All thresholds ignored
-- Metrics display normally
-- Settings panel shows only the enable toggle (collapsed)
-
-When enabled:
-- Machine selector visible
-- Thresholds actively applied
-- Metric values styled with warning/critical colors
-
----
-
-## Part 4: Visual Styling
-
-### 4.1 CSS Classes
-
-Add to index.css:
-
-```css
-.metric-value-normal { }  /* Default styling */
-
-.metric-value-warning {
-  color: hsl(var(--status-warning));
-  background: hsl(var(--status-warning) / 0.1);
-  border-radius: 0.25rem;
-  padding: 0 0.5rem;
-}
-
-.metric-value-critical {
-  color: hsl(var(--status-error));
-  background: hsl(var(--status-error) / 0.1);
-  border-radius: 0.25rem;
-  padding: 0 0.5rem;
-}
-```
-
-### 4.2 Tooltip Enhancement
-
-When a value exceeds thresholds, the tooltip shows:
-- Normal description (existing)
-- Plus: "Exceeds warning/critical threshold for [Machine]"
-- Threshold values for context
-
----
-
-## Part 5: MetricsPanel Integration
-
-### 5.1 MetricItem Updates
-
-Modify the MetricItem component to:
-1. Consume threshold context
-2. Call `getThresholdStatus(metricKey, value)`
-3. Apply appropriate CSS class
-4. Optionally show indicator icon (warning triangle)
-
-### 5.2 All Beams Summary
-
-Apply threshold styling to the beam summary list as well for MCS values.
-
----
-
-## Machine Preset Details
-
-### Generic (Conservative)
-
-| Metric | Warning | Critical | Direction |
-|--------|---------|----------|-----------|
-| MCS | < 0.25 | < 0.15 | low |
-| LSV | < 0.30 | < 0.20 | low |
-| AAV | < 0.30 | < 0.20 | low |
-| MFA | < 4 cm² | < 2 cm² | low |
-| LT | > 20000 mm | > 30000 mm | high |
-| totalMU | > 1500 MU | > 2500 MU | high |
-
-### Varian TrueBeam
-
-| Metric | Warning | Critical | Direction |
-|--------|---------|----------|-----------|
-| MCS | < 0.30 | < 0.20 | low |
-| LSV | < 0.35 | < 0.25 | low |
-| AAV | < 0.35 | < 0.25 | low |
-| MFA | < 5 cm² | < 2 cm² | low |
-| LT | > 15000 mm | > 25000 mm | high |
-| totalMU | > 2000 MU | > 3000 MU | high |
-
-### Varian Halcyon
-
-| Metric | Warning | Critical | Direction |
-|--------|---------|----------|-----------|
-| MCS | < 0.35 | < 0.25 | low |
-| LSV | < 0.40 | < 0.30 | low |
-| AAV | < 0.40 | < 0.30 | low |
-| MFA | < 4 cm² | < 2 cm² | low |
-| LT | > 12000 mm | > 20000 mm | high |
-| totalMU | > 1800 MU | > 2800 MU | high |
-
-### Elekta Versa HD
-
-| Metric | Warning | Critical | Direction |
-|--------|---------|----------|-----------|
-| MCS | < 0.28 | < 0.18 | low |
-| LSV | < 0.32 | < 0.22 | low |
-| AAV | < 0.32 | < 0.22 | low |
-| MFA | < 4.5 cm² | < 2.5 cm² | low |
-| LT | > 18000 mm | > 28000 mm | high |
-| totalMU | > 1800 MU | > 2800 MU | high |
+| Action | File | Description |
+|--------|------|-------------|
+| Update | `src/lib/dicom/types.ts` | Add new metric fields |
+| Update | `src/lib/dicom/metrics.ts` | Implement new calculations |
+| Update | `src/lib/metrics-definitions.ts` | Add metric definitions |
+| Update | `src/lib/threshold-definitions.ts` | Add delivery parameters |
+| Create | `src/components/viewer/CollimatorViewer.tsx` | Collimator angle display |
+| Create | `src/components/viewer/DeliveryTimeCard.tsx` | Delivery time display |
+| Update | `src/components/viewer/MetricsPanel.tsx` | New metric sections |
+| Update | `src/components/viewer/InteractiveViewer.tsx` | Layout updates |
+| Update | `src/pages/Help.tsx` | Coordinate system docs, new metric refs |
 
 ---
 
 ## Implementation Sequence
 
-1. Create `src/lib/threshold-definitions.ts` with types and machine presets
-2. Create `src/contexts/ThresholdConfigContext.tsx` with state management
-3. Update `src/App.tsx` to include ThresholdConfigProvider
-4. Add threshold CSS classes to `src/index.css`
-5. Create `src/components/viewer/ThresholdSettings.tsx` UI component
-6. Update `src/components/viewer/MetricsSettings.tsx` to include threshold section
-7. Update `src/components/viewer/MetricsPanel.tsx` to apply threshold styling
+1. **Update types** with new metric fields
+2. **Add metric definitions** for new metrics
+3. **Implement delivery time calculation** in metrics.ts
+4. **Implement SAS, EM, PI calculations** in metrics.ts
+5. **Create CollimatorViewer** component
+6. **Create DeliveryTimeCard** component
+7. **Update MetricsPanel** with new sections
+8. **Update InteractiveViewer** layout
+9. **Update Help page** with coordinate system and new references
+10. **Update threshold definitions** with delivery parameters
+
+---
+
+## New References to Add
+
+1. **Delivery Time Estimation:**
+   - Park JM, et al. "The effect of MLC speed and acceleration on the plan delivery accuracy of VMAT." *Brit J Radiol.* 2015.
+
+2. **Small Aperture Score:**
+   - Crowe SB, et al. "Treatment plan complexity metrics for predicting IMRT pre-treatment quality assurance results." *Australas Phys Eng Sci Med.* 2014;37:475-482.
+   - DOI: 10.1007/s13246-014-0271-5
+
+3. **Edge Metric:**
+   - Younge KC, et al. "Predicting deliverability of VMAT plans using aperture complexity analysis." *J Appl Clin Med Phys.* 2016;17(4):124-131.
+   - DOI: 10.1120/jacmp.v17i4.6241
+
+4. **Plan Irregularity (PI) and Plan Modulation (PM):**
+   - Du W, et al. "Quantification of beam complexity in IMRT treatment plans." *Med Phys.* 2014;41(2):021716.
+   - DOI: 10.1118/1.4861821
 
 ---
 
 ## Success Criteria
 
-- Toggle to enable/disable threshold system works
-- Dropdown shows all machine presets
-- Custom preset allows editing individual thresholds
-- Metric values show yellow background when in warning range
-- Metric values show red background when in critical range
-- Settings persist across sessions via localStorage
-- Tooltips indicate when thresholds are exceeded
+- Estimated delivery time shown for each beam and total plan
+- Collimator angle displayed and updates with control points
+- Jaw positions shown with field size calculation
+- SAS, EM, and PI metrics calculated and displayed
+- Help page includes IEC 61217 coordinate system explanation
+- All new metrics exportable to CSV
+- Machine delivery parameters configurable via existing preset system
 
