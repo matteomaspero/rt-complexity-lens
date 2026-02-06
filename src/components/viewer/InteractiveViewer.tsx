@@ -123,6 +123,36 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
             className="mt-4"
           />
         </div>
+
+        {/* Mode Selection */}
+        <div className="mt-8 w-full max-w-md">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">or select a mode</span>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <Link to="/batch">
+              <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="font-medium">Batch Analysis</span>
+                <span className="text-xs text-muted-foreground">Analyze multiple plans</span>
+              </Button>
+            </Link>
+            <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2" disabled>
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span className="font-medium">Compare Plans</span>
+              <span className="text-xs text-muted-foreground">Coming soon</span>
+            </Button>
+          </div>
+        </div>
         
         {/* Metrics Settings */}
         <div className="mt-6 w-full max-w-md">
