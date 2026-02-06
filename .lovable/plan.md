@@ -1,126 +1,252 @@
 
+# Improved Angular Analysis Layout and Beam Summary Card
 
-# Split Complexity Metrics for Better Clarity
+## Overview
 
-## Issue Analysis
+This plan addresses three main improvements:
+1. Replace tabbed Angular Analysis with fixed separate charts (no dropdown/tabs)
+2. Split the Timeline chart into separate charts for better clarity
+3. Add a Beam Summary Card at the top with key beam/arc information
 
-After testing the Angular Analysis tabs, all features work correctly:
-- Polar MU Distribution updates with control point changes
-- Delivery Timeline shows segment durations with limiting factor colors
-- Complexity Heatmap displays LSV, AAV, and Aperture Area
+---
 
-However, the **Complexity tab** currently shows multiple metrics on overlapping charts which can be visually overwhelming:
-- Chart 1: LSV (area) + AAV (line) combined on a single chart
-- Chart 2: Aperture Area separately
+## Part 1: Beam Summary Card
 
-## Proposed Changes
+Add a new component that displays key information about the currently selected beam to help users quickly understand what they're viewing.
 
-### Split Strategy
+### 1.1 Information to Display
 
-Reorganize the Complexity tab into **sub-tabs or separate cards** for cleaner visualization:
+| Field | Description | Example |
+|-------|-------------|---------|
+| Beam Name | The beam's label | "Arc1_CW" |
+| Type | Arc or Static | "VMAT Arc" |
+| Control Points | Number of CPs | "178 CPs" |
+| Gantry Range | Start to end angles | "181.0° to 179.0°" |
+| Rotation | Direction | "CW" (clockwise) |
+| MU | Beam MU | "324.5 MU" |
+| Est. Time | Delivery time | "0:52" (mm:ss) |
+| Dose Rate | Min-Max range | "145-580 MU/min" |
+
+### 1.2 Component Design
 
 ```text
-Current Layout:
-+------------------------------------------+
-| Complexity vs Gantry Angle               |
-|   LSV (area) + AAV (line) - COMBINED     |
-+------------------------------------------+
-| Aperture Area vs Control Point           |
-+------------------------------------------+
-
-New Layout:
-+------------------------------------------+
-| [LSV] [AAV] [Aperture] - sub-tabs        |
-+------------------------------------------+
-| Selected metric full-height chart        |
-| with clearer single-metric focus         |
-+------------------------------------------+
++------------------------------------------------------------------+
+| Beam: Arc1_CW                                    VMAT Arc | CW   |
++------------------------------------------------------------------+
+| CPs: 178  |  181.0° → 179.0° (358°)  |  324.5 MU  |  Est: 0:52   |
+| Dose Rate: 145 - 580 MU/min          |  Avg Gantry: 5.8 °/s      |
++------------------------------------------------------------------+
 ```
 
-### Alternative: Stacked Cards
+### 1.3 New File
 
-Keep all metrics visible but in separate cards:
+Create `src/components/viewer/BeamSummaryCard.tsx`
+
+---
+
+## Part 2: Fixed Separate Charts (No Tabs)
+
+Replace the tabbed interface with a vertically stacked layout where all charts are always visible.
+
+### 2.1 Current Layout (Tabbed)
 
 ```text
-+------------------------------------------+
-| LSV vs Gantry Angle          LSV: 0.957  |
-|   [Full height area chart]               |
-+------------------------------------------+
-| AAV vs Gantry Angle          AAV: 0.384  |
-|   [Full height line chart]               |
-+------------------------------------------+
-| Aperture Area             Area: 15.2 cm² |
-|   [Area chart]                           |
-+------------------------------------------+
+[ MU Distribution ] [ Timeline ] [ Complexity ]
++----------------------------------------+
+|   Only one tab content visible at      |
+|   a time - requires user to switch     |
++----------------------------------------+
 ```
 
----
-
-## File Changes
-
-### Modified Files
-
-| File | Changes |
-|------|---------|
-| `src/components/viewer/ComplexityHeatmap.tsx` | Split combined LSV+AAV chart into separate cards with individual charts for each metric |
-
----
-
-## Implementation Details
-
-### Separate Metric Cards
-
-Each metric gets its own card with:
-- Clear title with current value
-- Single focused chart
-- Consistent height
-- Reference line showing current control point
+### 2.2 New Layout (Fixed Sections)
 
 ```text
-+-- LSV (Leaf Sequence Variability) ------+
-| Current: 0.9567                          |
-| [Single metric area chart - 120px]       |
-+------------------------------------------+
++-- Beam Summary Card ---------------------------+
+| Arc1_CW | VMAT | 178 CPs | 181° → 179° | CW   |
+| 324.5 MU | Est: 0:52 | DR: 145-580 MU/min     |
++-----------------------------------------------+
 
-+-- AAV (Aperture Area Variability) ------+
-| Current: 0.3840                          |
-| [Single metric line chart - 120px]       |
-+------------------------------------------+
++-- MU Distribution -----------------------------+
+| [Polar Chart]       [Dose Rate vs Angle]      |
++-----------------------------------------------+
 
-+-- Aperture Area -------------------------+
-| Current: 15.2 cm²                        |
-| [Single metric area chart - 120px]       |
-+------------------------------------------+
++-- Delivery Analysis ---------------------------+
+| Segment Duration (bar chart)                   |
++-----------------------------------------------+
+| Dose Rate vs Angle                             |
++-----------------------------------------------+
+| Gantry Speed vs Angle                          |
++-----------------------------------------------+
+| MLC Speed vs Angle                             |
++-----------------------------------------------+
+
++-- Complexity Analysis -------------------------+
+| LSV vs Angle                                   |
++-----------------------------------------------+
+| AAV vs Angle                                   |
++-----------------------------------------------+
+| Aperture Area vs CP                            |
++-----------------------------------------------+
 ```
 
-### Benefits
+---
 
-1. **Easier to read** - Each metric has its own visual space
-2. **Better comparison** - Values are clearly labeled per metric
-3. **Consistent pattern** - Matches the layout used elsewhere in the app
-4. **Mobile friendly** - Stacks naturally on smaller screens
+## Part 3: Split Timeline Chart
+
+Currently the timeline shows segment duration colored by limiting factor. To improve clarity, split into separate focused charts.
+
+### 3.1 Current Timeline (Combined)
+
+- Single bar chart with duration colored by limiting factor
+- Difficult to see individual Dose Rate, Gantry Speed, MLC Speed values
+
+### 3.2 New Split Layout
+
+| Chart | Data | Purpose |
+|-------|------|---------|
+| Segment Duration | Duration (s) with limiting factor colors | Overview of time distribution |
+| Dose Rate vs Angle | MU/min at each segment | See dose rate variation |
+| Gantry Speed vs Angle | deg/s at each segment | See gantry speed pattern |
+| MLC Speed vs Angle | mm/s at each segment | See MLC speed bottlenecks |
+
+Each chart is compact (80-100px height) to allow all to fit vertically.
 
 ---
 
-## Technical Implementation
+## Part 4: File Changes Summary
 
-Update `ComplexityHeatmap.tsx` to:
-
-1. Remove the combined `ComposedChart` with overlapping LSV + AAV
-2. Create 3 separate card sections:
-   - **LSV Chart Card** - Area chart with LSV data only
-   - **AAV Chart Card** - Line chart with AAV data only  
-   - **Aperture Area Card** - Existing chart (keep as-is)
-3. Each card shows the current metric value in the header
-4. Reduce individual chart heights from 160px to ~100-120px to fit all three
+| Action | File | Description |
+|--------|------|-------------|
+| Create | `src/components/viewer/BeamSummaryCard.tsx` | New beam info display |
+| Update | `src/components/viewer/InteractiveViewer.tsx` | Replace tabs with fixed sections, add BeamSummaryCard |
+| Update | `src/components/viewer/DeliveryTimelineChart.tsx` | Split into 4 separate charts |
+| Update | `src/components/viewer/AngularDistributionChart.tsx` | Keep as-is (polar + dose rate) |
+| Update | `src/components/viewer/index.ts` | Export new component |
 
 ---
 
-## Success Criteria
+## Part 5: Implementation Details
 
-- LSV, AAV, and Aperture Area each have their own dedicated chart
-- Current values clearly displayed in each card header
-- All charts sync with control point scrubber (reference line updates)
-- Overall section height remains reasonable (scrollable if needed)
-- Cleaner visual presentation with no overlapping data series
+### 5.1 BeamSummaryCard Component
+
+```typescript
+interface BeamSummaryCardProps {
+  beam: Beam;
+  beamMetrics: BeamMetrics;
+  segments: ControlPointSegment[];
+}
+```
+
+Display:
+- Beam name and type (Arc/Static)
+- Rotation direction with icon
+- Gantry angle range and arc length
+- MU and estimated delivery time
+- Dose rate range (min - max across segments)
+- Average gantry and MLC speeds
+
+### 5.2 Updated DeliveryTimelineChart
+
+Split into four separate card sections:
+
+```typescript
+// 1. Segment Duration (existing bar chart with limiting factor colors)
+<Card>
+  <h4>Segment Duration</h4>
+  <BarChart data={...} /> // 100px height
+</Card>
+
+// 2. Dose Rate Line Chart
+<Card>
+  <h4>Dose Rate</h4>
+  <LineChart data={...} /> // 80px height
+</Card>
+
+// 3. Gantry Speed Line Chart (if arc)
+<Card>
+  <h4>Gantry Speed</h4>
+  <LineChart data={...} /> // 80px height
+</Card>
+
+// 4. MLC Speed Line Chart
+<Card>
+  <h4>MLC Speed</h4>
+  <LineChart data={...} /> // 80px height
+</Card>
+```
+
+### 5.3 Updated InteractiveViewer Layout
+
+Replace the collapsible tabbed section with:
+
+```text
+<BeamSummaryCard />
+
+<div className="space-y-4">
+  <Section title="MU Distribution">
+    <AngularDistributionChart />
+  </Section>
+  
+  <Section title="Delivery Analysis">
+    <DeliveryTimelineChart />  // Now contains 4 separate charts
+  </Section>
+  
+  <Section title="Complexity Analysis">
+    <ComplexityHeatmap />  // Already has 3 separate charts
+  </Section>
+</div>
+```
+
+---
+
+## Part 6: Dose Rate Range Calculation
+
+Add utility to calculate dose rate statistics from segments:
+
+```typescript
+function getDoseRateStats(segments: ControlPointSegment[]): {
+  min: number;
+  max: number;
+  avg: number;
+} {
+  const rates = segments.map(s => s.doseRate);
+  return {
+    min: Math.min(...rates),
+    max: Math.max(...rates),
+    avg: rates.reduce((a, b) => a + b, 0) / rates.length,
+  };
+}
+```
+
+---
+
+## Part 7: Success Criteria
+
+- Beam Summary Card displays at the top with key beam information
+- All Angular Analysis charts are visible without tabs (no switching required)
+- Timeline section shows 4 separate charts for duration, dose rate, gantry speed, MLC speed
+- Each chart has a clear title and current value display
+- Charts sync with control point scrubber
+- Responsive layout works on different screen sizes
+
+---
+
+## Part 8: Post-Implementation - Audit All Test Plans
+
+After implementing the UI changes, load each test plan and verify:
+
+| Test File | Check | Purpose |
+|-----------|-------|---------|
+| VMAT_1 | Complex VMAT arc | Multi-segment delivery |
+| MONACO_PT_01-04 | Monaco optimizer plans | Different complexity levels |
+| MONACO_PENALTY | Plan with penalty | Edge case handling |
+| TG119_7F | 7-field IMRT | Static field behavior |
+| TG119_2A | 2-arc VMAT | Multi-arc display |
+
+For each plan, verify:
+1. Beam summary shows correct angles, MU, time
+2. All charts render without errors
+3. Metrics calculate correctly
+4. Control point scrubber updates all charts
+5. No overlapping or cluttered data
 
