@@ -11,26 +11,90 @@ interface BatchUploadZoneProps {
 async function extractDicomFilesFromZip(zipFile: File): Promise<File[]> {
   const zip = await JSZip.loadAsync(zipFile);
   const dicomFiles: File[] = [];
-
   const filePromises: Promise<void>[] = [];
+  const seenNames = new Set<string>();
+
+  // Helper to check if any path segment is hidden or system folder
+  const isHiddenPath = (path: string): boolean => {
+    const segments = path.split('/');
+    return segments.some(segment => 
+      segment.startsWith('.') || 
+      segment.startsWith('__MACOSX') ||
+      segment.startsWith('__')
+    );
+  };
+
+  // Helper to check if file is likely DICOM
+  const isDicomFile = (fileName: string): boolean => {
+    const lowerName = fileName.toLowerCase();
+    return (
+      lowerName.endsWith('.dcm') ||
+      // Files without extension in medical folders are often DICOM
+      (!fileName.includes('.') && fileName.length > 0) ||
+      // RT Plan files often have these prefixes
+      lowerName.startsWith('rp.') ||
+      lowerName.startsWith('rp_') ||
+      lowerName.startsWith('rtplan')
+    );
+  };
+
+  // Helper to create unique filename preserving folder context
+  const createUniqueName = (relativePath: string): string => {
+    const segments = relativePath.split('/').filter(s => s.length > 0);
+    const fileName = segments.pop() || 'unknown';
+    
+    // If there's a parent folder, prefix it to avoid duplicates
+    if (segments.length > 0) {
+      const parentFolder = segments[segments.length - 1];
+      const uniqueName = `${parentFolder}_${fileName}`;
+      
+      if (!seenNames.has(uniqueName)) {
+        seenNames.add(uniqueName);
+        return uniqueName;
+      }
+      
+      // If still duplicate, add more context
+      let counter = 1;
+      while (seenNames.has(`${uniqueName}_${counter}`)) {
+        counter++;
+      }
+      const finalName = `${uniqueName}_${counter}`;
+      seenNames.add(finalName);
+      return finalName;
+    }
+    
+    // No parent folder - just use filename with dedup
+    if (!seenNames.has(fileName)) {
+      seenNames.add(fileName);
+      return fileName;
+    }
+    
+    let counter = 1;
+    while (seenNames.has(`${fileName}_${counter}`)) {
+      counter++;
+    }
+    const finalName = `${fileName}_${counter}`;
+    seenNames.add(finalName);
+    return finalName;
+  };
 
   zip.forEach((relativePath, zipEntry) => {
-    // Skip directories and hidden files
-    if (zipEntry.dir || relativePath.startsWith('__MACOSX') || relativePath.startsWith('.')) {
-      return;
-    }
+    // Skip directories
+    if (zipEntry.dir) return;
+    
+    // Skip hidden files and system folders (at any nesting level)
+    if (isHiddenPath(relativePath)) return;
 
     const fileName = relativePath.split('/').pop() || '';
     
-    // Check if it's likely a DICOM file
-    const isDicom = fileName.toLowerCase().endsWith('.dcm') ||
-      !fileName.includes('.') || // Files without extension might be DICOM
-      fileName.toLowerCase().startsWith('rp') || // RT Plan files often start with RP
-      fileName.toLowerCase().startsWith('rt');
+    // Skip empty filenames or hidden files
+    if (!fileName || fileName.startsWith('.')) return;
 
-    if (isDicom) {
+    // Check if it's likely a DICOM file
+    if (isDicomFile(fileName)) {
       const promise = zipEntry.async('blob').then(blob => {
-        const file = new File([blob], fileName, { type: 'application/dicom' });
+        const uniqueName = createUniqueName(relativePath);
+        const file = new File([blob], uniqueName, { type: 'application/dicom' });
         dicomFiles.push(file);
       });
       filePromises.push(promise);
@@ -38,6 +102,8 @@ async function extractDicomFilesFromZip(zipFile: File): Promise<File[]> {
   });
 
   await Promise.all(filePromises);
+  
+  console.log(`Extracted ${dicomFiles.length} DICOM files from ${zipFile.name}`);
   return dicomFiles;
 }
 
