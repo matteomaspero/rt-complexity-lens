@@ -27,7 +27,7 @@ export function MetricsSettings({ className }: MetricsSettingsProps) {
   const allEnabled = enabledMetrics.size === Object.keys(METRIC_DEFINITIONS).length;
   const noneEnabled = enabledMetrics.size === 0;
 
-  const categories: MetricCategory[] = ['primary', 'secondary', 'delivery'];
+  const categories: MetricCategory[] = ['primary', 'secondary', 'accuracy', 'deliverability', 'delivery'];
 
   return (
     <Collapsible className={className}>
