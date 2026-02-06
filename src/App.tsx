@@ -9,6 +9,7 @@ import { BatchProvider } from "@/contexts/BatchContext";
 import Index from "./pages/Index";
 import Help from "./pages/Help";
 import BatchDashboard from "./pages/BatchDashboard";
+import ComparePlans from "./pages/ComparePlans";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/batch" element={<BatchDashboard />} />
+                <Route path="/compare" element={<ComparePlans />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
