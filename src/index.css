@@ -52,6 +52,10 @@
     --chart-quaternary: 340 75% 55%;
     --chart-grid: 220 15% 92%;
     
+    /* Comparison Chart Colors */
+    --chart-comparison-a: 220 70% 50%;
+    --chart-comparison-b: 340 75% 55%;
+    
     /* Status Colors */
     --status-success: 160 60% 45%;
     --status-warning: 40 90% 50%;
@@ -109,6 +113,10 @@
     --chart-tertiary: 160 60% 55%;
     --chart-quaternary: 340 75% 65%;
     --chart-grid: 220 20% 20%;
+    
+    /* Comparison Chart Colors - Dark */
+    --chart-comparison-a: 220 70% 60%;
+    --chart-comparison-b: 340 75% 65%;
 
     --sidebar-background: 220 20% 10%;
     --sidebar-foreground: 220 15% 90%;

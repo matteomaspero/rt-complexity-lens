@@ -8,6 +8,8 @@ import {
   MetricsDiffTable,
   BeamComparisonTable,
   CPComparisonViewer,
+  ComparisonMUChart,
+  ComparisonDeliveryChart,
 } from '@/components/comparison';
 import { matchBeams } from '@/lib/comparison/beam-matcher';
 
@@ -107,12 +109,39 @@ export default function ComparePlans() {
             {/* Right Column */}
             <div className="space-y-6">
               {selectedBeams && (
-                <CPComparisonViewer
-                  beamA={selectedBeams.beamA}
-                  beamB={selectedBeams.beamB}
-                  currentCPIndex={currentCPIndex}
-                  onCPIndexChange={setCurrentCPIndex}
-                />
+                <>
+                  <CPComparisonViewer
+                    beamA={selectedBeams.beamA}
+                    beamB={selectedBeams.beamB}
+                    currentCPIndex={currentCPIndex}
+                    onCPIndexChange={setCurrentCPIndex}
+                  />
+                  
+                  {/* Comparison Charts */}
+                  <ComparisonMUChart
+                    beamA={selectedBeams.beamA}
+                    beamB={selectedBeams.beamB}
+                    muA={planA.metrics.beamMetrics.find(
+                      (m) => m.beamNumber === selectedBeams.beamA.beamNumber
+                    )?.beamMU ?? 0}
+                    muB={planB.metrics.beamMetrics.find(
+                      (m) => m.beamNumber === selectedBeams.beamB.beamNumber
+                    )?.beamMU ?? 0}
+                    currentCPIndex={currentCPIndex}
+                  />
+                  
+                  <ComparisonDeliveryChart
+                    beamA={selectedBeams.beamA}
+                    beamB={selectedBeams.beamB}
+                    metricsA={planA.metrics.beamMetrics.find(
+                      (m) => m.beamNumber === selectedBeams.beamA.beamNumber
+                    )!}
+                    metricsB={planB.metrics.beamMetrics.find(
+                      (m) => m.beamNumber === selectedBeams.beamB.beamNumber
+                    )!}
+                    currentCPIndex={currentCPIndex}
+                  />
+                </>
               )}
             </div>
           </div>
