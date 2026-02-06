@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, forwardRef } from 'react';
+import { useState, useCallback, useEffect, useRef, forwardRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { SessionPlan, Beam, ControlPoint } from '@/lib/dicom/types';
 import {
@@ -15,12 +15,12 @@ import {
   AngularDistributionChart,
   DeliveryTimelineChart,
   ComplexityHeatmap,
+  BeamSummaryCard,
 } from '@/components/viewer';
 import { MetricsSettings } from '@/components/viewer/MetricsSettings';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { HelpCircle, ChevronDown } from 'lucide-react';
 
@@ -36,6 +36,14 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   const currentBeam: Beam | null = sessionPlan?.plan.beams[selectedBeamIndex] ?? null;
   const currentCP: ControlPoint | null = currentBeam?.controlPoints[currentCPIndex] ?? null;
   const totalCPs = currentBeam?.controlPoints.length ?? 0;
+
+  // Get beam MU from fraction group
+  const beamMU = useMemo(() => {
+    if (!sessionPlan || !currentBeam) return 0;
+    const fg = sessionPlan.plan.fractionGroups[0];
+    const refBeam = fg?.referencedBeams.find(rb => rb.beamNumber === currentBeam.beamNumber);
+    return refBeam?.beamMeterset ?? currentBeam.beamDose ?? 0;
+  }, [sessionPlan, currentBeam]);
 
   // Handle plan loaded
   const handlePlanLoaded = useCallback((plan: SessionPlan) => {
@@ -190,6 +198,13 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Left Column - Visualizations */}
               <div className="space-y-6">
+                {/* Beam Summary Card */}
+                <BeamSummaryCard
+                  beam={currentBeam}
+                  controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
+                  beamMU={beamMU}
+                />
+
                 {/* Control Point Navigator */}
                 <ControlPointNavigator
                   currentIndex={currentCPIndex}
@@ -252,41 +267,48 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   />
                 </div>
 
-                {/* Angular Analysis Section */}
+                {/* MU Distribution Section */}
                 <Collapsible defaultOpen className="rounded-lg border bg-card">
                   <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
-                    <h4 className="text-sm font-medium">Angular Analysis</h4>
+                    <h4 className="text-sm font-medium">MU Distribution</h4>
                     <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="px-4 pb-4">
-                    <Tabs defaultValue="distribution" className="w-full">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="distribution">MU Distribution</TabsTrigger>
-                        <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                        <TabsTrigger value="complexity">Complexity</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="distribution" className="mt-4">
-                        <AngularDistributionChart
-                          beam={currentBeam}
-                          controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
-                          currentIndex={currentCPIndex}
-                        />
-                      </TabsContent>
-                      <TabsContent value="timeline" className="mt-4">
-                        <DeliveryTimelineChart
-                          beam={currentBeam}
-                          controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
-                          currentIndex={currentCPIndex}
-                        />
-                      </TabsContent>
-                      <TabsContent value="complexity" className="mt-4">
-                        <ComplexityHeatmap
-                          beam={currentBeam}
-                          controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
-                          currentIndex={currentCPIndex}
-                        />
-                      </TabsContent>
-                    </Tabs>
+                    <AngularDistributionChart
+                      beam={currentBeam}
+                      controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
+                      currentIndex={currentCPIndex}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* Delivery Analysis Section */}
+                <Collapsible defaultOpen className="rounded-lg border bg-card">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
+                    <h4 className="text-sm font-medium">Delivery Analysis</h4>
+                    <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="px-4 pb-4">
+                    <DeliveryTimelineChart
+                      beam={currentBeam}
+                      controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
+                      currentIndex={currentCPIndex}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* Complexity Analysis Section */}
+                <Collapsible defaultOpen className="rounded-lg border bg-card">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
+                    <h4 className="text-sm font-medium">Complexity Analysis</h4>
+                    <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="px-4 pb-4">
+                    <ComplexityHeatmap
+                      beam={currentBeam}
+                      controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
+                      currentIndex={currentCPIndex}
+                    />
                   </CollapsibleContent>
                 </Collapsible>
 
