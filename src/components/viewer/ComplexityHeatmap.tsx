@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Area,
-  ComposedChart,
+  AreaChart,
 } from 'recharts';
 import type { Beam, ControlPointMetrics } from '@/lib/dicom/types';
 
@@ -41,32 +41,29 @@ export function ComplexityHeatmap({
   const currentAngle = beam.controlPoints[currentIndex]?.gantryAngle ?? 0;
   const currentLSV = controlPointMetrics[currentIndex]?.apertureLSV ?? 0;
   const currentAAV = controlPointMetrics[currentIndex]?.apertureAAV ?? 0;
+  const currentArea = (controlPointMetrics[currentIndex]?.apertureArea ?? 0) / 100;
+
+  const tooltipStyle = {
+    backgroundColor: 'hsl(var(--card))',
+    border: '1px solid hsl(var(--border))',
+    borderRadius: '6px',
+    fontSize: '12px',
+  };
 
   return (
-    <div className="space-y-4">
-      {/* LSV and AAV over the arc */}
-      <div className="rounded-lg border bg-card p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-medium">Complexity vs Gantry Angle</h4>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: 'hsl(var(--chart-primary))' }}
-              />
-              LSV: {currentLSV.toFixed(3)}
-            </span>
-            <span className="flex items-center gap-1">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: 'hsl(var(--chart-secondary))' }}
-              />
-              AAV: {currentAAV.toFixed(3)}
-            </span>
-          </div>
+    <div className="space-y-3">
+      {/* LSV Chart Card */}
+      <div className="rounded-lg border bg-card p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-xs font-medium text-muted-foreground">
+            LSV (Leaf Sequence Variability)
+          </h4>
+          <span className="font-mono text-sm font-medium">
+            {currentLSV.toFixed(4)}
+          </span>
         </div>
-        <ResponsiveContainer width="100%" height={160}>
-          <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 20, left: 5 }}>
+        <ResponsiveContainer width="100%" height={100}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="hsl(var(--chart-grid))"
@@ -76,46 +73,82 @@ export function ComplexityHeatmap({
               dataKey="angle"
               type="number"
               domain={['dataMin', 'dataMax']}
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 9 }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
-              label={{
-                value: 'Gantry Angle (°)',
-                position: 'insideBottom',
-                offset: -10,
-                fontSize: 10,
-                fill: 'hsl(var(--muted-foreground))',
-              }}
+              tickFormatter={(v) => `${v}°`}
             />
             <YAxis
-              yAxisId="left"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 9 }}
               tickLine={false}
               axisLine={false}
               domain={[0, 1]}
               tickFormatter={(v) => v.toFixed(1)}
+              width={30}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px',
-                fontSize: '12px',
-              }}
-              formatter={(value: number, name: string) => [value.toFixed(4), name]}
+              contentStyle={tooltipStyle}
+              formatter={(value: number) => [value.toFixed(4), 'LSV']}
               labelFormatter={(label) => `Angle: ${Number(label).toFixed(1)}°`}
             />
             <Area
-              yAxisId="left"
               type="monotone"
               dataKey="LSV"
               stroke="hsl(var(--chart-primary))"
               fill="hsl(var(--chart-primary))"
-              fillOpacity={0.1}
+              fillOpacity={0.2}
               strokeWidth={2}
             />
+            <ReferenceLine
+              x={currentAngle}
+              stroke="hsl(var(--foreground))"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* AAV Chart Card */}
+      <div className="rounded-lg border bg-card p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-xs font-medium text-muted-foreground">
+            AAV (Aperture Area Variability)
+          </h4>
+          <span className="font-mono text-sm font-medium">
+            {currentAAV.toFixed(4)}
+          </span>
+        </div>
+        <ResponsiveContainer width="100%" height={100}>
+          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="hsl(var(--chart-grid))"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="angle"
+              type="number"
+              domain={['dataMin', 'dataMax']}
+              tick={{ fontSize: 9 }}
+              tickLine={false}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
+              tickFormatter={(v) => `${v}°`}
+            />
+            <YAxis
+              tick={{ fontSize: 9 }}
+              tickLine={false}
+              axisLine={false}
+              domain={[0, 1]}
+              tickFormatter={(v) => v.toFixed(1)}
+              width={30}
+            />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              formatter={(value: number) => [value.toFixed(4), 'AAV']}
+              labelFormatter={(label) => `Angle: ${Number(label).toFixed(1)}°`}
+            />
             <Line
-              yAxisId="left"
               type="monotone"
               dataKey="AAV"
               stroke="hsl(var(--chart-secondary))"
@@ -127,22 +160,23 @@ export function ComplexityHeatmap({
               stroke="hsl(var(--foreground))"
               strokeWidth={2}
               strokeDasharray="4 2"
-              yAxisId="left"
             />
-          </ComposedChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Aperture Area Variation */}
-      <div className="rounded-lg border bg-card p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-medium">Aperture Area vs Control Point</h4>
-          <span className="font-mono text-sm">
-            {(controlPointMetrics[currentIndex]?.apertureArea / 100).toFixed(1)} cm²
+      {/* Aperture Area Chart Card */}
+      <div className="rounded-lg border bg-card p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-xs font-medium text-muted-foreground">
+            Aperture Area
+          </h4>
+          <span className="font-mono text-sm font-medium">
+            {currentArea.toFixed(1)} cm²
           </span>
         </div>
-        <ResponsiveContainer width="100%" height={120}>
-          <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+        <ResponsiveContainer width="100%" height={100}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="hsl(var(--chart-grid))"
@@ -150,24 +184,20 @@ export function ComplexityHeatmap({
             />
             <XAxis
               dataKey="index"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 9 }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <YAxis
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 9 }}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v) => `${v.toFixed(0)}`}
+              tickFormatter={(v) => `${v}`}
+              width={30}
             />
             <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px',
-                fontSize: '12px',
-              }}
-              formatter={(value: number) => [`${value.toFixed(1)} cm²`, 'Aperture Area']}
+              contentStyle={tooltipStyle}
+              formatter={(value: number) => [`${value.toFixed(1)} cm²`, 'Area']}
               labelFormatter={(label) => `Control Point ${label}`}
             />
             <Area
@@ -180,11 +210,11 @@ export function ComplexityHeatmap({
             />
             <ReferenceLine
               x={currentIndex + 1}
-              stroke="hsl(var(--chart-secondary))"
+              stroke="hsl(var(--foreground))"
               strokeWidth={2}
               strokeDasharray="4 2"
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
