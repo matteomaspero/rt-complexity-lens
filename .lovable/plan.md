@@ -1,232 +1,233 @@
 
-# Plan: Improve Coordinate System Explanation with Diagrams
+
+# Plan: Fix Coordinate System Diagrams
 
 ## Summary
-Enhance the IEC 61217 Coordinate System section in the Help page with:
-1. A custom interactive SVG diagram component showing gantry angles and patient orientation
-2. A patient coordinate axes diagram showing XYZ orientation
-3. Improved prose explanations with clearer technical descriptions
-4. Reference to the IEC 61217 standard and DICOM documentation
+Correct both diagrams to show anatomically accurate representations:
+1. **IEC61217Diagram**: Change to transverse cross-sectional view (looking from feet toward head) with patient lying supine on table and gantry ring around them
+2. **PatientAxesDiagram**: Show patient lying supine on treatment table with linac/gantry representation
 
 ---
 
-## Current State
+## Current Problems
 
-The coordinate system section at lines 162-244 of `Help.tsx` has:
-- Basic tables for gantry angles (0/90/180/270)
-- Simple bullet lists for collimator and patient axes
-- Machine-specific variations table
-- No visual diagrams
+### IEC61217Diagram (Gantry Angle)
+- **Wrong**: Bird's-eye view looking down at patient (coronal/top-down view)
+- **Wrong**: Patient shown longitudinally (head at top, feet at bottom of diagram)
+- **Correct View**: Transverse cross-section (viewing from feet toward head, as if standing at foot of table)
+- **In Correct View**: 
+  - 0° = gantry at top (beam comes from above patient)
+  - 90° = gantry on patient's left (viewer's right)
+  - 180° = gantry at bottom (beam from below, through couch)
+  - 270° = gantry on patient's right (viewer's left)
 
-**Problem**: Text-only descriptions are difficult to understand without visual aids, especially for the spatial relationships between gantry positions and patient anatomy.
+### PatientAxesDiagram (Patient Axes)
+- **Wrong**: Shows upright patient silhouette (standing)
+- **Wrong**: No treatment table or linac context
+- **Correct**: Patient lying supine (on back) on treatment table
+- **Correct**: Should show table, and optionally a simplified linac/gantry
 
 ---
 
-## Implementation
+## Corrected Layouts
 
-### 1. Create New Component: `IEC61217Diagram.tsx`
-
-A reusable SVG component showing:
-- Top-down view of linac gantry with patient on couch
-- Four cardinal gantry angles (0, 90, 180, 270) with beam direction arrows
-- Patient orientation labels (Head, Feet, Left, Right)
-- XYZ axis indicators
-- Interactive highlights on hover (optional)
-
-**Component Location**: `src/components/help/IEC61217Diagram.tsx`
+### IEC61217Diagram - Transverse View
 
 ```text
-Layout:
-                    0° (Superior)
-                       ↓
-                   ┌───────┐
-                   │ Gantry│
-          270° ←── │   ●   │ ──→ 90°
-          (Right)  │ Couch │  (Left)
-                   └───────┘
-                       ↑
-                   180° (Inferior)
+                    0° (Anterior/AP)
+                    Gantry at top
+                         ↓
+                    ┌────●────┐
+                   /     │     \
+         270°    /   ┌───┴───┐   \    90°
+        (Right) ●────│Patient│────● (Left)
+        Gantry   \   │ Cross │   /  Gantry
+                  \  │Section│  /
+                   \ └───────┘ /
+                    └────●────┘
+                         ↑
+                   180° (Posterior/PA)
+                   Gantry under couch
+
+Viewing direction: From feet toward head (into the page)
+Patient: Supine (face up), cross-section at isocenter level
 ```
 
-### 2. Create Patient Axes Diagram: `PatientAxesDiagram.tsx`
+**Key elements to draw:**
+- Gantry ring (outer circle)
+- Treatment couch (flat rectangle at bottom of patient)
+- Patient cross-section (ellipse for body outline)
+- Left/Right labels on patient
+- Anterior/Posterior labels
+- Beam arrows from each cardinal position pointing to isocenter
 
-Simple SVG showing XYZ axes with anatomical labels:
-- X-axis: Left (+) / Right (-)
-- Y-axis: Posterior (+) / Anterior (-)  
-- Z-axis: Superior (+) / Inferior (-)
-
-**Component Location**: `src/components/help/PatientAxesDiagram.tsx`
-
-### 3. Update Help.tsx Coordinate Section
-
-#### Enhanced Content Structure:
+### PatientAxesDiagram - Side/Sagittal View with Context
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│ IEC 61217 Coordinate System                             │
-├─────────────────────────────────────────────────────────┤
-│ [Improved intro paragraph about IEC 61217 purpose]      │
-│                                                         │
-│ ┌─────────────────────┬─────────────────────────────┐  │
-│ │   Gantry Diagram    │   Gantry Angle Table        │  │
-│ │   (SVG component)   │   0° = Superior             │  │
-│ │                     │   90° = Left lateral        │  │
-│ │   [IEC61217Diagram] │   180° = Inferior           │  │
-│ │                     │   270° = Right lateral      │  │
-│ └─────────────────────┴─────────────────────────────┘  │
-│                                                         │
-│ Collimator Angle (existing + enhanced text)             │
-│                                                         │
-│ ┌─────────────────────┬─────────────────────────────┐  │
-│ │   Patient Axes      │   Axis descriptions         │  │
-│ │   (SVG component)   │   X: Left/Right             │  │
-│ │                     │   Y: Posterior/Anterior     │  │
-│ │   [PatientAxesDiag] │   Z: Superior/Inferior      │  │
-│ └─────────────────────┴─────────────────────────────┘  │
-│                                                         │
-│ Machine-Specific Variations (existing table)           │
-│                                                         │
-│ [Note about DICOM standard reference]                  │
-└─────────────────────────────────────────────────────────┘
+                Z+ (Superior)
+                     ↑
+                     │
+          ┌──────────┼──────────┐ ← Linac Gantry (ring)
+          │    ┌─────●─────┐    │
+          │    │  Patient  │    │
+    ←─────┼────│  (supine) │────┼─────→ X+ (Left)
+    Right │    │   body    │    │
+          │    └───────────┘    │
+          └──────────────────────┘
+                     │
+              ═══════════════════  ← Treatment Table
+                     │
+                     ↓
+                 Z- (Inferior)
+
+   Y+ (Posterior) points into page (toward table)
+   Y- (Anterior) points out of page (toward ceiling)
 ```
+
+**Chose the 3/4 isometric view** showing patient lying on table with all three axes visible.
+
+---
+
+## Implementation Details
+
+### 1. IEC61217Diagram.tsx - Complete Redesign
+
+**New SVG structure:**
+- Viewbox: 320x320 (slightly larger for labels)
+- Center: (160, 160)
+
+**Elements:**
+1. **Gantry ring** - Large dashed circle (r=130) representing rotation path
+2. **Treatment couch** - Horizontal rectangle at bottom center of patient area
+3. **Patient cross-section** - Ellipse (wider than tall, representing transverse body section)
+4. **Spine indicator** - Small circle at posterior of patient (for orientation)
+5. **L/R labels** - Inside or near patient cross-section
+6. **Four beam arrows** - From cardinal positions pointing to isocenter
+7. **Isocenter marker** - Center crosshairs
+8. **CW rotation indicator** - Arc with arrow
+
+**Key positions (center at 160,160):**
+```text
+0°:   (160, 30)  → beam points down to (160, 100)
+90°:  (290, 160) → beam points left to (220, 160)
+180°: (160, 290) → beam points up to (160, 220)
+270°: (30, 160)  → beam points right to (100, 160)
+
+Patient ellipse: cx=160, cy=160, rx=50 (L-R width), ry=35 (A-P depth)
+Couch: rect at y=185, width=120, height=15, centered at x=160
+```
+
+### 2. PatientAxesDiagram.tsx - Complete Redesign
+
+**New SVG structure:**
+- Viewbox: 280x260
+- Show lateral/side view or 3/4 isometric view
+
+**Option A: Lateral View (simpler, clearer for axes)**
+- Patient lying on their back (profile view from side)
+- Table visible below patient
+- Simplified linac gantry ring around patient
+- X-axis pointing left (into page, shown with circle+dot or foreshortened)
+- Y-axis pointing down toward table (posterior)
+- Z-axis pointing toward head (horizontal in this view)
+
+**Option B: 3/4 Isometric View (more intuitive)**
+- Similar to current but patient is horizontal
+- Table clearly visible under patient
+- Gantry ring sketched around
+- All three axes visible with depth cues
+
+**Chosen: Option B (3/4 isometric)** - more intuitive spatial understanding
+
+**Elements:**
+1. **Treatment table** - 3D rectangle in isometric projection
+2. **Patient body** - Lying supine on table (ellipsoid shape, head at one end)
+3. **Gantry ring** - Ellipse around patient (tilted for perspective)
+4. **Three axis arrows** from isocenter with color coding
+5. **Anatomical labels** - Head, Feet, Left, Right, Anterior, Posterior
 
 ---
 
 ## File Changes
 
-### New Files
+### `src/components/help/IEC61217Diagram.tsx`
 
-#### 1. `src/components/help/IEC61217Diagram.tsx`
+Full rewrite with transverse cross-sectional view:
 
-Custom SVG component featuring:
-- 300x300px viewbox with responsive scaling
-- Outer circle representing gantry rotation path
-- Patient silhouette (head/torso) in center on couch
-- Beam direction arrows at 0, 90, 180, 270
-- Color-coded labels matching the table
-- Caption noting this follows IEC 61217 conventions
-
-**Key SVG elements**:
 ```tsx
-// Gantry rotation circle
-<circle cx="150" cy="150" r="120" />
+// Key elements:
+// 1. Patient cross-section (ellipse, supine orientation)
+<ellipse cx="160" cy="155" rx="50" ry="35" /> // Body outline
 
-// Patient body (simplified)
-<ellipse cx="150" cy="150" rx="30" ry="50" />
-<circle cx="150" cy="95" r="15" /> // head
+// 2. Treatment couch below patient
+<rect x="100" y="185" width="120" height="12" rx="2" /> // Couch
 
-// Beam arrows at cardinal angles
-<path d="M150,30 L150,70" /> // 0° beam from superior
-// ... arrows for 90°, 180°, 270°
+// 3. Gantry rotation ring
+<circle cx="160" cy="160" r="130" strokeDasharray="6 4" />
 
-// Labels
-<text x="150" y="20">0° (Superior)</text>
-// ... other labels
+// 4. Beam arrows from each cardinal angle
+// 0° from top
+<line x1="160" y1="30" x2="160" y2="110" />
+// etc.
+
+// 5. Anatomical orientation markers inside patient
+<text>L</text> // Left side
+<text>R</text> // Right side
 ```
 
-#### 2. `src/components/help/PatientAxesDiagram.tsx`
+### `src/components/help/PatientAxesDiagram.tsx`
 
-3D-style axes diagram showing:
-- Three arrows from origin (X, Y, Z)
-- Color coding (X=red, Y=green, Z=blue - common convention)
-- Anatomical direction labels at each arrow tip
-- Isometric perspective for clarity
+Full rewrite with isometric supine patient view:
 
-### Modified Files
-
-#### 3. `src/components/help/index.ts`
-
-Export new components:
 ```tsx
-export { IEC61217Diagram } from './IEC61217Diagram';
-export { PatientAxesDiagram } from './PatientAxesDiagram';
+// Key elements:
+// 1. Treatment table (3D box shape)
+<path d="M40,180 L80,200 L240,200 L260,180 L260,170 L240,190 L80,190 L40,170 Z" />
+
+// 2. Patient lying supine on table
+// Head end
+<ellipse cx="80" cy="150" rx="20" ry="15" />
+// Body
+<ellipse cx="150" cy="155" rx="60" ry="20" />
+// Feet end  
+<ellipse cx="220" cy="155" rx="15" ry="12" />
+
+// 3. Gantry ring (tilted ellipse around patient)
+<ellipse cx="150" cy="140" rx="90" ry="60" transform="rotate(-10)" />
+
+// 4. Three coordinate axes from isocenter
+// X-axis (Left/Right)
+<line x1="150" y1="150" x2="250" y2="165" stroke="red" />
+// Y-axis (Posterior/Anterior) 
+<line x1="150" y1="150" x2="130" y2="200" stroke="green" />
+// Z-axis (Superior/Inferior)
+<line x1="150" y1="150" x2="70" y2="130" stroke="blue" />
 ```
-
-#### 4. `src/pages/Help.tsx`
-
-**Changes to coordinate system section (lines 162-244)**:
-
-1. Import new diagram components
-2. Restructure into flex/grid layout with diagrams alongside tables
-3. Enhance prose descriptions:
-   - Add context about why IEC 61217 matters
-   - Clarify "beam from above" means source at top, beam pointing down
-   - Add note about clockwise/counter-clockwise conventions
-   - Reference DICOM standard
-4. Add collimator rotation direction clarification
-5. Add couch angle explanation (currently missing)
-6. Add reference link to DICOM coordinate system documentation
 
 ---
 
-## Enhanced Text Content
+## Caption Updates
 
-### Introduction (enhanced)
-> The **IEC 61217** standard defines coordinate systems and angle conventions used universally in radiotherapy equipment. DICOM-RT files encode all geometric information using these conventions. Understanding this system is essential for correctly interpreting gantry angles, collimator rotations, and patient positioning in treatment plans.
+### IEC61217Diagram
+**New caption:**
+> Transverse view (looking from feet toward head). Patient is supine on treatment couch. Gantry rotates clockwise. 0° = beam from above (anterior-posterior).
 
-### Gantry Angle (enhanced)
-> Gantry angle describes the rotation of the treatment head around the patient. The angle is measured from the **viewer's perspective facing the gantry**. At 0°, the radiation source is directly above the patient (superior), with the beam directed downward. Rotation proceeds **clockwise** from this position.
-
-### Collimator Angle (enhanced)
-> The collimator (beam-limiting device) can rotate independently within the gantry head. At 0°, the MLC leaves are perpendicular to the gantry rotation axis. Rotation is **counter-clockwise** when viewed from the radiation source (beam's-eye view).
-
-### Patient Coordinate System (enhanced)
-> The patient coordinate system assumes a supine (face-up) patient position with head toward the gantry. The origin is at the machine isocenter. This left-handed coordinate system differs from typical medical imaging (LPS) conventions.
-
-### New: Couch Angle
-| Angle | Description |
-|-------|-------------|
-| 0° | Couch parallel to gantry rotation axis |
-| 90° | Couch rotated counter-clockwise (patient's head toward 90° gantry position) |
-| 270° | Couch rotated clockwise (patient's head toward 270° gantry position) |
-
-### Reference Note
-> For complete technical specifications, see the [DICOM Coordinate Systems documentation](https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_c.8.8.25.6.html) and the IEC 61217:2011 standard.
-
----
-
-## Technical Details
-
-### Diagram Specifications
-
-**IEC61217Diagram**:
-- Size: 280x280px default, responsive via props
-- Uses CSS variables for theming (--foreground, --muted, --primary)
-- Gantry circle: 120px radius
-- Patient figure: simplified oval body + circle head
-- Beam arrows: 6px wide, triangular heads
-- Labels: 11px font, positioned outside rotation circle
-- Animation: subtle pulse on beam origin circles (optional)
-
-**PatientAxesDiagram**:
-- Size: 200x200px default
-- Isometric projection (30° angles)
-- Arrow colors: X=#ef4444 (red), Y=#22c55e (green), Z=#3b82f6 (blue)
-- Labels positioned at arrow tips
-- Light grid lines for depth perception
-
-### Accessibility
-- SVG elements include `aria-label` descriptions
-- Color is not the only distinguishing factor (shapes + labels)
-- High contrast maintained for visibility
+### PatientAxesDiagram
+**New caption:**
+> Patient lying supine (face-up) on treatment table, head-first orientation. Origin at isocenter. Linac gantry ring shown for reference. Solid arrows show positive (+) axis directions.
 
 ---
 
 ## Summary of Changes
 
-| File | Change Type | Description |
-|------|-------------|-------------|
-| `src/components/help/IEC61217Diagram.tsx` | Create | Gantry angle visualization with patient orientation |
-| `src/components/help/PatientAxesDiagram.tsx` | Create | XYZ patient coordinate axes diagram |
-| `src/components/help/index.ts` | Modify | Export new diagram components |
-| `src/pages/Help.tsx` | Modify | Integrate diagrams, enhance text, add couch angle table |
+| File | Change | Description |
+|------|--------|-------------|
+| `IEC61217Diagram.tsx` | Rewrite | Change from bird's-eye to transverse cross-sectional view; add proper couch representation |
+| `PatientAxesDiagram.tsx` | Rewrite | Change from upright patient to supine patient on table; add linac gantry ring |
 
----
+Both diagrams will maintain:
+- Responsive sizing via props
+- Theme-aware colors using CSS classes
+- Accessible aria-labels
+- Descriptive captions
 
-## References Used
-
-- **IEC 61217:2011** - Radiotherapy equipment - Coordinates, movements and scales
-- **DICOM PS3.3 C.8.8.25.6** - RT Ion Beams Coordinate Systems
-- **AAPM Presentation** - "DICOM- an overview with an emphasis on Therapy" by R. Alfredo C. Siochi, PhD (for gantry/collimator conventions confirmation)
-
-Note: The diagrams are original SVG creations following the IEC 61217 conventions; no external copyrighted images are used.
