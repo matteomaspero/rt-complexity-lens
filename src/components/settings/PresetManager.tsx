@@ -149,7 +149,7 @@ export function PresetManager({ trigger }: PresetManagerProps) {
           description: `${addedCount} preset(s) added.`,
         });
       } catch (err) {
-        console.error('Import failed:', err);
+        // Import failed - user sees error toast
         toast({
           title: 'Import failed',
           description: err instanceof Error ? err.message : 'Invalid file format',

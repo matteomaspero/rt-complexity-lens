@@ -50,8 +50,8 @@ export function DemoLoader({ onPlanLoaded, className }: DemoLoaderProps) {
       };
 
       onPlanLoaded(sessionPlan);
-    } catch (error) {
-      console.error('Failed to load demo file:', error);
+    } catch {
+      // Demo file loading failed - user sees loading state reset
     } finally {
       setIsLoading(false);
       setLoadingFile(null);

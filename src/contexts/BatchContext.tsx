@@ -78,7 +78,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
             : p
         ));
       } catch (err) {
-        console.error(`Failed to parse ${file.name}:`, err);
+        // Parse error - user sees error status in batch list
         setPlans(prev => prev.map(p => 
           p.id === planId 
             ? { 
