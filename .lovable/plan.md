@@ -1,294 +1,265 @@
 
 
-# CSV Export, Configurable Metrics, Tooltips, and Help Page
-
-## Status: ✅ COMPLETED
-
-All four enhancements have been implemented:
-1. ✅ Enhanced CSV export with configurable metric filtering
-2. ✅ Configurable metrics settings panel on upload page
-3. ✅ Hover tooltips on all metrics with full descriptions and DOI references
-4. ✅ Comprehensive Help page at /help with UCoMX references
-
----
+# Metrics Threshold System
 
 ## Overview
 
-## Part 1: Metrics Configuration System
+Add a configurable threshold system that highlights concerning metric values in red (critical) and yellow (warning) based on machine-specific limits. The system will be toggleable and include presets for common radiotherapy linacs.
 
-### 1.1 Create Metrics Definition Data (`src/lib/metrics-definitions.ts`)
+---
 
-A centralized definition file containing all metric information:
+## Architecture
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/threshold-definitions.ts` | Machine presets and threshold type definitions |
+| `src/contexts/ThresholdConfigContext.tsx` | Context for threshold state management |
+| `src/components/viewer/ThresholdSettings.tsx` | UI for configuring thresholds |
+
+### Modified Files
+
+| File | Changes |
+|------|---------|
+| `src/components/viewer/MetricsPanel.tsx` | Apply threshold styling to metric values |
+| `src/components/viewer/MetricsSettings.tsx` | Add threshold toggle and machine selector |
+| `src/index.css` | Add threshold-related CSS classes |
+| `src/App.tsx` | Wrap app with ThresholdConfigProvider |
+
+---
+
+## Part 1: Threshold Definitions
+
+### 1.1 Threshold Types
+
+Each metric can have:
+- **Warning threshold**: Yellow highlight (approaching limits)
+- **Critical threshold**: Red highlight (exceeds recommended limits)
+- **Direction**: Whether high or low values are concerning
 
 ```text
-METRIC_DEFINITIONS = {
-  MCS: {
-    key: 'MCS',
-    name: 'Modulation Complexity Score',
-    shortDescription: 'Overall plan modulation indicator',
-    fullDescription: 'Combines LSV and AAV to quantify overall plan complexity. 
-                      Values closer to 1 indicate less modulation (simpler plans), 
-                      while values closer to 0 indicate higher modulation.',
-    unit: null,
-    category: 'primary',
-    reference: 'McNiven et al., 2010'
-  },
-  LSV: {
-    key: 'LSV',
-    name: 'Leaf Sequence Variability',
-    shortDescription: 'Variability in leaf positions',
-    fullDescription: 'Measures the variation in MLC leaf positions between 
-                      adjacent leaves. Higher values indicate more uniform 
-                      apertures; lower values suggest more irregular shapes.',
-    unit: null,
-    category: 'primary',
-    reference: 'Masi et al., 2013'
-  },
-  AAV: {
-    key: 'AAV', 
-    name: 'Aperture Area Variability',
-    shortDescription: 'Changes in aperture area between control points',
-    fullDescription: 'Quantifies the relative change in aperture area 
-                      across control points. Higher variability indicates 
-                      more dynamic aperture changes during delivery.',
-    unit: null,
-    category: 'primary',
-    reference: 'Masi et al., 2013'
-  },
-  MFA: {
-    key: 'MFA',
-    name: 'Mean Field Area',
-    shortDescription: 'Average aperture size',
-    fullDescription: 'The average area of the MLC aperture across all 
-                      control points. Smaller apertures are generally 
-                      associated with higher complexity and delivery challenges.',
-    unit: 'cm²',
-    category: 'primary'
-  },
-  LT: {
-    key: 'LT',
-    name: 'Leaf Travel',
-    shortDescription: 'Total MLC leaf movement',
-    fullDescription: 'Sum of all individual leaf movements throughout 
-                      the beam delivery. Higher leaf travel may indicate 
-                      increased mechanical wear and potential for MLC errors.',
-    unit: 'mm',
-    category: 'secondary'
-  },
-  LTMCS: {
-    key: 'LTMCS',
-    name: 'Leaf Travel-weighted MCS',
-    shortDescription: 'Combined complexity and leaf travel metric',
-    fullDescription: 'A composite metric that incorporates both modulation 
-                      complexity and total leaf travel to provide a more 
-                      comprehensive complexity assessment.',
-    unit: null,
-    category: 'secondary'
-  },
-  totalMU: {
-    key: 'totalMU',
-    name: 'Total Monitor Units',
-    shortDescription: 'Total radiation output',
-    fullDescription: 'The sum of monitor units across all beams. Higher MU 
-                      per fraction may indicate more modulated plans.',
-    unit: 'MU',
-    category: 'delivery'
-  }
+ThresholdDefinition = {
+  metricKey: string
+  warningThreshold: number
+  criticalThreshold: number
+  direction: 'high' | 'low'  // 'high' = values above threshold are bad
+                              // 'low' = values below threshold are bad
 }
 ```
 
-### 1.2 Metrics Configuration Context (`src/contexts/MetricsConfigContext.tsx`)
+### 1.2 Machine Presets
 
-React context to manage which metrics are visible:
+Predefined threshold configurations for common linacs:
 
-- Store enabled/disabled state for each metric
-- Persist to localStorage for session continuity
-- Provide toggle functions
-- Default: all metrics enabled
+**Generic / Conservative**
+- Safe baseline values for any modern linac
+- Most restrictive thresholds
 
-### 1.3 Settings Panel Component (`src/components/viewer/MetricsSettings.tsx`)
+**Varian TrueBeam**
+- MCS: warning < 0.3, critical < 0.2
+- MFA: warning < 5 cm², critical < 2 cm²
+- LT: warning > 15000 mm, critical > 25000 mm
 
-A collapsible settings panel on the upload page:
+**Varian Halcyon**
+- Stricter thresholds due to dual-layer MLC
+- MCS: warning < 0.35, critical < 0.25
+- MFA: warning < 4 cm², critical < 2 cm²
 
-- Checkbox list for each metric category (Primary, Secondary, Delivery)
-- "Select All" / "Deselect All" buttons
-- Visual grouping by category
+**Elekta Versa HD**
+- Agility MLC-specific thresholds
+- Slightly different MFA ranges
+
+**Custom**
+- User-defined thresholds
+- Editable input fields for each metric
+
+---
+
+## Part 2: Threshold Configuration Context
+
+### 2.1 Context State
+
+```text
+ThresholdConfig = {
+  enabled: boolean                    // Master toggle
+  selectedPreset: string              // 'generic' | 'truebeam' | 'halcyon' | 'versa_hd' | 'custom'
+  customThresholds: ThresholdSet      // User-defined values
+  
+  // Methods
+  setEnabled(enabled: boolean)
+  setPreset(preset: string)
+  updateCustomThreshold(metricKey, values)
+  getThresholdStatus(metricKey, value) -> 'normal' | 'warning' | 'critical'
+}
+```
+
+### 2.2 Persistence
+
+- Save to localStorage with key `rtplan-threshold-config`
+- Store: enabled flag, selected preset, custom threshold values
+- Load on app initialization
+
+---
+
+## Part 3: Threshold Settings UI
+
+### 3.1 Integration with MetricsSettings
+
+Add a new collapsible section within or below the existing Metrics Settings:
+
+```text
++------------------------------------------+
+| [Toggle] Enable Threshold Alerts         |
+|                                          |
+| Machine Preset: [Dropdown v]             |
+|   - Generic (Conservative)               |
+|   - Varian TrueBeam                      |
+|   - Varian Halcyon                       |
+|   - Elekta Versa HD                      |
+|   - Custom...                            |
+|                                          |
+| [Only shown if Custom selected]          |
+| +--------------------------------------+ |
+| | MCS:  Warning [____] Critical [____] | |
+| | MFA:  Warning [____] Critical [____] | |
+| | LT:   Warning [____] Critical [____] | |
+| +--------------------------------------+ |
+|                                          |
+| Legend: [Yellow] Warning  [Red] Critical |
++------------------------------------------+
+```
+
+### 3.2 Toggle Behavior
+
+When disabled:
+- All thresholds ignored
+- Metrics display normally
+- Settings panel shows only the enable toggle (collapsed)
+
+When enabled:
+- Machine selector visible
+- Thresholds actively applied
+- Metric values styled with warning/critical colors
+
+---
+
+## Part 4: Visual Styling
+
+### 4.1 CSS Classes
+
+Add to index.css:
+
+```css
+.metric-value-normal { }  /* Default styling */
+
+.metric-value-warning {
+  color: hsl(var(--status-warning));
+  background: hsl(var(--status-warning) / 0.1);
+  border-radius: 0.25rem;
+  padding: 0 0.5rem;
+}
+
+.metric-value-critical {
+  color: hsl(var(--status-error));
+  background: hsl(var(--status-error) / 0.1);
+  border-radius: 0.25rem;
+  padding: 0 0.5rem;
+}
+```
+
+### 4.2 Tooltip Enhancement
+
+When a value exceeds thresholds, the tooltip shows:
+- Normal description (existing)
+- Plus: "Exceeds warning/critical threshold for [Machine]"
+- Threshold values for context
+
+---
+
+## Part 5: MetricsPanel Integration
+
+### 5.1 MetricItem Updates
+
+Modify the MetricItem component to:
+1. Consume threshold context
+2. Call `getThresholdStatus(metricKey, value)`
+3. Apply appropriate CSS class
+4. Optionally show indicator icon (warning triangle)
+
+### 5.2 All Beams Summary
+
+Apply threshold styling to the beam summary list as well for MCS values.
+
+---
+
+## Machine Preset Details
+
+### Generic (Conservative)
+
+| Metric | Warning | Critical | Direction |
+|--------|---------|----------|-----------|
+| MCS | < 0.25 | < 0.15 | low |
+| LSV | < 0.30 | < 0.20 | low |
+| AAV | < 0.30 | < 0.20 | low |
+| MFA | < 4 cm² | < 2 cm² | low |
+| LT | > 20000 mm | > 30000 mm | high |
+| totalMU | > 1500 MU | > 2500 MU | high |
+
+### Varian TrueBeam
+
+| Metric | Warning | Critical | Direction |
+|--------|---------|----------|-----------|
+| MCS | < 0.30 | < 0.20 | low |
+| LSV | < 0.35 | < 0.25 | low |
+| AAV | < 0.35 | < 0.25 | low |
+| MFA | < 5 cm² | < 2 cm² | low |
+| LT | > 15000 mm | > 25000 mm | high |
+| totalMU | > 2000 MU | > 3000 MU | high |
+
+### Varian Halcyon
+
+| Metric | Warning | Critical | Direction |
+|--------|---------|----------|-----------|
+| MCS | < 0.35 | < 0.25 | low |
+| LSV | < 0.40 | < 0.30 | low |
+| AAV | < 0.40 | < 0.30 | low |
+| MFA | < 4 cm² | < 2 cm² | low |
+| LT | > 12000 mm | > 20000 mm | high |
+| totalMU | > 1800 MU | > 2800 MU | high |
+
+### Elekta Versa HD
+
+| Metric | Warning | Critical | Direction |
+|--------|---------|----------|-----------|
+| MCS | < 0.28 | < 0.18 | low |
+| LSV | < 0.32 | < 0.22 | low |
+| AAV | < 0.32 | < 0.22 | low |
+| MFA | < 4.5 cm² | < 2.5 cm² | low |
+| LT | > 18000 mm | > 28000 mm | high |
+| totalMU | > 1800 MU | > 2800 MU | high |
+
+---
+
+## Implementation Sequence
+
+1. Create `src/lib/threshold-definitions.ts` with types and machine presets
+2. Create `src/contexts/ThresholdConfigContext.tsx` with state management
+3. Update `src/App.tsx` to include ThresholdConfigProvider
+4. Add threshold CSS classes to `src/index.css`
+5. Create `src/components/viewer/ThresholdSettings.tsx` UI component
+6. Update `src/components/viewer/MetricsSettings.tsx` to include threshold section
+7. Update `src/components/viewer/MetricsPanel.tsx` to apply threshold styling
+
+---
+
+## Success Criteria
+
+- Toggle to enable/disable threshold system works
+- Dropdown shows all machine presets
+- Custom preset allows editing individual thresholds
+- Metric values show yellow background when in warning range
+- Metric values show red background when in critical range
 - Settings persist across sessions via localStorage
-
----
-
-## Part 2: Enhanced Metrics Panel with Tooltips
-
-### 2.1 Update MetricItem Component
-
-Transform the existing `MetricItem` to include hover tooltips:
-
-- Wrap metric label with `<Tooltip>` from Radix UI
-- Display full description on hover
-- Add info icon (optional visual cue)
-- Tooltip shows: full name, description, unit, and reference if available
-
-### 2.2 Filter Metrics by Configuration
-
-Update `MetricsPanel` to:
-- Consume the MetricsConfigContext
-- Only render metrics that are enabled
-- Maintain layout consistency when some metrics are hidden
-
----
-
-## Part 3: Enhanced CSV Export
-
-### 3.1 Update `metricsToCSV()` Function
-
-Enhance the CSV export to:
-- Accept optional list of enabled metrics
-- Export only selected metrics if configuration provided
-- Include full metric descriptions as comments in header
-- Add export timestamp and tool version
-
-### 3.2 Export Button Enhancement
-
-Update the CSV export button in MetricsPanel:
-- Use current metrics configuration
-- Include beam-level breakdown for enabled metrics only
-- Add filename with date stamp
-
----
-
-## Part 4: Help Page
-
-### 4.1 Create Help Page (`src/pages/Help.tsx`)
-
-Comprehensive documentation page with sections:
-
-**Introduction**
-- What is RT Plan Complexity Analyzer
-- Purpose and use cases
-
-**Metrics Reference**
-- Table of all UCoMX metrics with full explanations
-- Mathematical formulations (simplified)
-- Interpretation guidelines
-
-**How to Use**
-- Uploading plans
-- Navigating control points
-- Exporting data
-- Configuring metrics
-
-**References & Citations**
-- UCoMX v1.1 MATLAB repository (Zenodo link)
-- Key publications:
-  - McNiven et al. (2010) - MCS definition
-  - Masi et al. (2013) - LSV and AAV
-  - Complexity metrics review papers
-- Link to PMC review: "Complexity metrics for IMRT and VMAT plans"
-
-**About**
-- Tool version
-- Open source nature
-- Browser-based processing explanation
-
-### 4.2 Add Route in App.tsx
-
-```text
-<Route path="/help" element={<Help />} />
-```
-
-### 4.3 Navigation Link
-
-Add help link to:
-- Upload page footer
-- Viewer header (small icon button)
-
----
-
-## Part 5: UI Integration
-
-### 5.1 Upload Page Layout Update (`InteractiveViewer.tsx`)
-
-When no plan is loaded, show:
-
-```text
-+------------------------------------------+
-|     RT Plan Complexity Analyzer          |
-|     [subtitle text]                       |
-|                                          |
-|  +----------------------------------+    |
-|  |     Drag & Drop Zone             |    |
-|  +----------------------------------+    |
-|                                          |
-|            — or —                        |
-|                                          |
-|      [Load Demo Plan Button]             |
-|      [More test plans v]                 |
-|                                          |
-|  +----------------------------------+    |
-|  |  ⚙ Metrics Settings              |    |
-|  |    [x] MCS  [x] LSV  [x] AAV    |    |
-|  |    [x] MFA  [x] LT   [x] LTMCS  |    |
-|  +----------------------------------+    |
-|                                          |
-|  [Supports VMAT/IMRT • UCoMX v1.1]       |
-|  [? Help & Documentation]                 |
-+------------------------------------------+
-```
-
-### 5.2 Viewer Header Enhancement
-
-Add help icon button to the viewer header area for quick access to documentation.
-
----
-
-## File Changes Summary
-
-| Action | File |
-|--------|------|
-| Create | `src/lib/metrics-definitions.ts` |
-| Create | `src/contexts/MetricsConfigContext.tsx` |
-| Create | `src/components/viewer/MetricsSettings.tsx` |
-| Create | `src/pages/Help.tsx` |
-| Update | `src/components/viewer/MetricsPanel.tsx` |
-| Update | `src/components/viewer/InteractiveViewer.tsx` |
-| Update | `src/lib/dicom/metrics.ts` |
-| Update | `src/App.tsx` |
-
----
-
-## Technical Notes
-
-**Tooltip Implementation**
-- Uses existing `@radix-ui/react-tooltip` (already in dependencies)
-- TooltipProvider already wraps App in `App.tsx`
-- Consistent styling with existing UI components
-
-**Configuration Persistence**
-- Uses `localStorage` with key `rtplan-metrics-config`
-- Parsed on app load, saved on change
-- Graceful fallback to defaults if storage unavailable
-
-**Accessibility**
-- Tooltips are keyboard-accessible
-- Help page uses proper heading hierarchy
-- Settings checkboxes have proper labels
-
----
-
-## References to Include in Help Page
-
-Include the doi clickable link to the reference or just the link if doi is not available 
-
-1. **UCoMX v1.1 MATLAB Implementation**
-   - Zenodo repository (original user upload)
-   - Based on University of Padova research
-
-2. **Key Publications**
-   - McNiven AL, et al. "A new metric for assessing IMRT modulation complexity and plan deliverability." Med Phys. 2010
-   - Masi L, et al. "Impact of plan parameters on the dosimetric accuracy of VMAT." Med Phys. 2013
-   - PMC Review: "Complexity metrics for IMRT and VMAT plans: a review of current literature and applications" (PMC6774599)
-
-3. **Technical Resources**
-   - DICOM RT Standard documentation
-   - dicom-parser library
+- Tooltips indicate when thresholds are exceeded
 
