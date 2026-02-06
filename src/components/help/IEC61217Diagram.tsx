@@ -5,20 +5,20 @@ interface IEC61217DiagramProps {
   size?: number;
 }
 
-export function IEC61217Diagram({ className, size = 280 }: IEC61217DiagramProps) {
+export function IEC61217Diagram({ className, size = 320 }: IEC61217DiagramProps) {
   return (
     <div className={cn('flex flex-col items-center', className)}>
       <svg
         width={size}
         height={size}
-        viewBox="0 0 300 300"
+        viewBox="0 0 320 320"
         className="max-w-full"
-        aria-label="IEC 61217 gantry coordinate system diagram showing beam directions at 0°, 90°, 180°, and 270° around a supine patient"
+        aria-label="IEC 61217 gantry coordinate system: transverse view looking from feet toward head, showing gantry positions at 0° (anterior), 90° (left), 180° (posterior), and 270° (right)"
       >
         <defs>
           {/* Arrow marker for beam directions */}
           <marker
-            id="arrowhead"
+            id="beamArrow"
             markerWidth="10"
             markerHeight="7"
             refX="9"
@@ -32,7 +32,7 @@ export function IEC61217Diagram({ className, size = 280 }: IEC61217DiagramProps)
           </marker>
           {/* Rotation arrow marker */}
           <marker
-            id="rotationArrow"
+            id="rotArrow"
             markerWidth="8"
             markerHeight="6"
             refX="7"
@@ -47,212 +47,247 @@ export function IEC61217Diagram({ className, size = 280 }: IEC61217DiagramProps)
         </defs>
 
         {/* Background */}
-        <rect width="300" height="300" className="fill-background" />
+        <rect width="320" height="320" className="fill-background" />
 
-        {/* Gantry rotation circle */}
+        {/* Gantry rotation ring */}
         <circle
-          cx="150"
-          cy="150"
-          r="110"
+          cx="160"
+          cy="160"
+          r="130"
           className="fill-none stroke-muted"
-          strokeWidth="2"
-          strokeDasharray="6 4"
+          strokeWidth="3"
+          strokeDasharray="8 4"
         />
 
-        {/* Clockwise rotation indicator arc */}
+        {/* Clockwise rotation indicator arc (top-right quadrant) */}
         <path
-          d="M 150 55 A 95 95 0 0 1 245 150"
+          d="M 160 45 A 115 115 0 0 1 275 160"
           className="fill-none stroke-muted-foreground"
           strokeWidth="1.5"
-          markerEnd="url(#rotationArrow)"
+          markerEnd="url(#rotArrow)"
         />
         <text
-          x="215"
-          y="85"
-          className="fill-muted-foreground text-[9px]"
+          x="245"
+          y="80"
+          className="fill-muted-foreground text-[10px]"
           textAnchor="middle"
         >
           CW
         </text>
 
-        {/* Treatment couch (rectangle) */}
+        {/* Treatment couch (at bottom/posterior of patient) */}
         <rect
-          x="115"
-          y="100"
-          width="70"
-          height="100"
-          rx="4"
-          className="fill-muted/30 stroke-muted-foreground"
+          x="100"
+          y="200"
+          width="120"
+          height="14"
+          rx="2"
+          className="fill-muted/40 stroke-muted-foreground"
+          strokeWidth="1.5"
+        />
+        <text
+          x="160"
+          y="230"
+          className="fill-muted-foreground text-[9px]"
+          textAnchor="middle"
+        >
+          Couch
+        </text>
+
+        {/* Patient cross-section (transverse view - wider L-R than A-P) */}
+        <ellipse
+          cx="160"
+          cy="160"
+          rx="55"
+          ry="40"
+          className="fill-secondary stroke-foreground"
           strokeWidth="1.5"
         />
 
-        {/* Patient body (supine - head toward 0°) */}
+        {/* Spine indicator (posterior side) */}
         <ellipse
-          cx="150"
-          cy="165"
-          rx="22"
-          ry="30"
-          className="fill-secondary stroke-foreground"
-          strokeWidth="1"
-        />
-        {/* Patient head */}
-        <circle
-          cx="150"
-          cy="120"
-          r="14"
-          className="fill-secondary stroke-foreground"
-          strokeWidth="1"
-        />
-        {/* Patient arms */}
-        <ellipse
-          cx="122"
-          cy="155"
-          rx="6"
-          ry="18"
-          className="fill-secondary stroke-foreground"
-          strokeWidth="1"
-        />
-        <ellipse
-          cx="178"
-          cy="155"
-          rx="6"
-          ry="18"
-          className="fill-secondary stroke-foreground"
-          strokeWidth="1"
+          cx="160"
+          cy="193"
+          rx="8"
+          ry="5"
+          className="fill-muted-foreground/50"
         />
 
-        {/* 0° Beam (Superior - from top) */}
-        <line
-          x1="150"
-          y1="25"
-          x2="150"
-          y2="85"
-          className="stroke-primary"
-          strokeWidth="3"
-          markerEnd="url(#arrowhead)"
-        />
-        <circle cx="150" cy="25" r="5" className="fill-primary" />
+        {/* Left/Right labels inside patient */}
         <text
-          x="150"
-          y="12"
+          x="195"
+          y="164"
           className="fill-foreground text-[11px] font-medium"
           textAnchor="middle"
         >
-          0° (Superior)
+          L
         </text>
-
-        {/* 90° Beam (Left lateral) */}
-        <line
-          x1="275"
-          y1="150"
-          x2="215"
-          y2="150"
-          className="stroke-primary"
-          strokeWidth="3"
-          markerEnd="url(#arrowhead)"
-        />
-        <circle cx="275" cy="150" r="5" className="fill-primary" />
         <text
-          x="275"
-          y="140"
+          x="125"
+          y="164"
           className="fill-foreground text-[11px] font-medium"
           textAnchor="middle"
+        >
+          R
+        </text>
+
+        {/* Anterior label (top) */}
+        <text
+          x="160"
+          y="108"
+          className="fill-muted-foreground text-[9px]"
+          textAnchor="middle"
+        >
+          Anterior
+        </text>
+
+        {/* Posterior label (bottom, near couch) */}
+        <text
+          x="160"
+          y="248"
+          className="fill-muted-foreground text-[9px]"
+          textAnchor="middle"
+        >
+          Posterior
+        </text>
+
+        {/* 0° Beam (from top/anterior) */}
+        <line
+          x1="160"
+          y1="30"
+          x2="160"
+          y2="105"
+          className="stroke-primary"
+          strokeWidth="3"
+          markerEnd="url(#beamArrow)"
+        />
+        <circle cx="160" cy="30" r="6" className="fill-primary" />
+        <text
+          x="160"
+          y="15"
+          className="fill-foreground text-[12px] font-semibold"
+          textAnchor="middle"
+        >
+          0°
+        </text>
+
+        {/* 90° Beam (from right side of diagram = patient's left) */}
+        <line
+          x1="290"
+          y1="160"
+          x2="225"
+          y2="160"
+          className="stroke-primary"
+          strokeWidth="3"
+          markerEnd="url(#beamArrow)"
+        />
+        <circle cx="290" cy="160" r="6" className="fill-primary" />
+        <text
+          x="305"
+          y="155"
+          className="fill-foreground text-[12px] font-semibold"
+          textAnchor="start"
         >
           90°
         </text>
         <text
-          x="275"
+          x="305"
           y="170"
           className="fill-muted-foreground text-[9px]"
-          textAnchor="middle"
+          textAnchor="start"
         >
           (Left)
         </text>
 
-        {/* 180° Beam (Inferior - from bottom) */}
+        {/* 180° Beam (from bottom/posterior - through couch) */}
         <line
-          x1="150"
-          y1="275"
-          x2="150"
+          x1="160"
+          y1="290"
+          x2="160"
           y2="215"
           className="stroke-primary"
           strokeWidth="3"
-          markerEnd="url(#arrowhead)"
+          markerEnd="url(#beamArrow)"
         />
-        <circle cx="150" cy="275" r="5" className="fill-primary" />
+        <circle cx="160" cy="290" r="6" className="fill-primary" />
         <text
-          x="150"
-          y="295"
-          className="fill-foreground text-[11px] font-medium"
+          x="160"
+          y="308"
+          className="fill-foreground text-[12px] font-semibold"
           textAnchor="middle"
         >
-          180° (Inferior)
+          180°
         </text>
 
-        {/* 270° Beam (Right lateral) */}
+        {/* 270° Beam (from left side of diagram = patient's right) */}
         <line
-          x1="25"
-          y1="150"
-          x2="85"
-          y2="150"
+          x1="30"
+          y1="160"
+          x2="95"
+          y2="160"
           className="stroke-primary"
           strokeWidth="3"
-          markerEnd="url(#arrowhead)"
+          markerEnd="url(#beamArrow)"
         />
-        <circle cx="25" cy="150" r="5" className="fill-primary" />
+        <circle cx="30" cy="160" r="6" className="fill-primary" />
         <text
-          x="25"
-          y="140"
-          className="fill-foreground text-[11px] font-medium"
-          textAnchor="middle"
+          x="15"
+          y="155"
+          className="fill-foreground text-[12px] font-semibold"
+          textAnchor="end"
         >
           270°
         </text>
         <text
-          x="25"
+          x="15"
           y="170"
           className="fill-muted-foreground text-[9px]"
-          textAnchor="middle"
+          textAnchor="end"
         >
           (Right)
         </text>
 
         {/* Isocenter marker */}
         <circle
-          cx="150"
-          cy="150"
+          cx="160"
+          cy="160"
           r="4"
           className="fill-primary"
         />
         <circle
-          cx="150"
-          cy="150"
-          r="8"
+          cx="160"
+          cy="160"
+          r="10"
           className="fill-none stroke-primary"
           strokeWidth="1"
+          strokeDasharray="2 2"
         />
 
-        {/* Patient orientation labels */}
-        <text
-          x="150"
-          y="106"
-          className="fill-foreground text-[8px] font-medium"
-          textAnchor="middle"
-        >
-          HEAD
-        </text>
-        <text
-          x="150"
-          y="200"
-          className="fill-foreground text-[8px] font-medium"
-          textAnchor="middle"
-        >
-          FEET
-        </text>
+        {/* Viewing direction indicator (bottom corner) */}
+        <g transform="translate(265, 280)">
+          <circle cx="0" cy="0" r="12" className="fill-muted/50 stroke-muted-foreground" strokeWidth="1" />
+          <circle cx="0" cy="0" r="3" className="fill-foreground" />
+          <text
+            x="0"
+            y="28"
+            className="fill-muted-foreground text-[8px]"
+            textAnchor="middle"
+          >
+            View: ↑
+          </text>
+          <text
+            x="0"
+            y="38"
+            className="fill-muted-foreground text-[7px]"
+            textAnchor="middle"
+          >
+            (from feet)
+          </text>
+        </g>
       </svg>
-      <p className="mt-2 text-xs text-muted-foreground text-center max-w-[280px]">
-        Bird's-eye view (looking down at patient). Gantry rotates clockwise from 0°.
-        Beam directions shown as arrows pointing toward isocenter.
+      <p className="mt-2 text-xs text-muted-foreground text-center max-w-[300px]">
+        Transverse view (looking from feet toward head). Patient supine on couch. 
+        Gantry rotates clockwise. 0° = beam from above (AP).
       </p>
     </div>
   );
