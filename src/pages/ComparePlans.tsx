@@ -10,6 +10,7 @@ import {
   CPComparisonViewer,
   ComparisonMUChart,
   ComparisonDeliveryChart,
+  ComparisonPolarChart,
 } from '@/components/comparison';
 import { matchBeams } from '@/lib/comparison/beam-matcher';
 
@@ -140,6 +141,21 @@ export default function ComparePlans() {
                       (m) => m.beamNumber === selectedBeams.beamB.beamNumber
                     )!}
                     currentCPIndex={currentCPIndex}
+                  />
+                  
+                  <ComparisonPolarChart
+                    beamA={selectedBeams.beamA}
+                    beamB={selectedBeams.beamB}
+                    controlPointMetricsA={
+                      planA.metrics.beamMetrics.find(
+                        (m) => m.beamNumber === selectedBeams.beamA.beamNumber
+                      )?.controlPointMetrics ?? []
+                    }
+                    controlPointMetricsB={
+                      planB.metrics.beamMetrics.find(
+                        (m) => m.beamNumber === selectedBeams.beamB.beamNumber
+                      )?.controlPointMetrics ?? []
+                    }
                   />
                 </>
               )}
