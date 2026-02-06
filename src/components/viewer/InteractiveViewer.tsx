@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { HelpCircle, ChevronDown } from 'lucide-react';
+import { HelpCircle, ChevronDown, Home } from 'lucide-react';
 
 export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   function InteractiveViewer(_props, ref) {
@@ -92,6 +92,14 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     }
     setIsPlaying((prev) => !prev);
   }, [currentCPIndex, totalCPs]);
+
+  // Handle closing plan and returning to home
+  const handleClosePlan = useCallback(() => {
+    setSessionPlan(null);
+    setSelectedBeamIndex(0);
+    setCurrentCPIndex(0);
+    setIsPlaying(false);
+  }, []);
 
   // No plan loaded - show upload zone
   if (!sessionPlan) {
@@ -200,6 +208,14 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleClosePlan}
+                title="Back to Home"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
               <Button variant="ghost" size="icon" asChild>
                 <Link to="/help">
                   <HelpCircle className="h-5 w-5" />
