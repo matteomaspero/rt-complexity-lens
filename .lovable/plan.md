@@ -1,242 +1,366 @@
 
-# Add Isocenter/Table Position and Audit All Test Plans
+
+# New Features: Plan Comparison & Batch Analysis Dashboard
 
 ## Overview
 
-This plan addresses two tasks:
-1. Add isocenter position and patient support angle (table) to the BeamSummaryCard
-2. Audit all test plans to verify metrics and charts render correctly
+This plan introduces two major features:
+1. **Plan Comparison Mode** - Side-by-side diff view of two RT plans with control point-level comparison
+2. **Batch Analysis Dashboard** - Multi-plan analysis with import/export capabilities
 
 ---
 
-## Part 1: Add Isocenter and Table Position
+## Feature 1: Plan Comparison Mode
 
-### 1.1 DICOM Tags to Parse
+### 1.1 Concept
 
-The following DICOM tags need to be added to the parser:
+Enable users to load two plans and compare them like a git diff, highlighting differences in:
+- Plan-level metrics (MCS, LSV, AAV, etc.)
+- Beam configuration (gantry angles, MU distribution)
+- Control point-level differences (MLC positions, aperture shapes)
 
-| Tag | Keyword | Description | VR |
-|-----|---------|-------------|-----|
-| (300A,012C) | IsocenterPosition | X, Y, Z coordinates in mm | DS |
-| (300A,0122) | PatientSupportAngle | Table rotation angle | DS |
-| (300A,0128) | TableTopVerticalPosition | Vertical position | DS |
-| (300A,0129) | TableTopLongitudinalPosition | Longitudinal position | DS |
-| (300A,012A) | TableTopLateralPosition | Lateral position | DS |
-
-### 1.2 Type Updates
-
-Update `src/lib/dicom/types.ts`:
-
-```typescript
-// Add to ControlPoint interface
-export interface ControlPoint {
-  // ... existing fields ...
-  isocenterPosition?: [number, number, number];
-  patientSupportAngle?: number;        // Table rotation (degrees)
-  tableTopVertical?: number;           // mm
-  tableTopLongitudinal?: number;       // mm
-  tableTopLateral?: number;            // mm
-}
-```
-
-### 1.3 Parser Updates
-
-Update `src/lib/dicom/parser.ts`:
-
-Add new DICOM tags:
-```typescript
-const TAGS = {
-  // ... existing tags ...
-  PatientSupportAngle: 'x300a0122',
-  TableTopVerticalPosition: 'x300a0128',
-  TableTopLongitudinalPosition: 'x300a0129',
-  TableTopLateralPosition: 'x300a012a',
-};
-```
-
-Update `parseControlPoint()` to extract these values.
-
-### 1.4 BeamSummaryCard Updates
-
-Update `src/components/viewer/BeamSummaryCard.tsx` to display:
+### 1.2 UI Design
 
 ```text
-+------------------------------------------------------------------+
-| Beam: Arc1_CW                                    VMAT Arc | CW   |
-+------------------------------------------------------------------+
-| CPs: 178  |  181.0° → 179.0° (358°)  |  324.5 MU  |  Est: 0:52   |
-| Dose Rate: 145 – 580 MU/min          |  Avg Gantry: 5.8 °/s      |
-+------------------------------------------------------------------+
-| Isocenter: (0.0, -50.0, 100.0) mm    |  Table: 0.0°              |
-+------------------------------------------------------------------+
++-- Comparison Mode Header ----------------------------------+
+| Plan A: VMAT_v1.dcm        vs        Plan B: VMAT_v2.dcm  |
+| [Change Plan A]                      [Change Plan B]      |
++-----------------------------------------------------------+
+
++-- Summary Comparison Card ---------------------------------+
+| Metric      | Plan A  | Plan B  | Diff    | Status        |
+|-------------|---------|---------|---------|---------------|
+| MCS         | 0.4521  | 0.3892  | -0.0629 | -13.9%  (-)   |
+| LSV         | 0.9234  | 0.8876  | -0.0358 | -3.9%   (-)   |
+| Total MU    | 324.5   | 351.2   | +26.7   | +8.2%   (+)   |
+| Est. Time   | 0:52    | 0:58    | +6s     | +11.5%  (+)   |
++-----------------------------------------------------------+
+
++-- Beam Comparison -----------------------------------------+
+| Beam       | CPs A | CPs B | MU A    | MU B    | Diff    |
+|------------|-------|-------|---------|---------|---------|
+| Arc1_CW    | 178   | 182   | 162.3   | 175.6   | +8.2%   |
+| Arc2_CCW   | 178   | 182   | 162.2   | 175.6   | +8.3%   |
++-----------------------------------------------------------+
+
++-- Control Point Comparison --------------------------------+
+| [Slider: CP 1-178]                                        |
+|                                                           |
+| +-- Plan A Aperture --+    +-- Plan B Aperture --+       |
+| |  [MLC Viewer]       |    |  [MLC Viewer]       |       |
+| |  Gantry: 181.0°     |    |  Gantry: 181.0°     |       |
+| |  Area: 15.2 cm²     |    |  Area: 18.4 cm²     |       |
+| +---------------------+    +---------------------+       |
+|                                                           |
+| Difference Overlay: [Highlight areas that differ]        |
++-----------------------------------------------------------+
 ```
 
-New fields in the info grid:
-- **Isocenter**: X, Y, Z coordinates from first control point
-- **Table Angle**: Patient support angle (rotation)
+### 1.3 Key Comparison Features
+
+| Feature | Description |
+|---------|-------------|
+| **Metric Diff Table** | Side-by-side comparison with % change and direction indicators |
+| **Beam Matching** | Match beams by name or gantry range for comparison |
+| **CP Synchronization** | Linked scrubber to navigate both plans simultaneously |
+| **MLC Overlay** | Overlay apertures from both plans with diff highlighting |
+| **Chart Comparison** | Split or overlay charts showing both plans' data |
+
+### 1.4 Diff Highlighting Logic
+
+Color-code differences:
+- **Green**: Plan B is better (lower complexity, shorter time)
+- **Red**: Plan B is worse (higher complexity, longer time)
+- **Yellow**: Significant structural change (different beam count, CPs)
+- **Gray**: No meaningful difference (< 1%)
 
 ---
 
-## Part 2: File Changes Summary
+## Feature 2: Batch Analysis Dashboard
 
-| File | Changes |
-|------|---------|
-| `src/lib/dicom/types.ts` | Add table position fields to ControlPoint |
-| `src/lib/dicom/parser.ts` | Parse isocenter, patient support angle, table positions |
-| `src/components/viewer/BeamSummaryCard.tsx` | Display isocenter and table position |
+### 2.1 Concept
 
----
+A dedicated dashboard for analyzing multiple plans at once, with:
+- Bulk file import (drag multiple files)
+- Summary statistics across all plans
+- Sortable/filterable results table
+- CSV/JSON export of all metrics
+- Visual distribution charts
 
-## Part 3: BeamSummaryCard Layout Update
+### 2.2 UI Design
 
-Add a second row to the info grid for geometric parameters:
+```text
++-- Batch Analysis Dashboard --------------------------------+
+| [Import Plans]                    [Clear All] [Export All]|
++-----------------------------------------------------------+
 
-```typescript
-// Row 1: Delivery parameters (existing)
-<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
-  <div>Control Points: 178</div>
-  <div>Gantry: 181.0° → 179.0° (358°)</div>
-  <div>MU: 324.5</div>
-  <div>Est. Time: 0:52</div>
-  <div>Dose Rate: 145 – 580 MU/min</div>
-  <div>Avg Gantry: 5.8 °/s</div>
-</div>
++-- Import Zone ---------------------------------------------+
+| +-------------------------------------------------------+ |
+| |  Drop multiple DICOM-RT Plan files here               | |
+| |  or click to browse (supports 10+ files)              | |
+| +-------------------------------------------------------+ |
+|                                                           |
+| Processing: [=====>        ] 5/12 plans                   |
++-----------------------------------------------------------+
 
-// Row 2: Geometric parameters (new)
-<div className="grid grid-cols-2 md:grid-cols-3">
-  <div>Isocenter: (0.0, -50.0, 100.0) mm</div>
-  <div>Table Angle: 0.0°</div>
-  <div>Collimator: 5.0° → 5.0°</div>  // Optional: add collimator range
-</div>
++-- Summary Statistics --------------------------------------+
+| Plans Analyzed: 12                                        |
+|                                                           |
+| +-- Metric Ranges --+  +-- Distribution Chart --+        |
+| | MCS: 0.28 - 0.52  |  | [Box plot or histogram] |       |
+| | LSV: 0.78 - 0.96  |  |                         |        |
+| | MU:  285 - 412    |  |                         |        |
+| +-------------------+  +-------------------------+        |
++-----------------------------------------------------------+
+
++-- Results Table -------------------------------------------+
+| [Search: ________]  [Filter: Technique v] [Sort: MCS v]  |
+|                                                           |
+| | File         | Label    | Tech  | MCS   | LSV   | MU   ||
+| |--------------|----------|-------|-------|-------|------||
+| | plan_01.dcm  | VMAT_1   | VMAT  | 0.421 | 0.912 | 324  ||
+| | plan_02.dcm  | IMRT_HN  | IMRT  | 0.382 | 0.887 | 512  ||
+| | plan_03.dcm  | VMAT_2   | VMAT  | 0.456 | 0.934 | 298  ||
+| [Select rows to compare or export]                        |
++-----------------------------------------------------------+
+
++-- Export Options ------------------------------------------+
+| Format: [CSV v] [JSON] [Summary PDF]                      |
+| Include: [x] Plan metrics  [x] Beam metrics               |
+|          [ ] Control point data                           |
+| [Download Selected] [Download All]                        |
++-----------------------------------------------------------+
 ```
 
----
+### 2.3 Key Dashboard Features
 
-## Part 4: Audit All Test Plans
-
-After implementing the isocenter/table changes, systematically test each plan:
-
-### 4.1 Test Files to Audit
-
-| File | Type | Expected Characteristics |
-|------|------|-------------------------|
-| `RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm` | VMAT | Complex arc, multiple control points |
-| `RTPLAN_MO_PT_01.dcm` | Monaco VMAT | Single arc |
-| `RTPLAN_MO_PT_02.dcm` | Monaco VMAT | Single arc |
-| `RTPLAN_MO_PT_03.dcm` | Monaco VMAT | Single arc |
-| `RTPLAN_MO_PT_04.dcm` | Monaco VMAT | Single arc |
-| `RTPLAN_MR_PT_01_PENALTY.dcm` | Monaco VMAT | Plan with penalty optimization |
-| `RP.TG119.PR_ETH_7F.dcm` | IMRT | 7-field static beams |
-| `RP.TG119.PR_ETH_2A_2.dcm` | VMAT | 2-arc plan |
-
-### 4.2 Verification Checklist Per Plan
-
-For each plan, verify:
-
-**Beam Summary Card:**
-- Beam name displays correctly
-- Beam type (Arc/Static/IMRT) is correct
-- Gantry range shows start → end with arc length
-- MU matches fraction group reference
-- Estimated time is reasonable (< 5 min typical)
-- Dose rate range is valid (50-600 MU/min typical)
-- Isocenter position displays (if present)
-- Table angle displays (if present)
-
-**Visualizations:**
-- Gantry viewer shows correct angle and direction
-- Collimator viewer shows correct angle and jaw positions
-- MLC aperture renders without errors
-- All control points can be scrubbed
-
-**Charts:**
-- Cumulative MU chart shows monotonic increase
-- Gantry speed chart renders for arcs
-- MU Distribution polar chart renders
-- Delivery Analysis shows all 4 sub-charts
-- Complexity Analysis shows LSV, AAV, Aperture Area
-
-**Metrics Panel:**
-- All UCoMX metrics display (MCS, LSV, AAV, MFA, LT)
-- SAS5, SAS10, EM, PI metrics display
-- Values are in expected ranges
-
-### 4.3 Expected Metric Ranges
-
-| Metric | Valid Range | Typical Range |
-|--------|-------------|---------------|
-| MCS | 0 - 1 | 0.2 - 0.8 |
-| LSV | 0 - 1 | 0.7 - 0.99 |
-| AAV | 0 - 1 | 0.1 - 0.5 |
-| MFA | 0 - 500 cm^2 | 5 - 50 cm^2 |
-| LT | >= 0 mm | 1000 - 50000 mm |
-| SAS5 | 0 - 1 | 0 - 0.1 |
-| SAS10 | 0 - 1 | 0 - 0.3 |
-| EM | >= 0 mm^-1 | 0.1 - 1.0 mm^-1 |
-| PI | >= 1 | 1 - 50 |
-
-### 4.4 Known Edge Cases
-
-| Plan | Expected Behavior |
-|------|-------------------|
-| TG119_7F (7-field IMRT) | Static beams, no arc length, gantry speed N/A |
-| TG119_2A (2-arc) | Multiple beams, beam selector should work |
-| MONACO_PENALTY | May have unusual aperture shapes |
+| Feature | Description |
+|---------|-------------|
+| **Multi-file Upload** | Drop/select multiple DICOM files at once |
+| **Progress Indicator** | Show parsing progress for large batches |
+| **Summary Stats** | Min, max, mean, std dev for each metric |
+| **Distribution Charts** | Histograms or box plots for metric distributions |
+| **Sortable Table** | Click column headers to sort |
+| **Filtering** | Filter by technique (VMAT/IMRT), date, MU range |
+| **Row Selection** | Select specific plans to compare or export |
+| **Export Formats** | CSV (detailed), JSON (programmable), PDF (summary) |
 
 ---
 
-## Part 5: Implementation Sequence
+## Architecture
 
-1. **Update types** - Add table position fields to ControlPoint interface
-2. **Update parser** - Parse isocenter and table position tags from DICOM
-3. **Update BeamSummaryCard** - Add display for isocenter and table position
-4. **Manual audit** - Load each test plan and verify all components
+### 3.1 New Routes
 
----
+| Route | Component | Purpose |
+|-------|-----------|---------|
+| `/` | `Index` | Single plan viewer (existing) |
+| `/compare` | `ComparePlans` | Two-plan comparison mode |
+| `/batch` | `BatchDashboard` | Multi-plan analysis dashboard |
 
-## Part 6: Technical Details
+### 3.2 New Files
 
-### 6.1 Isocenter Position Extraction
+```text
+src/
+  pages/
+    ComparePlans.tsx          # Comparison page
+    BatchDashboard.tsx        # Batch analysis page
+  
+  components/
+    comparison/
+      ComparisonHeader.tsx    # Plan A vs Plan B header
+      MetricsDiffTable.tsx    # Side-by-side metrics table
+      BeamComparisonTable.tsx # Beam-level comparison
+      CPComparisonViewer.tsx  # Synced control point viewers
+      ApertureDiffOverlay.tsx # MLC difference overlay
+      ComparisonCharts.tsx    # Overlay/split charts
+    
+    batch/
+      BatchUploadZone.tsx     # Multi-file uploader
+      BatchProgressBar.tsx    # Parsing progress
+      BatchSummaryStats.tsx   # Aggregate statistics
+      BatchResultsTable.tsx   # Sortable results table
+      BatchDistributionChart.tsx # Metric distributions
+      BatchExportPanel.tsx    # Export controls
+  
+  lib/
+    comparison/
+      diff-calculator.ts      # Calculate metric differences
+      beam-matcher.ts         # Match beams between plans
+      cp-aligner.ts           # Align control points for comparison
+    
+    batch/
+      batch-processor.ts      # Process multiple files
+      batch-export.ts         # Export to CSV/JSON/PDF
+      batch-statistics.ts     # Calculate summary stats
+  
+  contexts/
+    BatchContext.tsx          # Store multiple analyzed plans
+```
 
-The isocenter is typically defined in the first control point only. If not present in subsequent control points, inherit from CP 0:
+### 3.3 Shared State for Batch Plans
 
 ```typescript
-// In parseControlPoint
-const isocenterStr = dataSet.string(TAGS.IsocenterPosition);
-let isocenterPosition: [number, number, number] | undefined;
+// BatchContext.tsx
+interface BatchPlan {
+  id: string;
+  fileName: string;
+  uploadTime: Date;
+  plan: RTPlan;
+  metrics: PlanMetrics;
+  status: 'pending' | 'parsing' | 'success' | 'error';
+  error?: string;
+}
 
-if (isocenterStr) {
-  const coords = isocenterStr.split('\\').map(v => parseFloat(v.trim()));
-  if (coords.length === 3) {
-    isocenterPosition = [coords[0], coords[1], coords[2]];
-  }
-} else if (previousCP?.isocenterPosition) {
-  isocenterPosition = previousCP.isocenterPosition;
+interface BatchContextType {
+  plans: BatchPlan[];
+  addPlans: (files: File[]) => Promise<void>;
+  removePlan: (id: string) => void;
+  clearAll: () => void;
+  isProcessing: boolean;
+  progress: { current: number; total: number };
 }
 ```
 
-### 6.2 Table Position Display
+---
 
-For the BeamSummaryCard, extract isocenter and table angle from the first control point:
+## Technical Details
+
+### 4.1 Plan Comparison Logic
 
 ```typescript
-const firstCP = beam.controlPoints[0];
-const isocenter = firstCP.isocenterPosition;
-const tableAngle = firstCP.patientSupportAngle ?? 0;
+// diff-calculator.ts
+interface MetricDiff {
+  metric: string;
+  planA: number;
+  planB: number;
+  absoluteDiff: number;
+  percentDiff: number;
+  direction: 'increase' | 'decrease' | 'same';
+  significance: 'minor' | 'moderate' | 'major';
+}
+
+function calculatePlanDiff(
+  planA: SessionPlan, 
+  planB: SessionPlan
+): PlanComparison {
+  // Compare plan-level metrics
+  // Match beams by name or angle
+  // Align control points for per-CP comparison
+}
 ```
 
-Display format:
-- Isocenter: `(X, Y, Z) mm` with values rounded to 1 decimal
-- Table: `N.N°` 
+### 4.2 Beam Matching Algorithm
+
+For comparing beams between plans:
+
+```text
+1. Try exact name match (Arc1_CW == Arc1_CW)
+2. Try gantry range match (181-179 CW == 181-179 CW)
+3. Try MU-weighted similarity
+4. Flag unmatched beams as "Added" or "Removed"
+```
+
+### 4.3 Control Point Alignment
+
+Two options for CP comparison:
+1. **Index-based**: CP 45 in Plan A vs CP 45 in Plan B
+2. **Gantry-based**: CP at 90° in Plan A vs CP at 90° in Plan B
+
+### 4.4 Batch Export Formats
+
+**CSV Export:**
+```csv
+File,Plan Label,Technique,Beams,Total MU,MCS,LSV,AAV,MFA,LT,Est Time
+plan_01.dcm,VMAT_1,VMAT,2,324.5,0.4521,0.9234,0.3421,24.5,12450,52
+plan_02.dcm,IMRT_HN,IMRT,7,512.3,0.3829,0.8876,0.4102,18.2,28340,124
+```
+
+**JSON Export:**
+```json
+{
+  "exportDate": "2025-02-06T...",
+  "plans": [
+    {
+      "fileName": "plan_01.dcm",
+      "planLabel": "VMAT_1",
+      "metrics": { "MCS": 0.4521, ... },
+      "beamMetrics": [...]
+    }
+  ],
+  "summary": {
+    "MCS": { "min": 0.28, "max": 0.52, "mean": 0.41, "std": 0.08 }
+  }
+}
+```
+
+---
+
+## Navigation Integration
+
+### 5.1 Updated Landing Page
+
+Add mode selection to the initial upload screen:
+
+```text
++-- RT Plan Complexity Analyzer -----------------------------+
+|                                                            |
+|  [===========================================]             |
+|  [  Drop DICOM-RT Plan file here            ]             |
+|  [  or click to browse                      ]             |
+|  [===========================================]             |
+|                                                            |
+|  -------------- or select a mode ---------------          |
+|                                                            |
+|  [ Compare Two Plans ]    [ Batch Analysis ]              |
+|                                                            |
++------------------------------------------------------------+
+```
+
+### 5.2 Header Navigation
+
+Add navigation between modes when a plan is loaded:
+
+```text
++-- Header --------------------------------------------------+
+| RT Plan Analyzer  | Single | Compare | Batch |    [Help]  |
++------------------------------------------------------------+
+```
+
+---
+
+## Implementation Phases
+
+### Phase 1: Batch Analysis (Simpler, More Utility)
+1. Create `/batch` route and `BatchDashboard` page
+2. Build `BatchUploadZone` for multi-file upload
+3. Create `BatchContext` for storing multiple plans
+4. Build results table with sorting/filtering
+5. Add CSV/JSON export functionality
+6. Add summary statistics and distribution charts
+
+### Phase 2: Plan Comparison
+1. Create `/compare` route and `ComparePlans` page
+2. Build comparison header with dual upload zones
+3. Implement metric diff calculation
+4. Build beam matching algorithm
+5. Create synchronized CP viewer with MLC overlay
+6. Add comparison charts
 
 ---
 
 ## Success Criteria
 
-- Isocenter position displays in BeamSummaryCard (when available in DICOM)
-- Table angle displays in BeamSummaryCard
-- All 8 test plans load without errors
-- All charts render correctly for each plan type
-- Metrics are within expected ranges
-- Static IMRT plans display appropriately (no arc-specific metrics)
-- Multi-arc plans allow beam switching
+### Batch Analysis
+- Upload and parse 10+ plans without browser freeze
+- Sort table by any metric column
+- Filter by technique type
+- Export selected or all plans to CSV
+- Show min/max/mean for each metric
+
+### Plan Comparison
+- Load two plans side-by-side
+- Show metric differences with % change
+- Match beams automatically or manually
+- Synchronized control point scrubbing
+- Visual MLC aperture difference overlay
+
