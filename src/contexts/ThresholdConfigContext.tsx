@@ -61,8 +61,8 @@ function loadFromStorage(): ThresholdConfigState {
         customDeliveryParams: parsed.customDeliveryParams ?? getDefaultDeliveryParams(),
       };
     }
-  } catch (e) {
-    console.warn('Failed to load threshold config from localStorage:', e);
+  } catch {
+    // localStorage unavailable or corrupted - use defaults silently
   }
   return defaultState;
 }
@@ -70,8 +70,8 @@ function loadFromStorage(): ThresholdConfigState {
 function saveToStorage(state: ThresholdConfigState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    console.warn('Failed to save threshold config to localStorage:', e);
+  } catch {
+    // localStorage unavailable - settings won't persist
   }
 }
 
@@ -81,8 +81,8 @@ function loadUserPresets(): UserPreset[] {
     if (stored) {
       return JSON.parse(stored);
     }
-  } catch (e) {
-    console.warn('Failed to load user presets from localStorage:', e);
+  } catch {
+    // localStorage unavailable or corrupted - use empty list
   }
   return [];
 }
@@ -90,8 +90,8 @@ function loadUserPresets(): UserPreset[] {
 function saveUserPresets(presets: UserPreset[]): void {
   try {
     localStorage.setItem(USER_PRESETS_KEY, JSON.stringify(presets));
-  } catch (e) {
-    console.warn('Failed to save user presets to localStorage:', e);
+  } catch {
+    // localStorage unavailable - presets won't persist
   }
 }
 

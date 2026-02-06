@@ -42,7 +42,7 @@ export const FileUploadZone = forwardRef<HTMLDivElement, FileUploadZoneProps>(
       setStatus('success');
       onPlanLoaded(sessionPlan);
     } catch (err) {
-      console.error('DICOM parse error:', err);
+      // Parse error - user sees error state with message
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Failed to parse DICOM file');
     }
