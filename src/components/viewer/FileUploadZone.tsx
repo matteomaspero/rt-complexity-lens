@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, forwardRef } from 'react';
 import { Upload, FileWarning, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
@@ -9,7 +9,8 @@ interface FileUploadZoneProps {
   className?: string;
 }
 
-export function FileUploadZone({ onPlanLoaded, className }: FileUploadZoneProps) {
+export const FileUploadZone = forwardRef<HTMLDivElement, FileUploadZoneProps>(
+  function FileUploadZone({ onPlanLoaded, className }, ref) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [status, setStatus] = useState<ParseStatus>('pending');
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export function FileUploadZone({ onPlanLoaded, className }: FileUploadZoneProps)
 
   return (
     <div
+      ref={ref}
       className={cn(
         'relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-all',
         isDragOver && 'border-primary bg-primary/5',
@@ -167,4 +169,4 @@ export function FileUploadZone({ onPlanLoaded, className }: FileUploadZoneProps)
       )}
     </div>
   );
-}
+});
