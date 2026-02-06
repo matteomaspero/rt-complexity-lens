@@ -41,8 +41,7 @@ export function ComparisonUploadZone({
 
       setStatus('success');
       onPlanLoaded(sessionPlan);
-    } catch (err) {
-      console.error('DICOM parse error:', err);
+    } catch {
       setStatus('error');
     }
   }, [onPlanLoaded]);

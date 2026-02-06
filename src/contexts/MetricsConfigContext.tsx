@@ -1,7 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { z } from 'zod';
 import { getAllMetricKeys } from '@/lib/metrics-definitions';
 
 const STORAGE_KEY = 'rtplan-metrics-config';
+
+// Schema for validating stored metrics config
+const MetricsConfigSchema = z.array(z.string());
 
 interface MetricsConfig {
   enabledMetrics: Set<string>;
@@ -18,12 +22,11 @@ function loadFromStorage(): Set<string> {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        return new Set(parsed);
-      }
+      const validated = MetricsConfigSchema.parse(parsed);
+      return new Set(validated);
     }
   } catch {
-    // Ignore storage errors
+    // Invalid data or storage error - use defaults
   }
   // Default: all metrics enabled
   return new Set(getAllMetricKeys());

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { z } from 'zod';
 import {
   type MachinePreset,
   type ThresholdSet,
@@ -11,6 +12,42 @@ import {
   getDefaultCustomThresholds,
   getDefaultDeliveryParams,
 } from '@/lib/threshold-definitions';
+
+// Zod schemas for localStorage validation
+const ThresholdDefinitionSchema = z.object({
+  metricKey: z.string(),
+  warningThreshold: z.number(),
+  criticalThreshold: z.number(),
+  direction: z.enum(['high', 'low']),
+});
+
+const MachineDeliveryParamsSchema = z.object({
+  maxDoseRate: z.number(),
+  maxDoseRateFFF: z.number().optional(),
+  maxGantrySpeed: z.number(),
+  maxMLCSpeed: z.number(),
+  mlcType: z.enum(['MLCX', 'MLCY', 'DUAL']),
+});
+
+const ThresholdConfigStateSchema = z.object({
+  enabled: z.boolean(),
+  selectedPreset: z.string(),
+  customThresholds: z.record(ThresholdDefinitionSchema),
+  customDeliveryParams: MachineDeliveryParamsSchema,
+});
+
+const UserPresetSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  thresholds: z.record(ThresholdDefinitionSchema),
+  deliveryParams: MachineDeliveryParamsSchema,
+  isBuiltIn: z.boolean().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const UserPresetsArraySchema = z.array(UserPresetSchema);
 
 interface ThresholdConfigState {
   enabled: boolean;
@@ -54,15 +91,16 @@ function loadFromStorage(): ThresholdConfigState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
+      const validated = ThresholdConfigStateSchema.parse(parsed);
       return {
-        enabled: parsed.enabled ?? defaultState.enabled,
-        selectedPreset: parsed.selectedPreset ?? defaultState.selectedPreset,
-        customThresholds: parsed.customThresholds ?? getDefaultCustomThresholds(),
-        customDeliveryParams: parsed.customDeliveryParams ?? getDefaultDeliveryParams(),
+        enabled: validated.enabled,
+        selectedPreset: validated.selectedPreset,
+        customThresholds: validated.customThresholds as ThresholdSet,
+        customDeliveryParams: validated.customDeliveryParams as MachineDeliveryParams,
       };
     }
   } catch {
-    // localStorage unavailable or corrupted - use defaults silently
+    // Invalid data or storage error - use defaults
   }
   return defaultState;
 }
@@ -79,10 +117,12 @@ function loadUserPresets(): UserPreset[] {
   try {
     const stored = localStorage.getItem(USER_PRESETS_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      const validated = UserPresetsArraySchema.parse(parsed);
+      return validated as UserPreset[];
     }
   } catch {
-    // localStorage unavailable or corrupted - use empty list
+    // Invalid data or storage error - use empty list
   }
   return [];
 }

@@ -263,8 +263,7 @@ export function importPresetsFromJSON(json: string): UserPreset[] {
     }
     
     return validPresets;
-  } catch (e) {
-    console.error('Failed to import presets:', e);
+  } catch {
     throw new Error('Invalid preset file format');
   }
 }
