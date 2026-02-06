@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, forwardRef } from 'react';
+import { Link } from 'react-router-dom';
 import type { SessionPlan, Beam, ControlPoint } from '@/lib/dicom/types';
 import {
   FileUploadZone,
@@ -11,8 +12,11 @@ import {
   BeamSelector,
   DemoLoader,
 } from '@/components/viewer';
+import { MetricsSettings } from '@/components/viewer/MetricsSettings';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { HelpCircle } from 'lucide-react';
 
 export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   function InteractiveViewer(_props, ref) {
@@ -105,9 +109,25 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
             className="mt-4"
           />
         </div>
+        
+        {/* Metrics Settings */}
+        <div className="mt-6 w-full max-w-md">
+          <MetricsSettings />
+        </div>
+        
         <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>Supports VMAT and IMRT plans • Browser-based processing</p>
           <p className="mt-1">UCoMX v1.1 complexity metrics</p>
+        </div>
+        
+        {/* Help Link */}
+        <div className="mt-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/help" className="flex items-center gap-1">
+              <HelpCircle className="h-4 w-4" />
+              Help & Documentation
+            </Link>
+          </Button>
         </div>
       </div>
     );
@@ -133,10 +153,17 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 <span>{sessionPlan.plan.totalMU.toFixed(0)} MU total</span>
               </div>
             </div>
-            <FileUploadZone
-              onPlanLoaded={handlePlanLoaded}
-              className="h-12 w-48 border-dashed p-2"
-            />
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" asChild>
+                <Link to="/help">
+                  <HelpCircle className="h-5 w-5" />
+                </Link>
+              </Button>
+              <FileUploadZone
+                onPlanLoaded={handlePlanLoaded}
+                className="h-12 w-48 border-dashed p-2"
+              />
+            </div>
           </div>
 
           {/* Beam Selector */}
