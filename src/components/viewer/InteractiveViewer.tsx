@@ -12,12 +12,17 @@ import {
   GantrySpeedChart,
   BeamSelector,
   DemoLoader,
+  AngularDistributionChart,
+  DeliveryTimelineChart,
+  ComplexityHeatmap,
 } from '@/components/viewer';
 import { MetricsSettings } from '@/components/viewer/MetricsSettings';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { HelpCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { HelpCircle, ChevronDown } from 'lucide-react';
 
 export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   function InteractiveViewer(_props, ref) {
@@ -246,6 +251,44 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                     height={140}
                   />
                 </div>
+
+                {/* Angular Analysis Section */}
+                <Collapsible defaultOpen className="rounded-lg border bg-card">
+                  <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
+                    <h4 className="text-sm font-medium">Angular Analysis</h4>
+                    <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="px-4 pb-4">
+                    <Tabs defaultValue="distribution" className="w-full">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="distribution">MU Distribution</TabsTrigger>
+                        <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                        <TabsTrigger value="complexity">Complexity</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="distribution" className="mt-4">
+                        <AngularDistributionChart
+                          beam={currentBeam}
+                          controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
+                          currentIndex={currentCPIndex}
+                        />
+                      </TabsContent>
+                      <TabsContent value="timeline" className="mt-4">
+                        <DeliveryTimelineChart
+                          beam={currentBeam}
+                          controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
+                          currentIndex={currentCPIndex}
+                        />
+                      </TabsContent>
+                      <TabsContent value="complexity" className="mt-4">
+                        <ComplexityHeatmap
+                          beam={currentBeam}
+                          controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
+                          currentIndex={currentCPIndex}
+                        />
+                      </TabsContent>
+                    </Tabs>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {/* Current Control Point Details */}
                 <div className="rounded-lg border bg-card p-4">
