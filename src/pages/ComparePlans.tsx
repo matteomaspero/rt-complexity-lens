@@ -1,8 +1,18 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, HelpCircle } from 'lucide-react';
+import { ArrowLeft, HelpCircle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { SessionPlan } from '@/lib/dicom/types';
+import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
+import { BUILTIN_PRESETS } from '@/lib/threshold-definitions';
+import { PresetManager } from '@/components/settings';
 import {
   ComparisonHeader,
   MetricsDiffTable,
@@ -19,6 +29,8 @@ export default function ComparePlans() {
   const [planB, setPlanB] = useState<SessionPlan | null>(null);
   const [selectedBeamMatch, setSelectedBeamMatch] = useState(0);
   const [currentCPIndex, setCurrentCPIndex] = useState(0);
+  
+  const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
 
   const bothLoaded = planA && planB;
 
@@ -54,6 +66,8 @@ export default function ComparePlans() {
     setCurrentCPIndex(0);
   }, []);
 
+  const builtInOptions = Object.values(BUILTIN_PRESETS);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -68,11 +82,48 @@ export default function ComparePlans() {
           <div className="flex-1">
             <h1 className="text-lg font-semibold">Plan Comparison</h1>
           </div>
-          <Link to="/help">
-            <Button variant="ghost" size="icon">
-              <HelpCircle className="h-5 w-5" />
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* Machine Preset Selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground hidden sm:inline">Machine:</span>
+              <Select value={selectedPreset} onValueChange={setPreset}>
+                <SelectTrigger className="h-8 w-[180px]">
+                  <SelectValue placeholder={getPresetName()} />
+                </SelectTrigger>
+                <SelectContent>
+                  {builtInOptions.map((preset) => (
+                    <SelectItem key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </SelectItem>
+                  ))}
+                  {userPresets.length > 0 && (
+                    <>
+                      <div className="px-2 py-1 text-xs text-muted-foreground border-t mt-1 pt-1">
+                        Your Presets
+                      </div>
+                      {userPresets.map((preset) => (
+                        <SelectItem key={preset.id} value={preset.id}>
+                          {preset.name}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
+              <PresetManager
+                trigger={
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            </div>
+            <Link to="/help">
+              <Button variant="ghost" size="icon">
+                <HelpCircle className="h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </header>
 

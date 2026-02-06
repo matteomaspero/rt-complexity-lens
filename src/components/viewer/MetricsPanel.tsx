@@ -1,4 +1,4 @@
-import type { PlanMetrics } from '@/lib/dicom/types';
+import type { PlanMetrics, BeamMetrics } from '@/lib/dicom/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Download, Info, AlertTriangle } from 'lucide-react';
@@ -146,6 +146,89 @@ function BeamsSummary({ beamMetrics, isMetricEnabled }: BeamsSummaryProps) {
   );
 }
 
+// Format delivery time as mm:ss
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Render beam-level metrics
+function BeamMetricsSection({ beam, isMetricEnabled }: { beam: BeamMetrics; isMetricEnabled: (key: string) => boolean }) {
+  return (
+    <div className="grid gap-3">
+      {/* Primary metrics */}
+      {isMetricEnabled('MCS') && (
+        <MetricItem metricKey="MCS" value={beam.MCS} />
+      )}
+      {isMetricEnabled('LSV') && (
+        <MetricItem metricKey="LSV" value={beam.LSV} />
+      )}
+      {isMetricEnabled('AAV') && (
+        <MetricItem metricKey="AAV" value={beam.AAV} />
+      )}
+      {isMetricEnabled('MFA') && (
+        <MetricItem metricKey="MFA" value={beam.MFA} />
+      )}
+      
+      {/* Secondary metrics */}
+      {isMetricEnabled('LT') && beam.LT !== undefined && (
+        <MetricItem metricKey="LT" value={beam.LT} />
+      )}
+      {isMetricEnabled('LTMCS') && beam.LTMCS !== undefined && (
+        <MetricItem metricKey="LTMCS" value={beam.LTMCS} />
+      )}
+      {isMetricEnabled('SAS5') && beam.SAS5 !== undefined && (
+        <MetricItem metricKey="SAS5" value={beam.SAS5} />
+      )}
+      {isMetricEnabled('SAS10') && beam.SAS10 !== undefined && (
+        <MetricItem metricKey="SAS10" value={beam.SAS10} />
+      )}
+      {isMetricEnabled('EM') && beam.EM !== undefined && (
+        <MetricItem metricKey="EM" value={beam.EM} />
+      )}
+      {isMetricEnabled('PI') && beam.PI !== undefined && (
+        <MetricItem metricKey="PI" value={beam.PI} />
+      )}
+      
+      {/* Delivery metrics */}
+      {isMetricEnabled('beamMU') && (
+        <MetricItem metricKey="beamMU" value={beam.beamMU} />
+      )}
+      {beam.arcLength && isMetricEnabled('arcLength') && (
+        <MetricItem metricKey="arcLength" value={beam.arcLength} />
+      )}
+      {isMetricEnabled('numberOfControlPoints') && (
+        <MetricItem 
+          metricKey="numberOfControlPoints" 
+          value={beam.numberOfControlPoints} 
+        />
+      )}
+      {isMetricEnabled('estimatedDeliveryTime') && beam.estimatedDeliveryTime !== undefined && (
+        <div className="metric-card">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="metric-label">Est. Time</span>
+            <span className="text-xs text-muted-foreground">mm:ss</span>
+          </div>
+          <div className="metric-value">{formatTime(beam.estimatedDeliveryTime)}</div>
+        </div>
+      )}
+      {isMetricEnabled('MUperDegree') && beam.MUperDegree !== undefined && (
+        <MetricItem metricKey="MUperDegree" value={beam.MUperDegree} />
+      )}
+      {isMetricEnabled('avgDoseRate') && beam.avgDoseRate !== undefined && (
+        <MetricItem metricKey="avgDoseRate" value={beam.avgDoseRate} />
+      )}
+      {isMetricEnabled('avgMLCSpeed') && beam.avgMLCSpeed !== undefined && (
+        <MetricItem metricKey="avgMLCSpeed" value={beam.avgMLCSpeed} />
+      )}
+      {isMetricEnabled('collimatorAngle') && beam.collimatorAngleStart !== undefined && (
+        <MetricItem metricKey="collimatorAngle" value={beam.collimatorAngleStart} />
+      )}
+    </div>
+  );
+}
+
 export function MetricsPanel({ metrics, currentBeamIndex }: MetricsPanelProps) {
   const { isMetricEnabled, getEnabledMetricKeys } = useMetricsConfig();
   
@@ -172,13 +255,6 @@ export function MetricsPanel({ metrics, currentBeamIndex }: MetricsPanelProps) {
   const hasPrimaryMetrics = ['MCS', 'LSV', 'AAV', 'MFA'].some(isMetricEnabled);
   const hasSecondaryMetrics = ['LT', 'LTMCS', 'SAS5', 'SAS10', 'EM', 'PI'].some(isMetricEnabled);
   const hasDeliveryMetrics = ['totalMU', 'totalDeliveryTime'].some(isMetricEnabled);
-
-  // Format delivery time as mm:ss
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   return (
     <Card className="h-full overflow-auto">
@@ -265,32 +341,7 @@ export function MetricsPanel({ metrics, currentBeamIndex }: MetricsPanelProps) {
             <h4 className="mb-3 text-sm font-medium">
               Beam: {currentBeam.beamName}
             </h4>
-            <div className="grid gap-3">
-              {isMetricEnabled('MCS') && (
-                <MetricItem metricKey="MCS" value={currentBeam.MCS} />
-              )}
-              {isMetricEnabled('LSV') && (
-                <MetricItem metricKey="LSV" value={currentBeam.LSV} />
-              )}
-              {isMetricEnabled('AAV') && (
-                <MetricItem metricKey="AAV" value={currentBeam.AAV} />
-              )}
-              {isMetricEnabled('MFA') && (
-                <MetricItem metricKey="MFA" value={currentBeam.MFA} />
-              )}
-              {isMetricEnabled('beamMU') && (
-                <MetricItem metricKey="beamMU" value={currentBeam.beamMU} />
-              )}
-              {currentBeam.arcLength && isMetricEnabled('arcLength') && (
-                <MetricItem metricKey="arcLength" value={currentBeam.arcLength} />
-              )}
-              {isMetricEnabled('numberOfControlPoints') && (
-                <MetricItem 
-                  metricKey="numberOfControlPoints" 
-                  value={currentBeam.numberOfControlPoints} 
-                />
-              )}
-            </div>
+            <BeamMetricsSection beam={currentBeam} isMetricEnabled={isMetricEnabled} />
           </div>
         )}
 
