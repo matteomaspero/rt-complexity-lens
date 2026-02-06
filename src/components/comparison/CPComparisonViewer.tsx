@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MLCApertureViewer } from '@/components/viewer/MLCApertureViewer';
+import { MLCDifferenceViewer } from './MLCDifferenceViewer';
 import type { Beam, ControlPoint } from '@/lib/dicom/types';
 import { cn } from '@/lib/utils';
 
@@ -86,52 +88,83 @@ export function CPComparisonViewer({
           </div>
         </div>
 
-        {/* Side-by-side apertures */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Plan A */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Plan A</span>
-              <span className="text-xs text-muted-foreground">{beamA.beamName}</span>
-            </div>
-            {cpA && (
-              <>
-                <div className="flex justify-center rounded-lg border bg-muted/30 p-2">
-                  <MLCApertureViewer
-                    mlcPositions={cpA.mlcPositions}
-                    leafWidths={beamA.mlcLeafWidths}
-                    jawPositions={cpA.jawPositions}
-                    width={180}
-                    height={160}
-                  />
-                </div>
-                <CPDetails cp={cpA} label="A" />
-              </>
-            )}
-          </div>
+        {/* View Mode Tabs */}
+        <Tabs defaultValue="side-by-side" className="w-full">
+          <TabsList className="mb-3 h-8 w-full">
+            <TabsTrigger value="side-by-side" className="flex-1 text-xs">Side-by-Side</TabsTrigger>
+            <TabsTrigger value="difference" className="flex-1 text-xs">Difference Overlay</TabsTrigger>
+          </TabsList>
 
-          {/* Plan B */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Plan B</span>
-              <span className="text-xs text-muted-foreground">{beamB.beamName}</span>
-            </div>
-            {cpB && (
-              <>
-                <div className="flex justify-center rounded-lg border bg-muted/30 p-2">
-                  <MLCApertureViewer
-                    mlcPositions={cpB.mlcPositions}
-                    leafWidths={beamB.mlcLeafWidths}
-                    jawPositions={cpB.jawPositions}
-                    width={180}
-                    height={160}
-                  />
+          {/* Side-by-side View */}
+          <TabsContent value="side-by-side" className="mt-0">
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Plan A */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-[hsl(var(--chart-comparison-a))]">Plan A</span>
+                  <span className="text-xs text-muted-foreground">{beamA.beamName}</span>
                 </div>
-                <CPDetails cp={cpB} label="B" />
-              </>
+                {cpA && (
+                  <>
+                    <div className="flex justify-center rounded-lg border bg-muted/30 p-2">
+                      <MLCApertureViewer
+                        mlcPositions={cpA.mlcPositions}
+                        leafWidths={beamA.mlcLeafWidths}
+                        jawPositions={cpA.jawPositions}
+                        width={180}
+                        height={160}
+                      />
+                    </div>
+                    <CPDetails cp={cpA} label="A" />
+                  </>
+                )}
+              </div>
+
+              {/* Plan B */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-[hsl(var(--chart-comparison-b))]">Plan B</span>
+                  <span className="text-xs text-muted-foreground">{beamB.beamName}</span>
+                </div>
+                {cpB && (
+                  <>
+                    <div className="flex justify-center rounded-lg border bg-muted/30 p-2">
+                      <MLCApertureViewer
+                        mlcPositions={cpB.mlcPositions}
+                        leafWidths={beamB.mlcLeafWidths}
+                        jawPositions={cpB.jawPositions}
+                        width={180}
+                        height={160}
+                      />
+                    </div>
+                    <CPDetails cp={cpB} label="B" />
+                  </>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Difference Overlay View */}
+          <TabsContent value="difference" className="mt-0">
+            {cpA && cpB && (
+              <div className="flex flex-col items-center gap-3">
+                <MLCDifferenceViewer
+                  mlcPositionsA={cpA.mlcPositions}
+                  mlcPositionsB={cpB.mlcPositions}
+                  leafWidths={beamA.mlcLeafWidths}
+                  jawPositionsA={cpA.jawPositions}
+                  jawPositionsB={cpB.jawPositions}
+                  width={340}
+                  height={280}
+                />
+                <div className="grid w-full grid-cols-2 gap-4 text-sm">
+                  <CPDetails cp={cpA} label="A" />
+                  <CPDetails cp={cpB} label="B" />
+                </div>
+              </div>
             )}
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Difference indicators */}
         {cpA && cpB && (
