@@ -91,6 +91,14 @@ export interface ControlPointMetrics {
   apertureArea: number; // mm²
   leafTravel: number; // mm (from previous CP)
   metersetWeight: number;
+  // Additional aperture analysis
+  aperturePerimeter?: number; // mm
+  smallApertureFlags?: {
+    below2mm: boolean;
+    below5mm: boolean;
+    below10mm: boolean;
+    below20mm: boolean;
+  };
 }
 
 export interface BeamMetrics {
@@ -110,6 +118,23 @@ export interface BeamMetrics {
   arcLength?: number; // degrees, for VMAT
   numberOfControlPoints: number;
   averageGantrySpeed?: number; // deg/s
+  
+  // Delivery time metrics
+  estimatedDeliveryTime?: number; // seconds
+  MUperDegree?: number; // MU per degree of arc
+  avgDoseRate?: number; // MU/min
+  avgMLCSpeed?: number; // mm/s
+  limitingFactor?: 'doseRate' | 'gantrySpeed' | 'mlcSpeed';
+  
+  // Collimator info
+  collimatorAngleStart?: number;
+  collimatorAngleEnd?: number;
+  
+  // Additional complexity metrics
+  SAS5?: number; // Small Aperture Score (5mm threshold)
+  SAS10?: number; // Small Aperture Score (10mm threshold)
+  EM?: number; // Edge Metric
+  PI?: number; // Plan Irregularity
   
   // Per-control-point data
   controlPointMetrics: ControlPointMetrics[];
@@ -131,10 +156,28 @@ export interface PlanMetrics {
   prescribedDose?: number;
   MUperGy?: number;
   
+  // Delivery time (aggregate)
+  totalDeliveryTime?: number; // seconds
+  
+  // Additional complexity metrics (aggregate)
+  SAS5?: number;
+  SAS10?: number;
+  EM?: number;
+  PI?: number;
+  
   // Per-beam breakdown
   beamMetrics: BeamMetrics[];
   
   calculationDate: Date;
+}
+
+// Machine delivery parameters for time estimation
+export interface MachineDeliveryParams {
+  maxDoseRate: number; // MU/min
+  maxDoseRateFFF?: number; // MU/min for FFF beams
+  maxGantrySpeed: number; // deg/s
+  maxMLCSpeed: number; // mm/s
+  mlcType: 'MLCX' | 'MLCY' | 'DUAL';
 }
 
 // Parsing status

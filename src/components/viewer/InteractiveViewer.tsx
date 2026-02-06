@@ -5,6 +5,7 @@ import {
   FileUploadZone,
   MLCApertureViewer,
   GantryViewer,
+  CollimatorViewer,
   ControlPointNavigator,
   MetricsPanel,
   CumulativeMUChart,
@@ -193,8 +194,8 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   onPlayToggle={handlePlayToggle}
                 />
 
-                {/* Gantry and MLC Row */}
-                <div className="grid gap-6 md:grid-cols-2">
+                {/* Gantry and Collimator Row */}
+                <div className="grid gap-6 md:grid-cols-3">
                   {/* Gantry View */}
                   <div className="rounded-lg border bg-card p-4">
                     <h4 className="mb-4 text-sm font-medium">Gantry Position</h4>
@@ -202,7 +203,18 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                       <GantryViewer
                         gantryAngle={currentCP.gantryAngle}
                         direction={currentCP.gantryRotationDirection}
-                        size={180}
+                        size={160}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Collimator View */}
+                  <div className="rounded-lg border bg-card p-4">
+                    <div className="flex justify-center">
+                      <CollimatorViewer
+                        collimatorAngle={currentCP.beamLimitingDeviceAngle}
+                        jawPositions={currentCP.jawPositions}
+                        size={160}
                       />
                     </div>
                   </div>
@@ -214,8 +226,8 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                       mlcPositions={currentCP.mlcPositions}
                       leafWidths={currentBeam.mlcLeafWidths}
                       jawPositions={currentCP.jawPositions}
-                      width={300}
-                      height={220}
+                      width={200}
+                      height={180}
                     />
                   </div>
                 </div>

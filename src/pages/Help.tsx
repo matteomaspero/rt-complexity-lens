@@ -146,6 +146,89 @@ export default function Help() {
             </CardContent>
           </Card>
 
+          {/* Coordinate System */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="2" x2="12" y2="12" />
+                  <line x1="12" y1="12" x2="20" y2="12" />
+                </svg>
+                IEC 61217 Coordinate System
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-sm dark:prose-invert max-w-none">
+              <p>
+                DICOM-RT uses the <strong>IEC 61217</strong> coordinate system standard for radiotherapy equipment.
+                All gantry, collimator, and patient coordinates follow this convention.
+              </p>
+
+              <h4>Gantry Angle</h4>
+              <Table>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-mono font-medium">0°</TableCell>
+                    <TableCell>Beam from above (superior, vertical down)</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-mono font-medium">90°</TableCell>
+                    <TableCell>Beam from patient's left (lateral)</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-mono font-medium">180°</TableCell>
+                    <TableCell>Beam from below (inferior, vertical up)</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-mono font-medium">270°</TableCell>
+                    <TableCell>Beam from patient's right (lateral)</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+
+              <h4>Collimator Angle</h4>
+              <ul>
+                <li><strong>0°</strong> — MLC leaves perpendicular to gantry rotation axis</li>
+                <li><strong>Positive rotation</strong> — Clockwise when viewed from the radiation source</li>
+              </ul>
+
+              <h4>Patient Coordinate System</h4>
+              <ul>
+                <li><strong>X-axis</strong> — Patient left (+) / right (-)</li>
+                <li><strong>Y-axis</strong> — Posterior (+) / anterior (-)</li>
+                <li><strong>Z-axis</strong> — Superior (+) / inferior (-)</li>
+              </ul>
+
+              <h4>Machine-Specific Variations</h4>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Machine</TableHead>
+                    <TableHead>MLC Type</TableHead>
+                    <TableHead>Jaw Configuration</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Varian C-arm</TableCell>
+                    <TableCell>MLCX (leaves move in X)</TableCell>
+                    <TableCell>ASYMX, ASYMY</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Varian Halcyon</TableCell>
+                    <TableCell>Dual-layer stacked MLC</TableCell>
+                    <TableCell>No jaws</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Elekta Agility</TableCell>
+                    <TableCell>MLCY (leaves move in Y)</TableCell>
+                    <TableCell>X, Y jaws</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
           {/* How to Use */}
           <Card>
             <CardHeader>
@@ -279,6 +362,66 @@ export default function Help() {
                       className="text-primary hover:underline"
                     >
                       PMC6774599<ExternalLinkIcon />
+                    </a>
+                  </li>
+                  <li>
+                    <span className="text-muted-foreground">Small Aperture Score:</span>
+                    <br />
+                    Crowe SB, et al. "Treatment plan complexity metrics for predicting IMRT 
+                    pre-treatment quality assurance results." <em>Australas Phys Eng Sci Med.</em> 2014;37:475-482.
+                    <br />
+                    <a
+                      href="https://doi.org/10.1007/s13246-014-0271-5"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      DOI: 10.1007/s13246-014-0271-5<ExternalLinkIcon />
+                    </a>
+                  </li>
+                  <li>
+                    <span className="text-muted-foreground">Edge Metric:</span>
+                    <br />
+                    Younge KC, et al. "Predicting deliverability of VMAT plans using aperture 
+                    complexity analysis." <em>J Appl Clin Med Phys.</em> 2016;17(4):124-131.
+                    <br />
+                    <a
+                      href="https://doi.org/10.1120/jacmp.v17i4.6241"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      DOI: 10.1120/jacmp.v17i4.6241<ExternalLinkIcon />
+                    </a>
+                  </li>
+                  <li>
+                    <span className="text-muted-foreground">Plan Irregularity:</span>
+                    <br />
+                    Du W, et al. "Quantification of beam complexity in IMRT treatment plans." 
+                    <em>Med Phys.</em> 2014;41(2):021716.
+                    <br />
+                    <a
+                      href="https://doi.org/10.1118/1.4861821"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      DOI: 10.1118/1.4861821<ExternalLinkIcon />
+                    </a>
+                  </li>
+                  <li>
+                    <span className="text-muted-foreground">Delivery Time Estimation:</span>
+                    <br />
+                    Park JM, et al. "The effect of MLC speed and acceleration on the plan 
+                    delivery accuracy of VMAT." <em>Brit J Radiol.</em> 2015.
+                    <br />
+                    <a
+                      href="https://doi.org/10.1259/bjr.20150040"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      DOI: 10.1259/bjr.20150040<ExternalLinkIcon />
                     </a>
                   </li>
                 </ul>

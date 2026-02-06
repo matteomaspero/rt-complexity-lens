@@ -1,6 +1,7 @@
 export { FileUploadZone } from './FileUploadZone';
 export { MLCApertureViewer } from './MLCApertureViewer';
 export { GantryViewer } from './GantryViewer';
+export { CollimatorViewer } from './CollimatorViewer';
 export { ControlPointNavigator } from './ControlPointNavigator';
 export { MetricsPanel } from './MetricsPanel';
 export { MetricsSettings } from './MetricsSettings';

@@ -16,11 +16,21 @@ export interface ThresholdDefinition {
 
 export type ThresholdSet = Record<string, ThresholdDefinition>;
 
+// Machine delivery parameters for time estimation
+export interface MachineDeliveryParams {
+  maxDoseRate: number; // MU/min
+  maxDoseRateFFF?: number; // MU/min for FFF beams
+  maxGantrySpeed: number; // deg/s
+  maxMLCSpeed: number; // mm/s
+  mlcType: 'MLCX' | 'MLCY' | 'DUAL';
+}
+
 export interface MachinePresetConfig {
   id: MachinePreset;
   name: string;
   description: string;
   thresholds: ThresholdSet;
+  deliveryParams: MachineDeliveryParams;
 }
 
 // Generic / Conservative - Safe baseline for any modern linac
@@ -63,36 +73,71 @@ const VERSA_HD_THRESHOLDS: ThresholdSet = {
   totalMU: { metricKey: 'totalMU', warningThreshold: 1800, criticalThreshold: 2800, direction: 'high' },
 };
 
+// Machine delivery parameters
+const GENERIC_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 600,
+  maxGantrySpeed: 4.8,
+  maxMLCSpeed: 25,
+  mlcType: 'MLCX',
+};
+
+const TRUEBEAM_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 600,
+  maxDoseRateFFF: 1400,
+  maxGantrySpeed: 6.0,
+  maxMLCSpeed: 25,
+  mlcType: 'MLCX',
+};
+
+const HALCYON_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 800,
+  maxGantrySpeed: 4.0,
+  maxMLCSpeed: 50,
+  mlcType: 'DUAL',
+};
+
+const VERSA_HD_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 600,
+  maxGantrySpeed: 6.0,
+  maxMLCSpeed: 35,
+  mlcType: 'MLCY',
+};
+
 export const MACHINE_PRESETS: Record<MachinePreset, MachinePresetConfig> = {
   generic: {
     id: 'generic',
     name: 'Generic (Conservative)',
     description: 'Safe baseline values for any modern linac',
     thresholds: GENERIC_THRESHOLDS,
+    deliveryParams: GENERIC_DELIVERY,
   },
   truebeam: {
     id: 'truebeam',
     name: 'Varian TrueBeam',
     description: 'Optimized for TrueBeam with Millennium MLC',
     thresholds: TRUEBEAM_THRESHOLDS,
+    deliveryParams: TRUEBEAM_DELIVERY,
   },
   halcyon: {
     id: 'halcyon',
     name: 'Varian Halcyon',
     description: 'Stricter thresholds for dual-layer MLC',
     thresholds: HALCYON_THRESHOLDS,
+    deliveryParams: HALCYON_DELIVERY,
   },
   versa_hd: {
     id: 'versa_hd',
     name: 'Elekta Versa HD',
     description: 'Optimized for Agility MLC',
     thresholds: VERSA_HD_THRESHOLDS,
+    deliveryParams: VERSA_HD_DELIVERY,
   },
   custom: {
     id: 'custom',
     name: 'Custom',
     description: 'User-defined threshold values',
-    thresholds: { ...GENERIC_THRESHOLDS }, // Start with generic as base
+    thresholds: { ...GENERIC_THRESHOLDS },
+    deliveryParams: GENERIC_DELIVERY,
   },
 };
 

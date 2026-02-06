@@ -170,8 +170,15 @@ export function MetricsPanel({ metrics, currentBeamIndex }: MetricsPanelProps) {
 
   // Check if any metrics in a category are enabled
   const hasPrimaryMetrics = ['MCS', 'LSV', 'AAV', 'MFA'].some(isMetricEnabled);
-  const hasSecondaryMetrics = ['LT', 'LTMCS'].some(isMetricEnabled);
-  const hasDeliveryMetrics = isMetricEnabled('totalMU');
+  const hasSecondaryMetrics = ['LT', 'LTMCS', 'SAS5', 'SAS10', 'EM', 'PI'].some(isMetricEnabled);
+  const hasDeliveryMetrics = ['totalMU', 'totalDeliveryTime'].some(isMetricEnabled);
+
+  // Format delivery time as mm:ss
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <Card className="h-full overflow-auto">
@@ -217,10 +224,35 @@ export function MetricsPanel({ metrics, currentBeamIndex }: MetricsPanelProps) {
                 {isMetricEnabled('LTMCS') && (
                   <MetricItem metricKey="LTMCS" value={metrics.LTMCS} />
                 )}
+                {isMetricEnabled('SAS5') && metrics.SAS5 !== undefined && (
+                  <MetricItem metricKey="SAS5" value={metrics.SAS5} />
+                )}
+                {isMetricEnabled('SAS10') && metrics.SAS10 !== undefined && (
+                  <MetricItem metricKey="SAS10" value={metrics.SAS10} />
+                )}
+                {isMetricEnabled('EM') && metrics.EM !== undefined && (
+                  <MetricItem metricKey="EM" value={metrics.EM} />
+                )}
+                {isMetricEnabled('PI') && metrics.PI !== undefined && (
+                  <MetricItem metricKey="PI" value={metrics.PI} />
+                )}
               </>
             )}
-            {hasDeliveryMetrics && isMetricEnabled('totalMU') && (
-              <MetricItem metricKey="totalMU" value={metrics.totalMU} />
+            {hasDeliveryMetrics && (
+              <>
+                {isMetricEnabled('totalMU') && (
+                  <MetricItem metricKey="totalMU" value={metrics.totalMU} />
+                )}
+                {isMetricEnabled('totalDeliveryTime') && metrics.totalDeliveryTime && (
+                  <div className="metric-card">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="metric-label">Est. Time</span>
+                      <span className="text-xs text-muted-foreground">mm:ss</span>
+                    </div>
+                    <div className="metric-value">{formatTime(metrics.totalDeliveryTime)}</div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
