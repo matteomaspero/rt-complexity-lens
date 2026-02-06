@@ -1,339 +1,248 @@
 
 
-# Enhanced Metrics: Delivery Time, Collimator Data, and Additional Complexity Indices
+# Angular Distribution Viewer and Comprehensive Visualizations
 
-## Overview
+## Verification Summary
 
-This plan expands the RT Plan Complexity Analyzer with delivery time estimation, collimator angle/position display, coordinate system specification, and additional complexity metrics from UCoMX and literature sources.
+The current implementation has been verified working:
+- Collimator Viewer: Displays angle (5.0°), jaw positions (X1, X2, Y1, Y2), field size (107.7 cm²)
+- Delivery Time: Shown as mm:ss format (e.g., 0:57)
+- New Metrics: SAS5 (0.0000), SAS10 (0.0000), EM (0.3088 mm⁻¹), PI (17.61) all calculated
+- All metrics exportable via CSV with new fields included
 
 ---
 
-## Part 1: Delivery Time Estimation
+## Part 1: Angular Distribution Charts
 
-Based on the UCoMX framework and TPS validation, delivery time can be estimated from control point data using machine parameters.
+### 1.1 Polar MU Distribution Chart
 
-### 1.1 Delivery Time Calculation
+A polar (radar) chart showing MU delivery as a function of gantry angle:
 
-Add estimated beam delivery time calculation based on:
-- **MU and dose rate**: Time = MU / DoseRate
-- **Gantry speed limiting**: For VMAT arcs, check if gantry speed limits delivery
-- **MLC speed limiting**: Check if MLC leaf travel limits delivery
-
-**Formula per control point:**
 ```text
-Time_CP = max(
-  MU_CP / MaxDoseRate,
-  GantryAngle_CP / MaxGantrySpeed,
-  MaxLeafTravel_CP / MaxMLCSpeed
-)
+              0° (Superior)
+                |
+                |
+     270° ------+------ 90°
+      (Right)   |    (Left)
+                |
+             180° (Posterior)
 ```
 
-**Machine parameters (configurable by preset):**
+**Data points:**
+- Aggregate MU delivered in each angular bin (e.g., 10° bins)
+- Color intensity or radius shows MU magnitude
+- Highlights where most dose is being delivered
 
-| Machine | Max Dose Rate | Max Gantry Speed | Max MLC Speed |
-|---------|---------------|------------------|---------------|
-| Generic | 600 MU/min | 4.8 °/s | 25 mm/s |
-| TrueBeam | 600 MU/min | 6.0 °/s | 25 mm/s |
-| TrueBeam FFF | 1400 MU/min | 6.0 °/s | 25 mm/s |
-| Halcyon | 800 MU/min | 4.0 °/s | 50 mm/s |
-| Elekta Versa HD | 600 MU/min | 6.0 °/s | 35 mm/s |
+### 1.2 Angular Dose Rate Chart
 
-### 1.2 New Metrics
+Line/area chart with gantry angle on X-axis:
 
-| Metric | Name | Unit | Description |
-|--------|------|------|-------------|
-| `estimatedDeliveryTime` | Est. Delivery Time | s | Estimated beam-on time per beam |
-| `totalDeliveryTime` | Total Delivery Time | s | Sum across all beams |
-| `MUperDegree` | MU per Degree | MU/° | Average MU delivered per degree of arc |
-| `avgDoseRate` | Avg Dose Rate | MU/min | Average dose rate during delivery |
-| `avgGantrySpeed` | Avg Gantry Speed | °/s | Average gantry rotation speed |
-| `avgMLCSpeed` | Avg MLC Speed | mm/s | Average leaf speed during delivery |
+| Metric | Description |
+|--------|-------------|
+| Dose Rate | MU/min at each control point |
+| MU per Degree | Rate of MU delivery per degree of arc |
+| Segment Duration | Time spent in each angular segment |
 
----
+### 1.3 Implementation
 
-## Part 2: Collimator Angles and Positions
+New component: `src/components/viewer/AngularDistributionChart.tsx`
 
-### 2.1 Display Collimator Angle
-
-The `beamLimitingDeviceAngle` is already parsed in control points. Add display components:
-
-**Current ControlPoint type already has:**
-```typescript
-beamLimitingDeviceAngle: number; // collimator angle
-```
-
-### 2.2 Collimator Visualization
-
-Create a `CollimatorViewer` component similar to `GantryViewer`:
-- Display current collimator angle
-- Show rotation indicator
-- Display alongside gantry viewer
-
-### 2.3 Jaw Positions Display
-
-Jaw positions are already parsed. Add a card showing:
-- X1, X2 (asymmetric X jaws)
-- Y1, Y2 (asymmetric Y jaws)
-- Field size calculation: (X2-X1) × (Y2-Y1)
-
-### 2.4 Machine-Specific Collimator Types
-
-Different machines use different collimator configurations:
-
-| Machine | MLC Type | Jaw Configuration |
-|---------|----------|-------------------|
-| Varian C-arm | MLCX | ASYMX, ASYMY |
-| Varian Halcyon | MLCX (dual-layer) | No jaws |
-| Elekta Agility | MLCY | X, Y |
-| Elekta MLCi2 | MLCX | X, Y |
-
----
-
-## Part 3: Coordinate System Reference
-
-### 3.1 IEC 61217 Standard
-
-DICOM-RT uses the IEC 61217 coordinate system. Add display and documentation:
-
-**Gantry coordinate system:**
-- 0° = beam from above (superior)
-- 90° = beam from patient's left
-- 180° = beam from below (posterior)
-- 270° = beam from patient's right
-
-**Collimator coordinate system:**
-- 0° = leaves perpendicular to gantry rotation axis
-- Positive rotation = clockwise looking from source
-
-**Patient coordinate system:**
-- X = left (positive) / right (negative)
-- Y = posterior (positive) / anterior (negative)  
-- Z = superior (positive) / inferior (negative)
-
-### 3.2 UI Updates
-
-Add to the viewer:
-- Info tooltip on gantry viewer explaining IEC 61217
-- Coordinate system legend in Help page
-- Isocenter position display when available
-
----
-
-## Part 4: Additional Complexity Metrics
-
-Based on literature review (PMC6774599, Du et al., Crowe et al., Younge et al.), add these metrics:
-
-### 4.1 Aperture-Based Metrics
-
-| Metric | Name | Formula/Description | Reference |
-|--------|------|---------------------|-----------|
-| `SAS` | Small Aperture Score | Fraction of segments with aperture < threshold (5mm default) | Crowe et al., 2014 |
-| `EM` | Edge Metric | Ratio of MLC edge length to aperture area | Younge et al., 2016 |
-| `PI` | Plan Irregularity | Average deviation of aperture from circular shape | Du et al., 2014 |
-| `PM` | Plan Modulation | Variation in fluence across apertures | Du et al., 2014 |
-| `CoA` | Circumference over Area | Aperture perimeter / area ratio | Literature |
-
-### 4.2 Delivery Parameter Metrics
-
-| Metric | Name | Unit | Description |
-|--------|------|------|-------------|
-| `MUperGy` | MU per Gy | MU/Gy | Plan efficiency metric |
-| `MUCP` | MU per Control Point | MU | Average MU between control points |
-| `DRV` | Dose Rate Variation | - | Coefficient of variation in dose rate |
-| `GSV` | Gantry Speed Variation | - | Coefficient of variation in gantry speed |
-
-### 4.3 Calculation Updates
-
-**Small Aperture Score (SAS):**
-```typescript
-SAS = Σ (apertures with any leaf gap < threshold) / total_apertures
-// Thresholds: 2mm, 5mm, 10mm, 20mm
-```
-
-**Edge Metric (EM):**
-```typescript
-EM = Σ (leaf_pair_edge_length) / aperture_area
-// Higher EM = more irregular aperture edges
-```
-
-**Plan Irregularity (PI):**
-```typescript
-AI = aperture_perimeter² / (4π × aperture_area)  // = 1 for circle
-PI = MU-weighted average of AI across all control points
+```text
++------------------------------------------+
+|  Angular Distribution                     |
+|  +-------------------+  +--------------+ |
+|  |                   |  | Legend       | |
+|  |    Polar Chart    |  | - MU Dist    | |
+|  |    (SVG/Recharts) |  | - Dose Rate  | |
+|  |                   |  |              | |
+|  +-------------------+  +--------------+ |
+|                                          |
+|  X-Axis: Gantry Angle (0-360°)           |
+|  +--------------------------------------+|
+|  |  Line Chart: Dose Rate vs Angle     ||
+|  +--------------------------------------+|
++------------------------------------------+
 ```
 
 ---
 
-## Part 5: Updated Types and Definitions
+## Part 2: Additional Comprehensive Views
 
-### 5.1 Types Updates (`src/lib/dicom/types.ts`)
+### 2.1 Aperture Complexity Heatmap
 
-Add to `BeamMetrics`:
-```typescript
-// Delivery time metrics
-estimatedDeliveryTime?: number;  // seconds
-MUperDegree?: number;
-avgDoseRate?: number;  // MU/min
-avgMLCSpeed?: number;  // mm/s
+A visualization showing complexity variation across the arc:
 
-// Collimator info
-collimatorAngleStart?: number;
-collimatorAngleEnd?: number;
+| Axis | Data |
+|------|------|
+| X | Gantry angle (0-360°) |
+| Y | Metric value |
+| Metrics | MCS, LSV, AAV per control point segment |
 
-// Additional complexity
-SAS5?: number;   // Small Aperture Score (5mm threshold)
-SAS10?: number;  // Small Aperture Score (10mm threshold)
-EM?: number;     // Edge Metric
-PI?: number;     // Plan Irregularity
-CoA?: number;    // Circumference over Area
+Color gradient shows where complexity peaks occur.
+
+### 2.2 MLC Speed Distribution
+
+Shows leaf movement intensity across the beam:
+
+| Display | Purpose |
+|---------|---------|
+| Max leaf speed per segment | Identifies MLC speed bottlenecks |
+| Histogram of leaf speeds | Distribution analysis |
+| Speed limit violations | Highlights potential delivery issues |
+
+### 2.3 Segment Duration Analysis
+
+Bar chart showing time spent in each control point segment:
+
+- X-axis: Control point or gantry angle
+- Y-axis: Estimated segment duration (seconds)
+- Color: Limiting factor (dose rate, gantry, or MLC)
+
+### 2.4 Cumulative Delivery Timeline
+
+A timeline view showing:
+
+```text
+Time (s)  0    10    20    30    40    50    60
+          |-----|-----|-----|-----|-----|-----|
+Gantry    179° -----> 270° -----> 0° -----> 90°
+MU        ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+DoseRate  ████▓▓▓▓▓▓▓▓░░░░████████████
 ```
-
-Add to `PlanMetrics`:
-```typescript
-totalDeliveryTime?: number;  // seconds
-MUperGy?: number;
-SAS5?: number;
-SAS10?: number;
-EM?: number;
-PI?: number;
-```
-
-### 5.2 Metric Definitions Updates
-
-Add to `METRIC_DEFINITIONS`:
-
-| Key | Category | Reference |
-|-----|----------|-----------|
-| `estimatedDeliveryTime` | delivery | UCoMX validation |
-| `totalDeliveryTime` | delivery | - |
-| `MUperDegree` | delivery | Miura et al. |
-| `avgGantrySpeed` | delivery | - |
-| `avgMLCSpeed` | delivery | Park et al. |
-| `SAS5` | secondary | Crowe et al., 2014 |
-| `SAS10` | secondary | Crowe et al., 2014 |
-| `EM` | secondary | Younge et al., 2016 |
-| `PI` | secondary | Du et al., 2014 |
-| `collimatorAngle` | delivery | IEC 61217 |
 
 ---
 
-## Part 6: UI Components
+## Part 3: File Changes
 
-### 6.1 New Components
+### New Files
 
-**CollimatorViewer.tsx**
-- Similar design to GantryViewer
-- Show collimator angle with rotation
-- Include field rectangle representation
+| File | Purpose |
+|------|---------|
+| `src/components/viewer/AngularDistributionChart.tsx` | Polar/angular MU and dose rate charts |
+| `src/components/viewer/ComplexityHeatmap.tsx` | Per-angle complexity visualization |
+| `src/components/viewer/DeliveryTimelineChart.tsx` | Time-based delivery analysis |
 
-**DeliveryTimeCard.tsx**
-- Display estimated delivery time per beam
-- Show limiting factor (MLC, gantry, or dose rate)
-- Total plan delivery time
+### Modified Files
 
-**CoordinateSystemInfo.tsx**
-- Expandable info panel explaining IEC 61217
-- Visual diagram of patient/gantry orientation
-
-### 6.2 Updated Components
-
-**MetricsPanel.tsx**
-- Add new metrics to appropriate sections
-- New "Delivery Time" subsection
-- New "Aperture Analysis" subsection for SAS, EM, PI
-
-**GantryViewer.tsx**
-- Add collimator angle display (small overlay)
-- Optional isocenter marker
-
-**InteractiveViewer.tsx**
-- Add collimator viewer alongside gantry viewer
-- Add delivery time summary card
+| File | Changes |
+|------|---------|
+| `src/components/viewer/Charts.tsx` | Add MU vs Angle chart, Dose Rate vs Angle |
+| `src/components/viewer/InteractiveViewer.tsx` | Add new chart sections, tabs for different views |
+| `src/components/viewer/index.ts` | Export new components |
+| `src/lib/dicom/metrics.ts` | Add per-angle binned metrics calculation |
 
 ---
 
-## Part 7: Machine Configuration Integration
+## Part 4: Angular Chart Data Structure
 
-### 7.1 Link to Threshold Presets
+### 4.1 Angular Binned Data
 
-Reuse machine presets from `threshold-definitions.ts` and extend with delivery parameters:
+Calculate per-angle aggregations:
 
 ```typescript
-interface MachineDeliveryParams {
-  maxDoseRate: number;        // MU/min
-  maxDoseRateFFF?: number;    // MU/min for FFF beams
-  maxGantrySpeed: number;     // deg/s
-  maxMLCSpeed: number;        // mm/s
-  mlcType: 'MLCX' | 'MLCY' | 'DUAL';
+interface AngularBin {
+  angleStart: number;      // Bin start angle
+  angleEnd: number;        // Bin end angle
+  angleMid: number;        // Bin center for plotting
+  MU: number;              // Total MU in this angular range
+  MUperDegree: number;     // MU per degree
+  avgDoseRate: number;     // Average dose rate (MU/min)
+  maxDoseRate: number;     // Peak dose rate
+  duration: number;        // Time spent in this range (s)
+  avgMCS: number;          // Average complexity
+  maxLeafSpeed: number;    // Maximum MLC speed (mm/s)
+  limitingFactor: 'doseRate' | 'gantrySpeed' | 'mlcSpeed';
 }
 ```
 
-### 7.2 Automatic Detection
+### 4.2 Calculation Logic
 
-When possible, detect machine from DICOM:
-- `TreatmentMachineName` tag
-- `Manufacturer` tag
-- Number of leaves / leaf widths
-
----
-
-## File Changes Summary
-
-| Action | File | Description |
-|--------|------|-------------|
-| Update | `src/lib/dicom/types.ts` | Add new metric fields |
-| Update | `src/lib/dicom/metrics.ts` | Implement new calculations |
-| Update | `src/lib/metrics-definitions.ts` | Add metric definitions |
-| Update | `src/lib/threshold-definitions.ts` | Add delivery parameters |
-| Create | `src/components/viewer/CollimatorViewer.tsx` | Collimator angle display |
-| Create | `src/components/viewer/DeliveryTimeCard.tsx` | Delivery time display |
-| Update | `src/components/viewer/MetricsPanel.tsx` | New metric sections |
-| Update | `src/components/viewer/InteractiveViewer.tsx` | Layout updates |
-| Update | `src/pages/Help.tsx` | Coordinate system docs, new metric refs |
+For each control point pair:
+1. Calculate angular extent
+2. Calculate MU delivered
+3. Estimate duration based on limiting factor
+4. Compute dose rate = MU / duration
+5. Bin into angular segments (10° bins recommended)
 
 ---
 
-## Implementation Sequence
+## Part 5: UI Layout Options
 
-1. **Update types** with new metric fields
-2. **Add metric definitions** for new metrics
-3. **Implement delivery time calculation** in metrics.ts
-4. **Implement SAS, EM, PI calculations** in metrics.ts
-5. **Create CollimatorViewer** component
-6. **Create DeliveryTimeCard** component
-7. **Update MetricsPanel** with new sections
-8. **Update InteractiveViewer** layout
-9. **Update Help page** with coordinate system and new references
-10. **Update threshold definitions** with delivery parameters
+### Option A: Tabbed Chart Section
+
+Replace current chart row with a tabbed interface:
+
+```text
+[ Control Points | Angular | Timeline | Complexity ]
+
++------------------------------------------------+
+| Selected Tab Content                            |
++------------------------------------------------+
+```
+
+### Option B: Expandable Chart Grid
+
+Add a new collapsible section below existing charts:
+
+```text
++-- Angular Analysis -------------------------+
+| [Polar MU Chart]  [Dose Rate vs Angle]     |
+| [Complexity Map]  [Speed Distribution]      |
++--------------------------------------------+
+```
+
+### Recommended: Option B
+
+Keep existing charts visible, add new section that can be collapsed if not needed.
 
 ---
 
-## New References to Add
+## Part 6: Polar Chart Implementation
 
-1. **Delivery Time Estimation:**
-   - Park JM, et al. "The effect of MLC speed and acceleration on the plan delivery accuracy of VMAT." *Brit J Radiol.* 2015.
+### Using Recharts PolarGrid
 
-2. **Small Aperture Score:**
-   - Crowe SB, et al. "Treatment plan complexity metrics for predicting IMRT pre-treatment quality assurance results." *Australas Phys Eng Sci Med.* 2014;37:475-482.
-   - DOI: 10.1007/s13246-014-0271-5
+Recharts supports radar/polar charts that can display angular data:
 
-3. **Edge Metric:**
-   - Younge KC, et al. "Predicting deliverability of VMAT plans using aperture complexity analysis." *J Appl Clin Med Phys.* 2016;17(4):124-131.
-   - DOI: 10.1120/jacmp.v17i4.6241
+```typescript
+<RadarChart data={angularData}>
+  <PolarGrid />
+  <PolarAngleAxis dataKey="angleMid" />
+  <PolarRadiusAxis />
+  <Radar 
+    dataKey="MU" 
+    fill="hsl(var(--chart-primary))"
+  />
+</RadarChart>
+```
 
-4. **Plan Irregularity (PI) and Plan Modulation (PM):**
-   - Du W, et al. "Quantification of beam complexity in IMRT treatment plans." *Med Phys.* 2014;41(2):021716.
-   - DOI: 10.1118/1.4861821
+### Alternative: Custom SVG
+
+For better IEC 61217 alignment, a custom SVG polar plot:
+- 0° at top (IEC convention)
+- Clockwise rotation for positive angles
+- Matches gantry viewer orientation
+
+---
+
+## Part 7: Implementation Sequence
+
+1. **Add angular binning calculation** to metrics.ts
+2. **Create AngularDistributionChart** component with:
+   - Polar MU distribution (radar chart)
+   - Dose Rate vs Angle (line chart)
+3. **Create ComplexityHeatmap** showing MCS/LSV/AAV per angle
+4. **Create DeliveryTimelineChart** with segment duration breakdown
+5. **Update InteractiveViewer** layout with new chart section
+6. **Update index.ts** exports
 
 ---
 
 ## Success Criteria
 
-- Estimated delivery time shown for each beam and total plan
-- Collimator angle displayed and updates with control points
-- Jaw positions shown with field size calculation
-- SAS, EM, and PI metrics calculated and displayed
-- Help page includes IEC 61217 coordinate system explanation
-- All new metrics exportable to CSV
-- Machine delivery parameters configurable via existing preset system
+- Polar chart shows MU distribution around the arc
+- Line chart displays dose rate variation with gantry angle
+- Current gantry position highlighted on angular charts
+- Charts sync with control point scrubber
+- Limiting factor (dose rate/gantry/MLC) visualized per segment
+- New charts work for both single-arc and multi-arc plans
 
