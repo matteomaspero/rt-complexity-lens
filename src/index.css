@@ -143,4 +143,21 @@
   .metric-label {
     @apply text-xs font-medium uppercase tracking-wide text-muted-foreground;
   }
+
+  /* Threshold Status Styling */
+  .metric-value-normal {
+    /* Default styling, no changes needed */
+  }
+
+  .metric-value-warning {
+    @apply rounded px-2 py-0.5;
+    color: hsl(var(--status-warning));
+    background: hsl(var(--status-warning) / 0.15);
+  }
+
+  .metric-value-critical {
+    @apply rounded px-2 py-0.5;
+    color: hsl(var(--status-error));
+    background: hsl(var(--status-error) / 0.15);
+  }
 }
