@@ -96,7 +96,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   // No plan loaded - show upload zone
   if (!sessionPlan) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
+      <main className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold tracking-tight">
             RT Plan Complexity Analyzer
@@ -175,13 +175,13 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
             </Link>
           </Button>
         </div>
-      </div>
+      </main>
     );
   }
 
   // Plan loaded - show interactive viewer
   return (
-    <div className="flex min-h-screen bg-background">
+    <main className="flex min-h-screen bg-background">
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
@@ -379,6 +379,6 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 });
