@@ -336,6 +336,6 @@ This project is licensed under the **Creative Commons Attribution-NonCommercial-
 
 When using RTp-lens in academic work, please cite:
 
-> RTplan Complexity Lens. (2024). A browser-based DICOM-RT Plan complexity analysis tool. Available at: https://rt-complexity-lens.lovable.app
+> Maspero Matteo. RTplan Complexity Lens. (2026). A browser-based DICOM-RT Plan complexity analysis tool. Available at: https://rt-complexity-lens.lovable.app
 
 See [LICENSE](LICENSE) for full details.
