@@ -1,12 +1,14 @@
 import type { BatchPlan } from '@/contexts/BatchContext';
-import type { BatchStatistics } from './batch-statistics';
 import { calculateBatchStatistics } from './batch-statistics';
+import { METRIC_DEFINITIONS, type MetricKey } from '@/lib/cohort/metric-utils';
 
 export interface ExportOptions {
   format: 'csv' | 'json';
   includePlanMetrics: boolean;
   includeBeamMetrics: boolean;
   includeControlPointData: boolean;
+  includeGeometricMetrics?: boolean;
+  includeComplexityMetrics?: boolean;
 }
 
 function escapeCSV(value: string | number | undefined): string {
@@ -18,59 +20,130 @@ function escapeCSV(value: string | number | undefined): string {
   return str;
 }
 
+function formatMetricValue(value: number | undefined, decimals: number = 4): string {
+  if (value === undefined || value === null || isNaN(value)) return '';
+  return value.toFixed(decimals);
+}
+
+// All metrics organized by category for export
+const GEOMETRIC_METRICS: { key: MetricKey; decimals: number }[] = [
+  { key: 'MFA', decimals: 2 },
+  { key: 'EFS', decimals: 2 },
+  { key: 'PA', decimals: 2 },
+  { key: 'JA', decimals: 2 },
+  { key: 'psmall', decimals: 2 },
+];
+
+const BEAM_METRICS: { key: MetricKey; decimals: number }[] = [
+  { key: 'totalMU', decimals: 1 },
+  { key: 'totalDeliveryTime', decimals: 1 },
+  { key: 'GT', decimals: 1 },
+  { key: 'MUCA', decimals: 2 },
+  { key: 'beamCount', decimals: 0 },
+  { key: 'controlPointCount', decimals: 0 },
+];
+
+const COMPLEXITY_METRICS: { key: MetricKey; decimals: number }[] = [
+  { key: 'MCS', decimals: 4 },
+  { key: 'LSV', decimals: 4 },
+  { key: 'AAV', decimals: 4 },
+  { key: 'LT', decimals: 1 },
+  { key: 'LTMCS', decimals: 4 },
+  { key: 'SAS5', decimals: 4 },
+  { key: 'SAS10', decimals: 4 },
+  { key: 'EM', decimals: 4 },
+  { key: 'PI', decimals: 2 },
+  { key: 'LG', decimals: 4 },
+  { key: 'MAD', decimals: 4 },
+  { key: 'TG', decimals: 4 },
+  { key: 'PM', decimals: 4 },
+];
+
+function getMetricValue(plan: BatchPlan, key: MetricKey): number | undefined {
+  const m = plan.metrics;
+  const p = plan.plan;
+  
+  switch (key) {
+    case 'beamCount': return p.beams?.length ?? 0;
+    case 'controlPointCount': 
+      return p.beams?.reduce((sum, b) => sum + (b.numberOfControlPoints || 0), 0) ?? 0;
+    case 'totalDeliveryTime': return m.totalDeliveryTime;
+    case 'GT': return m.beamMetrics?.reduce((sum, b) => sum + (b.arcLength || 0), 0) ?? 0;
+    default: return (m as unknown as Record<string, number | undefined>)[key];
+  }
+}
+
 export function exportToCSV(plans: BatchPlan[], options: ExportOptions): string {
   const successfulPlans = plans.filter(p => p.status === 'success');
   
   if (successfulPlans.length === 0) return '';
 
-  const headers = [
-    'File',
-    'Plan Label',
-    'Technique',
-    'Beams',
-    'Total MU',
-    'MCS',
-    'LSV',
-    'AAV',
-    'MFA (cm²)',
-    'LT (mm)',
-    'LTMCS',
-    'SAS5',
-    'SAS10',
-    'EM (mm⁻¹)',
-    'PI',
-    'Est. Time (s)',
-  ];
+  // Build header row with all metric categories
+  const headers: string[] = ['File', 'Plan Label', 'Technique', 'Beams'];
+  
+  // Always include geometric metrics at the beginning
+  const includeGeometric = options.includeGeometricMetrics !== false;
+  const includeComplexity = options.includeComplexityMetrics !== false;
+  
+  if (includeGeometric) {
+    GEOMETRIC_METRICS.forEach(({ key }) => {
+      const def = METRIC_DEFINITIONS[key];
+      headers.push(def?.unit ? `${key} (${def.unit})` : key);
+    });
+  }
+  
+  // Beam metrics
+  if (options.includePlanMetrics) {
+    BEAM_METRICS.forEach(({ key }) => {
+      const def = METRIC_DEFINITIONS[key];
+      headers.push(def?.unit ? `${key} (${def.unit})` : key);
+    });
+  }
+  
+  // Complexity metrics
+  if (includeComplexity) {
+    COMPLEXITY_METRICS.forEach(({ key }) => {
+      const def = METRIC_DEFINITIONS[key];
+      headers.push(def?.unit ? `${key} (${def.unit})` : key);
+    });
+  }
 
   if (options.includeBeamMetrics) {
     headers.push('Beam Details');
   }
 
   const rows = successfulPlans.map(p => {
-    const m = p.metrics;
     const plan = p.plan;
-    
-    const row = [
+    const row: string[] = [
       escapeCSV(p.fileName),
       escapeCSV(plan.planLabel),
       escapeCSV(plan.technique),
-      plan.beams.length,
-      m.totalMU?.toFixed(1) ?? '',
-      m.MCS?.toFixed(4) ?? '',
-      m.LSV?.toFixed(4) ?? '',
-      m.AAV?.toFixed(4) ?? '',
-      m.MFA?.toFixed(2) ?? '',
-      m.LT?.toFixed(0) ?? '',
-      m.LTMCS?.toFixed(4) ?? '',
-      m.SAS5?.toFixed(4) ?? '',
-      m.SAS10?.toFixed(4) ?? '',
-      m.EM?.toFixed(4) ?? '',
-      m.PI?.toFixed(2) ?? '',
-      m.totalDeliveryTime?.toFixed(1) ?? '',
+      String(plan.beams?.length ?? 0),
     ];
 
+    // Geometric metrics
+    if (includeGeometric) {
+      GEOMETRIC_METRICS.forEach(({ key, decimals }) => {
+        row.push(formatMetricValue(getMetricValue(p, key), decimals));
+      });
+    }
+
+    // Beam metrics
+    if (options.includePlanMetrics) {
+      BEAM_METRICS.forEach(({ key, decimals }) => {
+        row.push(formatMetricValue(getMetricValue(p, key), decimals));
+      });
+    }
+
+    // Complexity metrics
+    if (includeComplexity) {
+      COMPLEXITY_METRICS.forEach(({ key, decimals }) => {
+        row.push(formatMetricValue(getMetricValue(p, key), decimals));
+      });
+    }
+
     if (options.includeBeamMetrics) {
-      const beamSummary = m.beamMetrics
+      const beamSummary = p.metrics.beamMetrics
         .map(bm => `${bm.beamName}: ${bm.beamMU?.toFixed(1)} MU, MCS=${bm.MCS?.toFixed(3)}`)
         .join(' | ');
       row.push(escapeCSV(beamSummary));
@@ -79,7 +152,8 @@ export function exportToCSV(plans: BatchPlan[], options: ExportOptions): string 
     return row.join(',');
   });
 
-  return [headers.join(','), ...rows].join('\n');
+  // Add branded header comment
+  return `# Tool: RTp-lens (https://rt-complexity-lens.lovable.app)\n# Export Date: ${new Date().toISOString()}\n# Plans: ${successfulPlans.length}\n${headers.join(',')}\n${rows.join('\n')}`;
 }
 
 export function exportToJSON(plans: BatchPlan[], options: ExportOptions): string {
@@ -87,39 +161,70 @@ export function exportToJSON(plans: BatchPlan[], options: ExportOptions): string
   
   const stats = calculateBatchStatistics(successfulPlans.map(p => ({ metrics: p.metrics, plan: p.plan })));
   
+  const includeGeometric = options.includeGeometricMetrics !== false;
+  const includeComplexity = options.includeComplexityMetrics !== false;
+  
+  // Build summary with all available stats
+  const summary: Record<string, { min: number; max: number; mean: number; std: number }> = {};
+  
+  // Helper to add stat if available
+  const addStat = (key: string) => {
+    const s = stats[key as keyof typeof stats];
+    if (s && typeof s === 'object' && 'mean' in s) {
+      summary[key] = { min: s.min, max: s.max, mean: s.mean, std: s.std };
+    }
+  };
+  
+  if (includeGeometric) {
+    GEOMETRIC_METRICS.forEach(({ key }) => addStat(key));
+  }
+  
+  if (options.includePlanMetrics) {
+    BEAM_METRICS.forEach(({ key }) => addStat(key));
+  }
+  
+  if (includeComplexity) {
+    COMPLEXITY_METRICS.forEach(({ key }) => addStat(key));
+  }
+  
   const exportData = {
+    tool: 'RTp-lens',
+    toolUrl: 'https://rt-complexity-lens.lovable.app',
+    pythonToolkit: 'https://github.com/matteomaspero/rt-complexity-lens/tree/main/python',
     exportDate: new Date().toISOString(),
     planCount: successfulPlans.length,
-    summary: {
-      MCS: { min: stats.MCS.min, max: stats.MCS.max, mean: stats.MCS.mean, std: stats.MCS.std },
-      LSV: { min: stats.LSV.min, max: stats.LSV.max, mean: stats.LSV.mean, std: stats.LSV.std },
-      AAV: { min: stats.AAV.min, max: stats.AAV.max, mean: stats.AAV.mean, std: stats.AAV.std },
-      MFA: { min: stats.MFA.min, max: stats.MFA.max, mean: stats.MFA.mean, std: stats.MFA.std },
-      totalMU: { min: stats.totalMU.min, max: stats.totalMU.max, mean: stats.totalMU.mean, std: stats.totalMU.std },
-    },
+    summary,
     plans: successfulPlans.map(p => {
       const planData: Record<string, unknown> = {
         fileName: p.fileName,
         planLabel: p.plan.planLabel,
         technique: p.plan.technique,
+        beamCount: p.plan.beams?.length ?? 0,
         uploadTime: p.uploadTime.toISOString(),
       };
 
-      if (options.includePlanMetrics) {
-        planData.metrics = {
-          MCS: p.metrics.MCS,
-          LSV: p.metrics.LSV,
-          AAV: p.metrics.AAV,
-          MFA: p.metrics.MFA,
-          LT: p.metrics.LT,
-          LTMCS: p.metrics.LTMCS,
-          totalMU: p.metrics.totalMU,
-          SAS5: p.metrics.SAS5,
-          SAS10: p.metrics.SAS10,
-          EM: p.metrics.EM,
-          PI: p.metrics.PI,
-          totalDeliveryTime: p.metrics.totalDeliveryTime,
-        };
+      if (options.includePlanMetrics || includeGeometric || includeComplexity) {
+        const metrics: Record<string, number | undefined> = {};
+        
+        if (includeGeometric) {
+          GEOMETRIC_METRICS.forEach(({ key }) => {
+            metrics[key] = getMetricValue(p, key);
+          });
+        }
+        
+        if (options.includePlanMetrics) {
+          BEAM_METRICS.forEach(({ key }) => {
+            metrics[key] = getMetricValue(p, key);
+          });
+        }
+        
+        if (includeComplexity) {
+          COMPLEXITY_METRICS.forEach(({ key }) => {
+            metrics[key] = getMetricValue(p, key);
+          });
+        }
+        
+        planData.metrics = metrics;
       }
 
       if (options.includeBeamMetrics) {
@@ -159,7 +264,7 @@ export function downloadFile(content: string, filename: string, mimeType: string
 export function exportBatch(
   plans: BatchPlan[],
   options: ExportOptions,
-  filenamePrefix = 'batch-analysis'
+  filenamePrefix = 'rtplens-batch'
 ) {
   const timestamp = new Date().toISOString().split('T')[0];
   

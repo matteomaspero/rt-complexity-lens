@@ -55,7 +55,7 @@ export default function PythonDocs() {
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" asChild>
               <a
-                href="https://github.com/rtplan-complexity/rtplan-complexity"
+                href="https://github.com/matteomaspero/rt-complexity-lens/tree/main/python"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2"
