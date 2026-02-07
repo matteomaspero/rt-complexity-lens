@@ -1,161 +1,196 @@
 
-
-# Plan: Remove UCoMX Implementation Claims and Fix Coordinate Diagrams
+# Plan: Homogenize Help Page Style and Enhance Visual Appeal
 
 ## Summary
-
-Two changes are needed:
-1. **Remove explicit claims** that this tool is "based on" or "implements" UCoMX v1.1 source code (keep UCoMX in references as inspiration)
-2. **Fix coordinate system diagrams** to show correct anatomical orientations
-
----
-
-## Part 1: Remove UCoMX Implementation References
-
-### Problem
-The current text claims this tool is "based on the UCoMX v1.1 MATLAB implementation" and calculates "UCoMX complexity metrics." Since the source code is not available, we cannot claim to have implemented it - only that the metrics are **inspired by** the same publications.
-
-### Files & Changes
-
-#### `src/pages/Index.tsx` (via InteractiveViewer.tsx)
-**Line 174** - Change:
-```
-UCoMX v1.1 complexity metrics
-```
-To:
-```
-Plan complexity metrics
-```
-
-#### `src/pages/Help.tsx`
-Multiple changes:
-
-| Line | Current Text | New Text |
-|------|--------------|----------|
-| 63 | "based on the **UCoMX v1.1** framework" | "calculating complexity metrics **inspired by published research** including the UCoMX framework" |
-| 73 | "Calculate UCoMX complexity metrics at plan, beam, and control point levels" | "Calculate complexity metrics at plan, beam, and control point levels" |
-| 91-92 | "based on the UCoMX v1.1 MATLAB implementation" | "inspired by complexity metrics from the literature" |
-| 419-430 | "This tool is based on the UCoMX v1.1 MATLAB implementation" with Zenodo link as primary | Reframe as "The metrics in this tool are inspired by the UCoMX framework. For the original MATLAB implementation, see:" |
-| 589 | "Based on the UCoMX v1.1 framework from the University of Padova" | "Complexity metrics inspired by published research (see References)" |
+Improve the Help page by:
+1. Standardizing text formatting (bold, headings, lists)
+2. Enhancing visual hierarchy and spacing
+3. Making diagrams more prominent with better captions
+4. Adding visual accents for better readability
+5. Ensuring consistent styling patterns throughout
 
 ---
 
-## Part 2: Fix Coordinate System Diagrams
+## Current Issues Identified
 
-### Problem Analysis
+### Diagram Accuracy
+The coordinate system diagrams are now **technically correct**:
+- **IEC61217Diagram**: Transverse view with correct gantry positions (0° = AP from ceiling)
+- **PatientAxesDiagram**: Lateral view with correct axis orientations
 
-Looking at the current diagrams:
+### Style Inconsistencies
 
-**IEC61217Diagram (Gantry Angle):**
-- The transverse view shows correct orientation (view from feet)
-- Labels L/R are correct (patient's left on viewer's right)
-- **But**: The labels say "0° (Anterior/AP)" which is wrong - 0° gantry means beam comes from ABOVE (ceiling), which is the **anterior** direction for a supine patient. But the diagram caption says "0° = beam from above (AP)" which mixes terminology.
-- The table description says "From above (superior)" which confuses superior (anatomical direction = toward head) with anterior (toward ceiling for supine patient)
-
-**PatientAxesDiagram (Patient Coordinate):**
-- The isometric view is confusing
-- X axis (red) points upward in the diagram, but it should represent patient's left-right axis
-- Y axis (green) points down-left toward table, representing posterior
-- Z axis (blue) points toward head, which is correct
-
-The main issues:
-1. **Gantry diagram**: Terminology confusion between "superior/inferior" (head/feet directions) and "anterior/posterior" (front/back for supine patient)
-2. **Patient axes diagram**: The isometric projection makes the axes confusing - X appears to point to ceiling instead of sideways
-
-### Corrected Diagrams
-
-#### IEC61217Diagram - Terminology Fix
-
-The gantry angle diagram should use consistent terminology:
-- **0°** = Gantry at top, beam travels DOWNWARD (toward floor for supine patient = **Anterior-to-Posterior** beam direction, or AP beam)
-- **90°** = Gantry at patient's left, beam travels RIGHT (toward patient's right = **Left lateral**)
-- **180°** = Gantry at bottom (under couch), beam travels UPWARD = **Posterior-to-Anterior** (PA beam)
-- **270°** = Gantry at patient's right, beam travels LEFT = **Right lateral**
-
-Current confusion: The table says "From above (superior)" but superior means toward the head, not toward the ceiling. For a supine patient:
-- Beam from ceiling = enters through anterior surface
-- Superior direction = toward head (Z+ axis)
-
-**Fix**: Change terminology in the table from "From above (superior)" to "From ceiling (AP direction)" or similar clear language.
-
-#### PatientAxesDiagram - Clearer Orientation
-
-The current isometric view is confusing. A clearer approach would be to use a slightly different viewing angle or add clearer visual cues:
-
-Option A: **Use a true lateral view (from patient's right side)** showing:
-- Patient lying flat (horizontal)
-- Z-axis horizontal toward head
-- Y-axis vertical (up = anterior, down = posterior toward table)
-- X-axis coming "out of the page" (shown with a dot symbol ⊙ for +X toward viewer = patient's left)
-
-Option B: **Improve the current isometric view** by:
-- Making the patient body clearly horizontal on the table
-- Showing X-axis going truly to the side (not upward)
-- Adding clearer perspective cues
-
-**Recommended**: Option A (lateral view) is clearer because all axes are intuitive:
-- Looking from patient's right side
-- Head on right (Z+), feet on left (Z-)
-- Anterior (chest/face) up (Y-), Posterior (back/table) down (Y+)  
-- Left (+X) toward viewer (⊙ symbol), Right (-X) away from viewer (⊗ symbol)
+| Issue | Location | Current State |
+|-------|----------|---------------|
+| Bold usage | Throughout | Inconsistent - some terms bolded, others not |
+| Heading sizes | Section headers | Mix of `<h4>` tags with varying weight |
+| List styling | Feature lists | Some bulleted, some not |
+| Section spacing | Between cards | Variable margins |
+| Emphasis patterns | Key terms | Mix of bold, italics, plain |
+| Caption prominence | Diagrams | Small, could be more styled |
+| Visual accents | Info boxes | Only one highlighted box (References) |
 
 ---
 
-## Detailed Changes
+## Implementation Changes
+
+### 1. Standardize Typography Patterns
+
+**Establish consistent rules:**
+- **Section titles**: Use `<h4 className="font-semibold text-base mb-2">` 
+- **Key terms**: Bold first occurrence only
+- **Technical terms**: Use `<code className="font-mono">` for values like `0°`, `90°`
+- **Emphasis**: Reserve bold for truly important concepts
+
+### 2. Enhance Introduction Card
+
+**Changes:**
+- Add a subtle accent border or icon highlight
+- Standardize feature list with checkmark or bullet icons
+- Add visual separator between intro text and features
+
+### 3. Improve Coordinate System Section
+
+**Changes to Help.tsx lines 162-345:**
+- Add subtle background highlight to diagram containers
+- Enhance diagram captions with styled boxes
+- Add visual dividers between subsections (Gantry, Collimator, Patient)
+- Standardize table styling for all angle tables
+- Add consistent "note" styling for clarifications
+
+**Diagram container enhancement:**
+```tsx
+<div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
+  <div className="shrink-0 p-4 rounded-lg bg-muted/30 border">
+    <IEC61217Diagram />
+  </div>
+  ...
+</div>
+```
+
+### 4. Standardize "How to Use" Section
+
+**Changes to Help.tsx lines 348-387:**
+- Number headings more prominently (styled badges)
+- Add icons to each step for visual interest
+- Consistent paragraph styling
+
+### 5. Improve References Section
+
+**Changes to Help.tsx lines 412-573:**
+- Add subtle card backgrounds to group related references
+- Use consistent citation formatting
+- Enhance DOI links with better visual treatment
+
+### 6. Add Visual Accents Throughout
+
+**New patterns to apply:**
+- Subtle dividers between major subsections
+- Highlighted "tip" or "note" boxes where appropriate
+- Consistent icon usage in headings
+
+---
+
+## Detailed File Changes
+
+### `src/pages/Help.tsx`
+
+#### Introduction Section (lines 51-79)
+- Wrap key features in a styled list with icons
+- Add subtle visual divider
+
+#### Coordinate System Section (lines 162-345)
+- Add styled containers around diagrams
+- Enhance caption styling
+- Standardize all angle tables with consistent headers
+- Add subtle backgrounds to distinguish subsections
+- Fix bold usage consistency
+
+#### How to Use Section (lines 348-387)
+- Add step number badges
+- Improve visual hierarchy
+
+#### References Section (lines 412-573)
+- Add grouped backgrounds for different reference types
+- Consistent citation formatting
+
+#### About Section (lines 576-596)
+- Add subtle branding/visual element
 
 ### `src/components/help/IEC61217Diagram.tsx`
-
-**Update table in Help.tsx (lines 202-217)** to use clearer beam direction terminology:
-
-| Angle | Current | Corrected |
-|-------|---------|-----------|
-| 0° | "From above (superior)" | "From ceiling — AP beam (enters anterior)" |
-| 90° | "From patient's left" | "From patient's left — left lateral beam" |
-| 180° | "From below (inferior)" | "From floor — PA beam (enters posterior)" |
-| 270° | "From patient's right" | "From patient's right — right lateral beam" |
-
-**Update diagram caption** (line 289-291):
-Change "0° = beam from above (AP)" to clearer text about the transverse viewing convention.
+- No changes needed - diagram is correct
 
 ### `src/components/help/PatientAxesDiagram.tsx`
-
-**Complete rewrite** to use a lateral view:
-
-```text
-New diagram structure (looking from patient's RIGHT side):
-
-      Y− (Anterior/ceiling)
-            ↑
-            │
-            │    ┌─────────────────────┐
-            │    │     Patient Body    │───→ Z+ (Superior/Head)
-            │    │    (horizontal)     │
-Z− (Feet) ←─┼────│                     │
-            │    └─────────────────────┘
-            │    ═══════════════════════ (Table)
-            ↓
-      Y+ (Posterior/table)
-
-      X+ (Left): ⊙ coming toward viewer
-      X− (Right): ⊗ going away from viewer
-```
-
-Key elements:
-- Patient body as a horizontal ellipse/shape
-- Table as a horizontal bar below patient
-- Gantry ring as a vertical circle around the patient (optional)
-- Z-axis horizontal pointing toward head (right)
-- Y-axis vertical (down = posterior toward table, up = anterior toward ceiling)
-- X-axis shown with ⊙ (dot in circle) = coming toward viewer = patient's left
+- No changes needed - diagram is correct
 
 ---
 
-## Summary of File Changes
+## Specific Text Formatting Standards
+
+### Bold Usage Rules
+| Use Case | Treatment |
+|----------|-----------|
+| Tool name ("RT Plan Complexity Analyzer") | Bold on first mention |
+| Standards ("IEC 61217") | Bold on first mention |
+| Axis labels (X, Y, Z) | Use colored font, not just bold |
+| Angle values (0°, 90°) | Monospace font (`font-mono`) |
+| Direction terms (clockwise, counter-clockwise) | Bold |
+| Anatomical terms (anterior, posterior) | Normal text |
+
+### Heading Hierarchy
+| Level | Usage | Styling |
+|-------|-------|---------|
+| Card Title | Section header | `<CardTitle>` with icon |
+| H4 | Subsection | `font-semibold text-base` |
+| H5/strong | Minor heading | `font-medium` |
+
+---
+
+## Visual Enhancement Details
+
+### Diagram Container Styling
+```tsx
+<div className="rounded-xl border bg-gradient-to-br from-muted/20 to-muted/40 p-4">
+  <IEC61217Diagram />
+</div>
+```
+
+### Enhanced Caption Style
+```tsx
+<p className="mt-3 text-sm text-center text-muted-foreground bg-muted/50 rounded-lg p-2">
+  Caption text here
+</p>
+```
+
+### Note/Tip Box Style
+```tsx
+<div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4 text-sm">
+  <strong>Note:</strong> Important information here
+</div>
+```
+
+### Step Badge Style
+```tsx
+<span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold mr-2">
+  1
+</span>
+```
+
+---
+
+## Summary of Changes
 
 | File | Change Type | Description |
 |------|-------------|-------------|
-| `src/components/viewer/InteractiveViewer.tsx` | Edit line 174 | Remove "UCoMX v1.1" claim |
-| `src/pages/Help.tsx` | Edit lines 63, 73, 91-92, 202-218, 419-430, 589 | Soften UCoMX claims; fix beam direction terminology |
-| `src/components/help/IEC61217Diagram.tsx` | Minor edit | Update caption text |
-| `src/components/help/PatientAxesDiagram.tsx` | Full rewrite | Change from isometric to lateral view for clarity |
+| `src/pages/Help.tsx` | Major edit | Standardize typography, add visual accents, enhance diagram containers, consistent formatting |
+| `src/components/help/IEC61217Diagram.tsx` | No change | Diagram is correct |
+| `src/components/help/PatientAxesDiagram.tsx` | No change | Diagram is correct |
 
+---
+
+## Expected Outcome
+- Consistent visual hierarchy throughout the Help page
+- More prominent and visually appealing diagrams
+- Easier scanning with better typography
+- Professional, clinical aesthetic maintained
+- Improved readability and information architecture
