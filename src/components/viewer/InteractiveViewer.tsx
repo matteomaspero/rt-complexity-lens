@@ -23,6 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Logo } from '@/components/ui/logo';
 import { HelpCircle, ChevronDown, Home, Github } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -108,9 +109,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold tracking-tight">
-            RT Plan Complexity Analyzer
-          </h1>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Logo size="lg" />
+          </div>
           <p className="text-muted-foreground max-w-md mx-auto">
             Upload a DICOM-RT Plan file to analyze delivery complexity metrics, timing estimates, and quality indicators.
           </p>
@@ -214,9 +215,8 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
           <MetricsSettings />
         </div>
         
-        <div className="mt-8 text-center text-sm text-muted-foreground space-y-1">
+        <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>Supports <span className="font-medium">VMAT</span> and <span className="font-medium">IMRT</span> plans • Browser-based processing</p>
-          <p className="font-mono text-xs">MCS • PM • LSV • AAV • Delivery Timing</p>
         </div>
         
         {/* Help Link and Theme Toggle */}

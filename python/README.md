@@ -1,6 +1,6 @@
-# RT Plan Complexity Analyzer - Python Toolkit
+# RTplan Complexity Lens - Python Toolkit
 
-Offline Python implementation of the RT Plan Complexity Analyzer metrics,
+Offline Python implementation of RTp-lens metrics,
 producing results identical to the web application.
 
 ## Installation

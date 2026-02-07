@@ -958,7 +958,7 @@ export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): s
   lines.push(`# Plan: ${metrics.planLabel}`);
   lines.push(`# Exported: ${new Date().toISOString()}`);
   lines.push(`# Calculated: ${metrics.calculationDate.toISOString()}`);
-  lines.push('# Tool: RT Plan Complexity Analyzer (UCoMX v1.1)');
+  lines.push('# Tool: RTp-lens (UCoMX v1.1)');
   lines.push('');
   
   // Plan-level metrics

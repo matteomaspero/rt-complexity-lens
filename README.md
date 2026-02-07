@@ -1,10 +1,10 @@
-# RT Plan Complexity Analyzer
+# RTplan Complexity Lens
 
 A browser-based tool for analyzing DICOM-RT Plan complexity using UCoMX metrics.
 
 ## Overview
 
-The **RT Plan Complexity Analyzer** calculates and visualizes treatment plan complexity metrics directly in your browser. No data is uploaded to servers—all processing happens locally.
+**RTplan Complexity Lens** (RTp-lens) calculates and visualizes treatment plan complexity metrics directly in your browser. No data is uploaded to servers—all processing happens locally.
 
 ## Features
 

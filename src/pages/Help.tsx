@@ -66,7 +66,7 @@ export default function Help() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Help & Documentation</h1>
               <p className="text-muted-foreground">
-                RT Plan Complexity Analyzer Guide
+                RTp-lens Documentation
               </p>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default function Help() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-muted-foreground leading-relaxed">
-                  The <strong className="text-foreground">RT Plan Complexity Analyzer</strong> is a browser-based tool for analyzing 
+                  <strong className="text-foreground">RTplan Complexity Lens</strong> (RTp-lens) is a browser-based tool for analyzing 
                   DICOM-RT Plan files and calculating delivery complexity metrics inspired by 
                   <strong className="text-foreground"> published research</strong> including the UCoMX framework.
                 </p>

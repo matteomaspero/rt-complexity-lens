@@ -74,7 +74,7 @@ export default function PythonDocs() {
             <CardContent className="pt-6">
               <p className="text-muted-foreground leading-relaxed">
                 The <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">rtplan-complexity</code> Python 
-                package provides identical metric calculations to this web application, allowing you to run analyses 
+                package provides identical metric calculations to RTp-lens, allowing you to run analyses 
                 offline on your local workstation. The package supports single-plan, batch, and cohort analysis modes 
                 with matplotlib visualizations.
               </p>
