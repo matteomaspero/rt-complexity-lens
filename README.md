@@ -317,4 +317,25 @@ This tool is intended for **research and educational purposes**. It should not b
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International** (CC BY-NC-SA 4.0).
+
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+### You are free to:
+
+- **Share** — copy and redistribute the material in any medium or format
+- **Adapt** — remix, transform, and build upon the material
+
+### Under the following terms:
+
+- **Attribution** — You must give appropriate credit and link to the original project
+- **NonCommercial** — You may not use the material for commercial purposes
+- **ShareAlike** — Derivatives must use the same license
+
+### Citation
+
+When using RTp-lens in academic work, please cite:
+
+> RTplan Complexity Lens. (2024). A browser-based DICOM-RT Plan complexity analysis tool. Available at: https://rt-complexity-lens.lovable.app
+
+See [LICENSE](LICENSE) for full details.
