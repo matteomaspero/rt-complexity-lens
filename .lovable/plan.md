@@ -1,99 +1,84 @@
 
 
-# Plan: Rebrand to RTplan Complexity Lens (RTp-lens)
+# Plan: Update Logo Style and OG Image
 
 ## Summary
 
-Rename the application from "RT Plan Complexity Analyzer" to **RTplan Complexity Lens** (short: **RTp-lens**), remove the metric abbreviation line from the home page, add a logo placeholder, and ensure consistent naming throughout the codebase.
+Redesign the logo SVG to match the reference image style - a magnifying glass with a network/complexity pattern inside the lens, and update the text to show "RTp" with a subscript-style small "p". Also generate a new OG image matching this design.
 
 ---
 
-## Name Recommendation
+## Reference Image Analysis
 
-Based on the project's published URL (`rt-complexity-lens.lovable.app`) and the user's suggestions:
-
-| Form | Usage |
-|------|-------|
-| **RTplan Complexity Lens** | Full name in documentation and formal contexts |
-| **RTp-lens** | Short name for UI headers, badges, and informal references |
-
-The name "Lens" evokes the concept of looking into/analyzing plan complexity, which fits the tool's purpose well.
+The uploaded image shows:
+- A magnifying glass icon with a network graph pattern inside
+- Circular outer rings (silver/metallic style)
+- Dark blue gradient background
+- Text layout: "COMPLEXITY" / "LENS" (cyan) / "RT" (white)
+- The network pattern has nodes connected by lines
 
 ---
 
 ## Changes Overview
 
-### 1. Remove Metric Abbreviation Line
+### 1. Update Logo SVG (`src/components/ui/logo.tsx`)
 
-Remove this line from the home page (InteractiveViewer.tsx line 219):
-```
-MCS • PM • LSV • AAV • Delivery Timing
-```
+Redesign the `LogoIcon` component to match the reference style:
+- **Magnifying glass**: Circle with a handle extending down-right
+- **Network pattern inside**: Nodes (small circles) connected by lines
+- **Outer ring**: Single or double circular border
+- Uses `currentColor` for theme compatibility
 
-### 2. Add Logo Placeholder
+### 2. Update Logo Text
 
-Create a simple SVG logo component that can be used throughout the app:
-- Stylized "RTP" letters with a lens/magnifying element
-- Works in both light and dark themes
-- Can be replaced with actual logo later
+Change the text display to "RTp-lens" with proper styling:
+- "RT" in bold
+- "p" as a smaller subscript-style character
+- "-lens" in regular weight
 
-### 3. Update App Name Everywhere
+### 3. Generate New OG Image (`public/og-image.png`)
 
-| File | Location | Old | New |
-|------|----------|-----|-----|
-| `index.html` | `<title>` | RT Plan Complexity Analyzer | RTplan Complexity Lens |
-| `index.html` | `og:title` | RT Plan Complexity Analyzer | RTplan Complexity Lens |
-| `index.html` | `description` | Update description text | Include "RTp-lens" |
-| `InteractiveViewer.tsx` | Home page title | RT Plan Complexity Analyzer | RTp-lens |
-| `Help.tsx` | Page subtitle | RT Plan Complexity Analyzer Guide | RTp-lens Documentation |
-| `Help.tsx` | Introduction text | RT Plan Complexity Analyzer | RTplan Complexity Lens |
-| `Help.tsx` | About section | RT Plan Complexity Analyzer | RTplan Complexity Lens |
-| `src/lib/dicom/metrics.ts` | CSV export header | RT Plan Complexity Analyzer | RTp-lens |
-| `python/README.md` | Title and references | RT Plan Complexity Analyzer | RTplan Complexity Lens / RTp-lens |
-| `python/pyproject.toml` | Description | RT Plan Complexity Analyzer | RTplan Complexity Lens |
-| `README.md` | Project title | RT Plan Complexity Analyzer | RTplan Complexity Lens |
+Create a new 1200x630 OG image featuring:
+- Dark blue gradient background (matching reference)
+- Centered magnifying glass with network pattern
+- "COMPLEXITY" text above
+- "LENS" in cyan, "RTp" in white below
+- Subtle outer ring decoration
 
 ---
 
 ## Technical Details
 
-### New Logo Component
-
-Create `src/components/ui/logo.tsx`:
+### New Logo SVG Structure
 
 ```text
-RTp-lens Logo Component
-├── Props: size (sm, md, lg), showText (boolean)
-├── SVG with stylized "RT" and lens icon
-├── Supports theme colors (uses currentColor)
-└── Export: Logo, LogoIcon (icon only)
+LogoIcon SVG (viewBox 0 0 32 32)
+├── Outer ring circle (stroke only)
+├── Magnifying glass
+│   ├── Lens circle (filled semi-transparent)
+│   ├── Handle (angled line)
+│   └── Network pattern inside lens
+│       ├── Center node
+│       ├── Surrounding nodes (6-8 small circles)
+│       └── Connecting lines between nodes
+└── Theme-compatible colors (currentColor)
 ```
 
-### Home Page Updates
+### Network Pattern Design
 
-```text
-InteractiveViewer.tsx Changes
-├── Line 111-112: Replace h1 text with RTp-lens + Logo
-├── Line 217-220: Remove the metric abbreviation paragraph
-└── Add Logo import
-```
+A simplified network graph that fits within the lens:
+- 1 center node
+- 6 outer nodes arranged in a hexagonal pattern
+- Lines connecting center to outer nodes
+- Some lines connecting adjacent outer nodes
 
-### Updated Home Page Header Structure
+### Size Configurations
 
-```text
-Before:
-  h1: "RT Plan Complexity Analyzer"
-  p: "Upload a DICOM-RT Plan..."
-  ...
-  p: "Supports VMAT and IMRT plans..."
-  p: "MCS • PM • LSV • AAV • Delivery Timing"  <-- Remove this
-
-After:
-  [Logo] + h1: "RTPlens"
-  p: "Upload a DICOM-RT Plan..."
-  ...
-  p: "Supports VMAT and IMRT plans • Browser-based processing"
-```
+| Size | Icon Dimension | Text Class |
+|------|----------------|------------|
+| sm | 20px | text-sm |
+| md | 28px | text-lg |
+| lg | 40px | text-2xl |
 
 ---
 
@@ -101,35 +86,17 @@ After:
 
 | File | Change |
 |------|--------|
-| `src/components/ui/logo.tsx` | **New file** - Logo component |
-| `index.html` | Update title, og:title, description |
-| `src/components/viewer/InteractiveViewer.tsx` | Replace name, add logo, remove metric line |
-| `src/pages/Help.tsx` | Update name references (3 locations) |
-| `src/lib/dicom/metrics.ts` | Update CSV export header |
-| `python/README.md` | Update name references |
-| `python/pyproject.toml` | Update description |
-| `README.md` | Update project title and references |
-
-**Total: 7 files modified + 1 new file**
+| `src/components/ui/logo.tsx` | Redesign SVG with magnifying glass + network pattern |
+| `public/og-image.png` | Generate new image matching the design style |
 
 ---
 
-## Logo Design
+## Color Scheme (from reference)
 
-Simple SVG placeholder that can be easily replaced:
+- **Background**: Dark navy gradient (`#1a2744` to `#0f1724`)
+- **Primary/Cyan accent**: `#3b9fd4` / `#5bb5e0`
+- **Text white**: `#ffffff`
+- **Metallic ring**: Linear gradient silver/gray
 
-```text
-Visual concept:
-┌─────────────────┐
-│  RT   ◎        │  
-│      Lens      │
-└─────────────────┘
-
-- "RT" in bold/monospace style
-- Circular lens icon (◎) representing analysis/focus
-- Clean, minimal design
-- Uses CSS currentColor for theme compatibility
-```
-
-The logo will be implemented as a React component with size variants, making it easy to use in the header, footer, and other locations consistently.
+For the SVG component, we'll use `currentColor` and `text-primary` classes to maintain theme compatibility.
 
