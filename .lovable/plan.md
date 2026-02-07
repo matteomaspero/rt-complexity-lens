@@ -1,196 +1,258 @@
 
-# Plan: Homogenize Help Page Style and Enhance Visual Appeal
+# Plan: Homogenize Styling Across Pages and Add PNG Export for Charts
 
 ## Summary
-Improve the Help page by:
-1. Standardizing text formatting (bold, headings, lists)
-2. Enhancing visual hierarchy and spacing
-3. Making diagrams more prominent with better captions
-4. Adding visual accents for better readability
-5. Ensuring consistent styling patterns throughout
+This plan covers two main improvements:
+1. **Style Homogenization**: Apply the Help page styling patterns (StepBadge, NoteBox, subsection headers, card styling) across the main viewer, Batch Dashboard, and Compare Plans pages
+2. **PNG Export for Charts**: Add the ability to export any chart as a PNG image using a reusable utility
 
 ---
 
-## Current Issues Identified
+## Part 1: Style Homogenization
 
-### Diagram Accuracy
-The coordinate system diagrams are now **technically correct**:
-- **IEC61217Diagram**: Transverse view with correct gantry positions (0° = AP from ceiling)
-- **PatientAxesDiagram**: Lateral view with correct axis orientations
+### Current State Analysis
 
-### Style Inconsistencies
+The Help page established these styling patterns that are not yet applied elsewhere:
 
-| Issue | Location | Current State |
-|-------|----------|---------------|
-| Bold usage | Throughout | Inconsistent - some terms bolded, others not |
-| Heading sizes | Section headers | Mix of `<h4>` tags with varying weight |
-| List styling | Feature lists | Some bulleted, some not |
-| Section spacing | Between cards | Variable margins |
-| Emphasis patterns | Key terms | Mix of bold, italics, plain |
-| Caption prominence | Diagrams | Small, could be more styled |
-| Visual accents | Info boxes | Only one highlighted box (References) |
+| Pattern | Help Page | Main Viewer | Batch | Compare |
+|---------|-----------|-------------|-------|---------|
+| Subsection headers with accent bar | Yes | No | No | No |
+| NoteBox for tips/info | Yes | No | No | No |
+| StepBadge for numbered items | Yes | No | No | No |
+| Card border-l-4 accent | Yes (intro card) | No | No | No |
+| Table header bg-muted/50 | Yes | No | Partial | No |
+| Code blocks with font-mono bg-muted | Yes | Partial | No | No |
+| Consistent icon + title in CardHeader | Yes | Partial | No | No |
+
+### Changes Required
+
+#### 1. Create Shared UI Components
+
+Create a new file `src/components/ui/info-box.tsx` with reusable components:
+- `NoteBox` - Info callout with accent border (extracted from Help.tsx)
+- `SubsectionHeader` - Consistent subsection headers with accent bar
+- These can be used across all pages
+
+#### 2. Update InteractiveViewer.tsx (Main Page)
+
+**Header section (home view, lines 107-115):**
+- Add subtle accent styling to the hero text
+- Use consistent spacing
+
+**Collapsible sections (lines 319-361):**
+- Add icons to collapsible triggers matching Help page pattern
+- Use consistent header styling: `<h4 className="text-sm font-medium flex items-center gap-2">`
+
+**Card styling (lines 268-300):**
+- Add consistent "Gantry Position", "MLC Aperture" headers with subtle accent
+
+#### 3. Update BatchDashboard.tsx
+
+**Header (lines 34-100):**
+- Add descriptive subtitle like Help page
+- Keep sticky header but improve visual hierarchy
+
+**Empty state:**
+- Currently handled by BatchUploadZone, but could add helpful tips using NoteBox
+
+**Summary section:**
+- Apply consistent card accent styling
+
+#### 4. Update ComparePlans.tsx
+
+**Header (lines 74-128):**
+- Add descriptive subtitle
+
+**Empty state (lines 218-225):**
+- Convert to a styled card with NoteBox-style info
+
+**Comparison sections:**
+- Apply consistent subsection headers
 
 ---
 
-## Implementation Changes
+## Part 2: PNG Export for Charts
 
-### 1. Standardize Typography Patterns
+### Implementation Approach
 
-**Establish consistent rules:**
-- **Section titles**: Use `<h4 className="font-semibold text-base mb-2">` 
-- **Key terms**: Bold first occurrence only
-- **Technical terms**: Use `<code className="font-mono">` for values like `0°`, `90°`
-- **Emphasis**: Reserve bold for truly important concepts
+Use `html2canvas` library to capture chart containers as PNG images. This is more reliable than trying to export SVG/Canvas directly from Recharts.
 
-### 2. Enhance Introduction Card
+#### 1. Install html2canvas
 
-**Changes:**
-- Add a subtle accent border or icon highlight
-- Standardize feature list with checkmark or bullet icons
-- Add visual separator between intro text and features
+Add `html2canvas` as a dependency (it's lightweight and well-maintained).
 
-### 3. Improve Coordinate System Section
+#### 2. Create Export Utility
 
-**Changes to Help.tsx lines 162-345:**
-- Add subtle background highlight to diagram containers
-- Enhance diagram captions with styled boxes
-- Add visual dividers between subsections (Gantry, Collimator, Patient)
-- Standardize table styling for all angle tables
-- Add consistent "note" styling for clarifications
+Create `src/lib/chart-export.ts`:
+```typescript
+import html2canvas from 'html2canvas';
 
-**Diagram container enhancement:**
-```tsx
-<div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
-  <div className="shrink-0 p-4 rounded-lg bg-muted/30 border">
-    <IEC61217Diagram />
-  </div>
-  ...
-</div>
+export async function exportChartAsPng(
+  element: HTMLElement, 
+  filename: string
+): Promise<void> {
+  const canvas = await html2canvas(element, {
+    backgroundColor: null, // Preserve transparency or use theme background
+    scale: 2, // Higher resolution
+  });
+  
+  const link = document.createElement('a');
+  link.download = `${filename}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
 ```
 
-### 4. Standardize "How to Use" Section
+#### 3. Create ExportableChart Wrapper Component
 
-**Changes to Help.tsx lines 348-387:**
-- Number headings more prominently (styled badges)
-- Add icons to each step for visual interest
-- Consistent paragraph styling
+Create `src/components/ui/exportable-chart.tsx`:
+```typescript
+interface ExportableChartProps {
+  title: string;
+  filename?: string;
+  children: React.ReactNode;
+}
 
-### 5. Improve References Section
+function ExportableChart({ title, filename, children }: ExportableChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
+  
+  const handleExport = async () => {
+    if (chartRef.current) {
+      await exportChartAsPng(chartRef.current, filename || title);
+    }
+  };
+  
+  return (
+    <div className="rounded-lg border bg-card">
+      <div className="flex items-center justify-between p-3 border-b">
+        <h4 className="text-sm font-medium">{title}</h4>
+        <Button variant="ghost" size="icon" onClick={handleExport} title="Export as PNG">
+          <Download className="h-4 w-4" />
+        </Button>
+      </div>
+      <div ref={chartRef} className="p-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+```
 
-**Changes to Help.tsx lines 412-573:**
-- Add subtle card backgrounds to group related references
-- Use consistent citation formatting
-- Enhance DOI links with better visual treatment
+#### 4. Update Chart Components
 
-### 6. Add Visual Accents Throughout
+Wrap existing charts with the ExportableChart component or add export buttons:
 
-**New patterns to apply:**
-- Subtle dividers between major subsections
-- Highlighted "tip" or "note" boxes where appropriate
-- Consistent icon usage in headings
+**Main Viewer Charts to update:**
+- `CumulativeMUChart` - Add export button
+- `GantrySpeedChart` - Add export button  
+- `AngularDistributionChart` - Add export button to polar and line charts
+- `DeliveryTimelineChart` - Add export button to each sub-chart
+- `ComplexityHeatmap` - Add export button to each sub-chart
+
+**Comparison Charts to update:**
+- `ComparisonMUChart`
+- `ComparisonDeliveryChart`
+- `ComparisonPolarChart`
+
+**Batch Charts to update:**
+- `BatchDistributionChart`
 
 ---
 
 ## Detailed File Changes
 
-### `src/pages/Help.tsx`
+### New Files
 
-#### Introduction Section (lines 51-79)
-- Wrap key features in a styled list with icons
-- Add subtle visual divider
+| File | Description |
+|------|-------------|
+| `src/components/ui/info-box.tsx` | Shared NoteBox and SubsectionHeader components |
+| `src/lib/chart-export.ts` | PNG export utility function |
+| `src/components/ui/exportable-chart.tsx` | Wrapper component with export button |
 
-#### Coordinate System Section (lines 162-345)
-- Add styled containers around diagrams
-- Enhance caption styling
-- Standardize all angle tables with consistent headers
-- Add subtle backgrounds to distinguish subsections
-- Fix bold usage consistency
+### Modified Files
 
-#### How to Use Section (lines 348-387)
-- Add step number badges
-- Improve visual hierarchy
-
-#### References Section (lines 412-573)
-- Add grouped backgrounds for different reference types
-- Consistent citation formatting
-
-#### About Section (lines 576-596)
-- Add subtle branding/visual element
-
-### `src/components/help/IEC61217Diagram.tsx`
-- No changes needed - diagram is correct
-
-### `src/components/help/PatientAxesDiagram.tsx`
-- No changes needed - diagram is correct
+| File | Changes |
+|------|---------|
+| `src/components/viewer/InteractiveViewer.tsx` | Apply consistent styling patterns, import shared components |
+| `src/components/viewer/Charts.tsx` | Add export button to CumulativeMUChart and GantrySpeedChart |
+| `src/components/viewer/AngularDistributionChart.tsx` | Add export functionality |
+| `src/components/viewer/DeliveryTimelineChart.tsx` | Add export functionality to sub-charts |
+| `src/components/viewer/ComplexityHeatmap.tsx` | Add export functionality to sub-charts |
+| `src/components/comparison/ComparisonMUChart.tsx` | Add export functionality |
+| `src/components/comparison/ComparisonDeliveryChart.tsx` | Add export functionality |
+| `src/components/comparison/ComparisonPolarChart.tsx` | Add export functionality |
+| `src/components/batch/BatchDistributionChart.tsx` | Add export functionality |
+| `src/pages/BatchDashboard.tsx` | Apply consistent styling, add subtitle |
+| `src/pages/ComparePlans.tsx` | Apply consistent styling, improve empty state |
+| `package.json` | Add html2canvas dependency |
 
 ---
 
-## Specific Text Formatting Standards
+## Visual Styling Standards (Applied Across All Pages)
 
-### Bold Usage Rules
-| Use Case | Treatment |
-|----------|-----------|
-| Tool name ("RT Plan Complexity Analyzer") | Bold on first mention |
-| Standards ("IEC 61217") | Bold on first mention |
-| Axis labels (X, Y, Z) | Use colored font, not just bold |
-| Angle values (0°, 90°) | Monospace font (`font-mono`) |
-| Direction terms (clockwise, counter-clockwise) | Bold |
-| Anatomical terms (anterior, posterior) | Normal text |
+### Headers
+- Page title: `text-lg font-semibold` or `text-xl font-semibold`
+- Subtitle: `text-muted-foreground text-sm`
 
-### Heading Hierarchy
-| Level | Usage | Styling |
-|-------|-------|---------|
-| Card Title | Section header | `<CardTitle>` with icon |
-| H4 | Subsection | `font-semibold text-base` |
-| H5/strong | Minor heading | `font-medium` |
-
----
-
-## Visual Enhancement Details
-
-### Diagram Container Styling
+### Section Headers
 ```tsx
-<div className="rounded-xl border bg-gradient-to-br from-muted/20 to-muted/40 p-4">
-  <IEC61217Diagram />
-</div>
+<h4 className="font-semibold text-base flex items-center gap-2">
+  <span className="w-1 h-5 bg-primary rounded-full" />
+  Section Title
+</h4>
 ```
 
-### Enhanced Caption Style
+### Tables
 ```tsx
-<p className="mt-3 text-sm text-center text-muted-foreground bg-muted/50 rounded-lg p-2">
-  Caption text here
-</p>
+<TableHeader>
+  <TableRow className="bg-muted/50">
+    <TableHead className="font-semibold">Column</TableHead>
+  </TableRow>
+</TableHeader>
 ```
 
-### Note/Tip Box Style
+### Code/Values
 ```tsx
-<div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4 text-sm">
-  <strong>Note:</strong> Important information here
-</div>
+<code className="font-mono bg-muted px-1 py-0.5 rounded text-xs">value</code>
 ```
 
-### Step Badge Style
+### Info Boxes
 ```tsx
-<span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold mr-2">
-  1
-</span>
+<NoteBox>Important information here</NoteBox>
 ```
 
 ---
 
-## Summary of Changes
+## Export Button Placement
 
-| File | Change Type | Description |
-|------|-------------|-------------|
-| `src/pages/Help.tsx` | Major edit | Standardize typography, add visual accents, enhance diagram containers, consistent formatting |
-| `src/components/help/IEC61217Diagram.tsx` | No change | Diagram is correct |
-| `src/components/help/PatientAxesDiagram.tsx` | No change | Diagram is correct |
+Each chart will have a small download icon button in the header:
+
+```text
+┌─────────────────────────────────────────┐
+│ Chart Title                         [⬇] │  ← Download icon button
+├─────────────────────────────────────────┤
+│                                         │
+│           [Chart Content]               │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+The button will:
+- Be `variant="ghost" size="icon"`
+- Show tooltip "Export as PNG"
+- Download with filename based on chart title + timestamp
 
 ---
 
-## Expected Outcome
-- Consistent visual hierarchy throughout the Help page
-- More prominent and visually appealing diagrams
-- Easier scanning with better typography
-- Professional, clinical aesthetic maintained
-- Improved readability and information architecture
+## Summary
+
+| Category | Files Changed | New Files |
+|----------|---------------|-----------|
+| Style homogenization | 4 | 1 |
+| PNG export | 9 | 2 |
+| **Total** | **10** | **3** |
+
+This implementation will:
+- Create a consistent visual language across all pages matching the Help page
+- Enable PNG export for all charts with minimal code changes per chart
+- Use a reusable component pattern for future charts
