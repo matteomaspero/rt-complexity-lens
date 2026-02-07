@@ -171,7 +171,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
         
         <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>Supports VMAT and IMRT plans • Browser-based processing</p>
-          <p className="mt-1">UCoMX v1.1 complexity metrics</p>
+          <p className="mt-1">Plan complexity metrics</p>
         </div>
         
         {/* Help Link */}

@@ -287,7 +287,7 @@ export function IEC61217Diagram({ className, size = 320 }: IEC61217DiagramProps)
       </svg>
       <p className="mt-2 text-xs text-muted-foreground text-center max-w-[300px]">
         Transverse view (looking from feet toward head). Patient supine on couch. 
-        Gantry rotates clockwise. 0° = beam from above (AP).
+        Gantry rotates clockwise. 0° = AP beam from ceiling (enters anterior surface).
       </p>
     </div>
   );
