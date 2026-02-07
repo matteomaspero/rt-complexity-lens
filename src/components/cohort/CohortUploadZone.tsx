@@ -8,11 +8,19 @@ interface CohortUploadZoneProps {
   className?: string;
 }
 
+// ZIP extraction security limits
+const MAX_FILES = 100;
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_COMPRESSION_RATIO = 100;
+
 async function extractDicomFilesFromZip(zipFile: File): Promise<File[]> {
   const zip = await JSZip.loadAsync(zipFile);
   const dicomFiles: File[] = [];
   const filePromises: Promise<void>[] = [];
   const seenNames = new Set<string>();
+  let totalSize = 0;
+  let fileCount = 0;
 
   const isHiddenPath = (path: string): boolean => {
     const segments = path.split('/');
@@ -72,10 +80,27 @@ async function extractDicomFilesFromZip(zipFile: File): Promise<File[]> {
 
   zip.forEach((relativePath, zipEntry) => {
     if (zipEntry.dir) return;
+    if (fileCount >= MAX_FILES) return;
     if (isHiddenPath(relativePath)) return;
 
     const fileName = relativePath.split('/').pop() || '';
     if (!fileName || fileName.startsWith('.')) return;
+
+    // ZIP bomb detection: check compression ratio
+    const compressedSize = (zipEntry as any)._data?.compressedSize || 1;
+    const uncompressedSize = (zipEntry as any)._data?.uncompressedSize || 0;
+    if (uncompressedSize > 0 && compressedSize > 0) {
+      const ratio = uncompressedSize / compressedSize;
+      if (ratio > MAX_COMPRESSION_RATIO) {
+        return; // Skip suspicious files
+      }
+    }
+
+    // Check individual file size limit
+    if (uncompressedSize > MAX_FILE_SIZE) return;
+    
+    // Check total size limit
+    if (totalSize + uncompressedSize > MAX_TOTAL_SIZE) return;
 
     if (isDicomFile(fileName)) {
       const promise = zipEntry.async('blob').then(blob => {
@@ -84,6 +109,8 @@ async function extractDicomFilesFromZip(zipFile: File): Promise<File[]> {
         dicomFiles.push(file);
       });
       filePromises.push(promise);
+      fileCount++;
+      totalSize += uncompressedSize;
     }
   });
 
@@ -120,8 +147,8 @@ export function CohortUploadZone({ className }: CohortUploadZoneProps) {
           const extracted = await extractDicomFilesFromZip(zipFile);
           dicomFiles.push(...extracted);
         }
-      } catch (err) {
-        console.error('Failed to extract zip file:', err);
+      } catch {
+        // ZIP extraction failed - user sees empty results in UI
       } finally {
         setIsExtracting(false);
       }
