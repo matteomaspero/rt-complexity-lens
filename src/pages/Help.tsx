@@ -12,8 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { METRIC_DEFINITIONS, METRIC_CATEGORIES, type MetricCategory } from '@/lib/metrics-definitions';
 import { TableOfContents, IEC61217Diagram, PatientAxesDiagram } from '@/components/help';
+import 'katex/dist/katex.min.css';
+import { BlockMath } from 'react-katex';
 
 function ExternalLinkIcon() {
   return <ExternalLink className="ml-1 inline h-3 w-3" />;
@@ -38,6 +41,14 @@ function NoteBox({ children }: { children: React.ReactNode }) {
   );
 }
 
+function MathFormula({ formula }: { formula: string }) {
+  return (
+    <div className="my-2 p-3 bg-muted/30 rounded-lg overflow-x-auto">
+      <BlockMath math={formula} />
+    </div>
+  );
+}
+
 export default function Help() {
   const categories: MetricCategory[] = ['primary', 'secondary', 'accuracy', 'deliverability', 'delivery'];
 
@@ -45,18 +56,21 @@ export default function Help() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-6 py-12">
         {/* Header */}
-        <div className="mb-8 flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Help & Documentation</h1>
-            <p className="text-muted-foreground">
-              RT Plan Complexity Analyzer Guide
-            </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/">
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Help & Documentation</h1>
+              <p className="text-muted-foreground">
+                RT Plan Complexity Analyzer Guide
+              </p>
+            </div>
           </div>
+          <ThemeToggle />
         </div>
 
         {/* Main layout with TOC sidebar */}
@@ -161,6 +175,9 @@ export default function Help() {
                                   <div className="text-sm text-muted-foreground mt-1">
                                     {metric.fullDescription}
                                   </div>
+                                  {metric.formula && (
+                                    <MathFormula formula={metric.formula} />
+                                  )}
                                   {metric.reference && (
                                     <div className="mt-2 text-xs text-muted-foreground">
                                       <span className="font-medium">Ref:</span> {metric.reference}

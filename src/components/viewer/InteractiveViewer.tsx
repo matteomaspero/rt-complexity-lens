@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { HelpCircle, ChevronDown, Home } from 'lucide-react';
 
 export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
@@ -174,14 +175,15 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
           <p className="font-mono text-xs">MCS • PM • LSV • AAV • Delivery Timing</p>
         </div>
         
-        {/* Help Link */}
-        <div className="mt-4">
+        {/* Help Link and Theme Toggle */}
+        <div className="mt-4 flex items-center justify-center gap-2">
           <Button variant="ghost" size="sm" asChild>
             <Link to="/help" className="flex items-center gap-1">
               <HelpCircle className="h-4 w-4" />
               Help & Documentation
             </Link>
           </Button>
+          <ThemeToggle />
         </div>
       </main>
     );
@@ -221,6 +223,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   <HelpCircle className="h-5 w-5" />
                 </Link>
               </Button>
+              <ThemeToggle />
               <FileUploadZone
                 onPlanLoaded={handlePlanLoaded}
                 className="h-12 w-48 border-dashed p-2"

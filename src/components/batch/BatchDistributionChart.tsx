@@ -85,16 +85,18 @@ export function BatchDistributionChart() {
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={mcsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--chart-grid))" />
               <XAxis 
                 dataKey="range" 
-                tick={{ fontSize: 10 }}
-                className="text-muted-foreground"
+                tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
+                tickLine={false}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <YAxis 
                 allowDecimals={false}
-                tick={{ fontSize: 11 }}
-                className="text-muted-foreground"
+                tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }}
+                tickLine={false}
+                axisLine={false}
               />
               <Tooltip
                 content={({ active, payload }) => {

@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import type { SessionPlan } from '@/lib/dicom/types';
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import { BUILTIN_PRESETS } from '@/lib/threshold-definitions';
@@ -126,6 +127,7 @@ export default function ComparePlans() {
                 <HelpCircle className="h-5 w-5" />
               </Button>
             </Link>
+            <ThemeToggle />
           </div>
         </div>
       </header>

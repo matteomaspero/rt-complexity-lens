@@ -92,12 +92,12 @@ export function ComparisonMUChart({
             />
             <XAxis
               dataKey="index"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <YAxis
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v.toFixed(0)}`}

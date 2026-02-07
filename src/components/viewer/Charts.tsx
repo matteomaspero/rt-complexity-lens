@@ -58,12 +58,12 @@ export function CumulativeMUChart({
           />
           <XAxis
             dataKey="index"
-            tick={{ fontSize: 10 }}
+            tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
             tickLine={false}
             axisLine={{ stroke: 'hsl(var(--border))' }}
           />
           <YAxis
-            tick={{ fontSize: 10 }}
+            tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => `${v.toFixed(0)}`}
@@ -163,12 +163,12 @@ export function GantrySpeedChart({
           />
           <XAxis
             dataKey="index"
-            tick={{ fontSize: 10 }}
+            tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
             tickLine={false}
             axisLine={{ stroke: 'hsl(var(--border))' }}
           />
           <YAxis
-            tick={{ fontSize: 10 }}
+            tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
             tickLine={false}
             axisLine={false}
           />

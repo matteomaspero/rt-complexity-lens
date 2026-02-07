@@ -81,13 +81,13 @@ export function ComplexityHeatmap({
               dataKey="angle"
               type="number"
               domain={['dataMin', 'dataMax']}
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
               tickFormatter={(v) => `${v}°`}
             />
             <YAxis
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={false}
               domain={[0, 1]}
@@ -141,13 +141,13 @@ export function ComplexityHeatmap({
               dataKey="angle"
               type="number"
               domain={['dataMin', 'dataMax']}
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
               tickFormatter={(v) => `${v}°`}
             />
             <YAxis
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={false}
               domain={[0, 1]}
@@ -198,12 +198,12 @@ export function ComplexityHeatmap({
             />
             <XAxis
               dataKey="index"
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
             />
             <YAxis
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v}`}

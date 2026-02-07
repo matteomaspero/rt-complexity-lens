@@ -138,13 +138,13 @@ export function DeliveryTimelineChart({
             />
             <XAxis
               dataKey="gantryAngle"
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
               tickFormatter={(v) => `${v}°`}
             />
             <YAxis
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v.toFixed(1)}s`}
@@ -194,13 +194,13 @@ export function DeliveryTimelineChart({
             />
             <XAxis
               dataKey="gantryAngle"
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
               tickFormatter={(v) => `${v}°`}
             />
             <YAxis
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v}`}
@@ -249,13 +249,13 @@ export function DeliveryTimelineChart({
               />
               <XAxis
                 dataKey="gantryAngle"
-                tick={{ fontSize: 9 }}
+                tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
                 tickLine={false}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 tickFormatter={(v) => `${v}°`}
               />
               <YAxis
-                tick={{ fontSize: 9 }}
+                tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) => `${v}`}
@@ -304,13 +304,13 @@ export function DeliveryTimelineChart({
             />
             <XAxis
               dataKey="gantryAngle"
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
               tickFormatter={(v) => `${v}°`}
             />
             <YAxis
-              tick={{ fontSize: 9 }}
+              tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v}`}
