@@ -11,7 +11,9 @@ import { exportBatch, type ExportOptions } from '@/lib/batch/batch-export';
 export function BatchExportPanel() {
   const { plans, selectedPlans } = useBatch();
   const [format, setFormat] = useState<'csv' | 'json'>('csv');
+  const [includeGeometricMetrics, setIncludeGeometricMetrics] = useState(true);
   const [includePlanMetrics, setIncludePlanMetrics] = useState(true);
+  const [includeComplexityMetrics, setIncludeComplexityMetrics] = useState(true);
   const [includeBeamMetrics, setIncludeBeamMetrics] = useState(false);
   const [includeControlPointData, setIncludeControlPointData] = useState(false);
 
@@ -21,7 +23,9 @@ export function BatchExportPanel() {
   const handleExport = () => {
     const options: ExportOptions = {
       format,
+      includeGeometricMetrics,
       includePlanMetrics,
+      includeComplexityMetrics,
       includeBeamMetrics,
       includeControlPointData,
     };
@@ -64,10 +68,22 @@ export function BatchExportPanel() {
           </RadioGroup>
         </div>
 
-        {/* Include options */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Include</Label>
+        {/* Include options organized by category */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium">Include Metrics</Label>
+          
+          {/* Metric category checkboxes */}
           <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="geometricMetrics"
+                checked={includeGeometricMetrics}
+                onCheckedChange={(v) => setIncludeGeometricMetrics(v === true)}
+              />
+              <Label htmlFor="geometricMetrics" className="text-sm font-normal cursor-pointer">
+                Geometric (MFA, EFS, PA, JA, psmall)
+              </Label>
+            </div>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="planMetrics"
@@ -75,9 +91,23 @@ export function BatchExportPanel() {
                 onCheckedChange={(v) => setIncludePlanMetrics(v === true)}
               />
               <Label htmlFor="planMetrics" className="text-sm font-normal cursor-pointer">
-                Plan metrics
+                Beam (MU, Time, Arc, MUCA, Counts)
               </Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="complexityMetrics"
+                checked={includeComplexityMetrics}
+                onCheckedChange={(v) => setIncludeComplexityMetrics(v === true)}
+              />
+              <Label htmlFor="complexityMetrics" className="text-sm font-normal cursor-pointer">
+                Complexity (MCS, LSV, AAV, LT, SAS, EM, PI...)
+              </Label>
+            </div>
+          </div>
+          
+          {/* Additional data options */}
+          <div className="pt-2 border-t space-y-2">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="beamMetrics"
@@ -85,7 +115,7 @@ export function BatchExportPanel() {
                 onCheckedChange={(v) => setIncludeBeamMetrics(v === true)}
               />
               <Label htmlFor="beamMetrics" className="text-sm font-normal cursor-pointer">
-                Beam metrics
+                Per-beam breakdown
               </Label>
             </div>
             <div className="flex items-center space-x-2">
