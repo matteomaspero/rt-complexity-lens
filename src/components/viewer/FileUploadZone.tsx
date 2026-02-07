@@ -29,7 +29,10 @@ export const FileUploadZone = forwardRef<HTMLDivElement, FileUploadZoneProps>(
       const metrics = calculatePlanMetrics(plan);
       
       const parseTime = performance.now() - startTime;
-      console.log(`Parsed ${file.name} in ${parseTime.toFixed(0)}ms`);
+      // Performance logging only in development
+      if (import.meta.env.DEV) {
+        console.log(`Parsed ${file.name} in ${parseTime.toFixed(0)}ms`);
+      }
 
       const sessionPlan: SessionPlan = {
         id: crypto.randomUUID(),
