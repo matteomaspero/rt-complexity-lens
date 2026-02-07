@@ -23,7 +23,8 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { HelpCircle, ChevronDown, Home } from 'lucide-react';
+import { HelpCircle, ChevronDown, Home, Github } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   function InteractiveViewer(_props, ref) {
@@ -172,6 +173,40 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               </Button>
             </Link>
           </div>
+        </div>
+
+        {/* Python Toolkit Link */}
+        <div className="mt-6 w-full max-w-md">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">offline analysis</span>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" asChild className="gap-2">
+                  <a
+                    href="https://github.com/rtplan-complexity/rtplan-complexity"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Github className="h-4 w-4" />
+                    Python Toolkit
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Run identical analyses offline on your workstation using the rtplan-complexity Python package.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Same metrics, offline workstation • <Link to="/python-docs" className="text-primary hover:underline">View docs</Link>
+          </p>
         </div>
         
         {/* Metrics Settings */}

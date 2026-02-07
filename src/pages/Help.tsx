@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, BookOpen, Calculator, Upload, Download, CheckCircle2, Info, Compass } from 'lucide-react';
+import { ArrowLeft, ExternalLink, BookOpen, Calculator, Upload, Download, CheckCircle2, Info, Compass, Terminal, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -552,6 +552,82 @@ export default function Help() {
                 <NoteBox>
                   Only metrics enabled in your settings will be included in the export.
                 </NoteBox>
+              </CardContent>
+            </Card>
+
+            {/* Python Toolkit */}
+            <Card id="python-toolkit" className="border-l-4 border-l-primary">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Terminal className="h-5 w-5 text-primary" />
+                  Python Toolkit
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground leading-relaxed">
+                  The <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">rtplan-complexity</code> Python 
+                  package provides identical metric calculations for offline analysis on your local workstation.
+                </p>
+
+                <Separator className="my-4" />
+                
+                <h4 className="font-semibold text-base mb-3">Key Features</h4>
+                <ul className="space-y-2">
+                  {[
+                    'Identical metric algorithms to the web application',
+                    'Single-plan, batch, and cohort analysis modes',
+                    'Matplotlib visualizations (box plots, heatmaps, scatter matrix)',
+                    'CSV and JSON export formats',
+                    'Machine-specific delivery time estimation',
+                  ].map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Separator className="my-4" />
+
+                <h4 className="font-semibold text-base mb-3">Quick Start</h4>
+                <div className="rounded-lg border bg-muted/30 overflow-hidden">
+                  <div className="px-4 py-2 bg-muted/50 border-b text-xs font-medium text-muted-foreground">
+                    Python
+                  </div>
+                  <pre className="p-4 overflow-x-auto text-sm">
+                    <code className="font-mono text-foreground">{`from rtplan_complexity import parse_rtplan, calculate_plan_metrics
+
+plan = parse_rtplan("RTPLAN.dcm")
+metrics = calculate_plan_metrics(plan)
+
+print(f"MCS: {metrics.MCS:.4f}")
+print(f"LSV: {metrics.LSV:.4f}")`}</code>
+                  </pre>
+                </div>
+
+                <NoteBox>
+                  Install with: <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">pip install rtplan-complexity</code>
+                </NoteBox>
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button asChild>
+                    <Link to="/python-docs" className="flex items-center gap-2">
+                      View Full Documentation
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <a
+                      href="https://github.com/rtplan-complexity/rtplan-complexity"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      <Github className="h-4 w-4" />
+                      GitHub Repository
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
