@@ -48,6 +48,12 @@ const CORRELATION_METRICS = [
   'LT',
   'totalMU',
   'totalDeliveryTime',
+  'EFS',
+  'PA',
+  'SAS5',
+  'SAS10',
+  'EM',
+  'PI',
 ] as const;
 
 type MetricKey = typeof CORRELATION_METRICS[number];
@@ -78,7 +84,13 @@ export function getMetricDisplayName(key: string): string {
     MFA: 'MFA',
     LT: 'Leaf Travel',
     totalMU: 'Total MU',
-    totalDeliveryTime: 'Delivery Time',
+    totalDeliveryTime: 'Delivery',
+    EFS: 'EFS',
+    PA: 'Plan Area',
+    SAS5: 'SAS5',
+    SAS10: 'SAS10',
+    EM: 'Edge',
+    PI: 'Irregularity',
   };
   return displayNames[key] || key;
 }

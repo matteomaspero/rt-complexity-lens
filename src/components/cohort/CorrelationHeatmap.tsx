@@ -10,7 +10,7 @@ interface CorrelationHeatmapProps {
 export function CorrelationHeatmap({ className }: CorrelationHeatmapProps) {
   const { correlationMatrix } = useCohort();
 
-  const cellSize = 60;
+  const cellSize = 45;
 
   const gridData = useMemo(() => {
     if (!correlationMatrix) return null;

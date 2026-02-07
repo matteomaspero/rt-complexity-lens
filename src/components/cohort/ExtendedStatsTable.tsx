@@ -1,34 +1,33 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Table2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChevronDown, Table2, Shapes, Zap, BarChart3 } from 'lucide-react';
 import { useCohort } from '@/contexts/CohortContext';
-import { formatExtendedStat } from '@/lib/cohort';
-import { useState } from 'react';
+import { formatExtendedStat, METRIC_DEFINITIONS, METRIC_GROUPS, type MetricGroup } from '@/lib/cohort';
 
 interface ExtendedStatsTableProps {
   className?: string;
 }
 
-const METRIC_LABELS: Record<string, { name: string; unit: string }> = {
-  MCS: { name: 'Modulation Complexity Score', unit: '' },
-  LSV: { name: 'Leaf Sequence Variability', unit: '' },
-  AAV: { name: 'Aperture Area Variability', unit: '' },
-  MFA: { name: 'Mean Field Area', unit: 'cm²' },
-  LT: { name: 'Leaf Travel', unit: 'mm' },
-  totalMU: { name: 'Total MU', unit: 'MU' },
-  deliveryTime: { name: 'Delivery Time', unit: 's' },
-};
+function getGroupMetrics(group: MetricGroup) {
+  return METRIC_GROUPS[group].map(key => ({
+    key,
+    info: METRIC_DEFINITIONS[key],
+  })).filter(m => m.info);
+}
 
 export function ExtendedStatsTable({ className }: ExtendedStatsTableProps) {
   const { extendedStats, clusters, clusterStats, successfulPlans } = useCohort();
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<MetricGroup>('complexity');
 
   if (!extendedStats) {
     return null;
   }
 
-  const metricKeys = Object.keys(METRIC_LABELS) as Array<keyof typeof METRIC_LABELS>;
+  const groupMetrics = getGroupMetrics(activeTab);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className={className}>
@@ -46,6 +45,24 @@ export function ExtendedStatsTable({ className }: ExtendedStatsTableProps) {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent>
+            {/* Metric Group Tabs */}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as MetricGroup)} className="mb-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="geometric" className="flex items-center gap-1.5">
+                  <Shapes className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Geometric</span>
+                </TabsTrigger>
+                <TabsTrigger value="beam" className="flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Beam</span>
+                </TabsTrigger>
+                <TabsTrigger value="complexity" className="flex items-center gap-1.5">
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Complexity</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             {/* Overall Statistics */}
             <div className="mb-6">
               <h4 className="text-sm font-medium mb-3">
@@ -65,17 +82,18 @@ export function ExtendedStatsTable({ className }: ExtendedStatsTableProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {metricKeys.map(key => {
+                    {groupMetrics.map(({ key, info }) => {
                       const stats = extendedStats[key as keyof typeof extendedStats];
-                      if (!stats) return null;
-                      const formatted = formatExtendedStat(stats);
-                      const label = METRIC_LABELS[key];
+                      if (!stats || typeof stats !== 'object' || !('q1' in stats)) return null;
+                      if (stats.count === 0) return null;
+                      
+                      const formatted = formatExtendedStat(stats, info.decimals);
                       
                       return (
                         <TableRow key={key}>
                           <TableCell className="font-medium">
-                            {label.name}
-                            {label.unit && <span className="text-muted-foreground ml-1">({label.unit})</span>}
+                            {info.name}
+                            {info.unit && <span className="text-muted-foreground ml-1">({info.unit})</span>}
                           </TableCell>
                           <TableCell className="font-mono text-sm">{formatted.range}</TableCell>
                           <TableCell className="font-mono text-sm">{formatted.mean}</TableCell>
@@ -100,6 +118,14 @@ export function ExtendedStatsTable({ className }: ExtendedStatsTableProps) {
                     const stats = clusterStats.get(cluster.id);
                     if (!stats) return null;
 
+                    // Get metrics from current tab that have data
+                    const clusterMetrics = groupMetrics.filter(({ key }) => {
+                      const metricStats = stats[key as keyof typeof stats];
+                      return metricStats && typeof metricStats === 'object' && 'count' in metricStats && metricStats.count > 0;
+                    });
+
+                    if (clusterMetrics.length === 0) return null;
+
                     return (
                       <div key={cluster.id} className="border rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
@@ -123,14 +149,14 @@ export function ExtendedStatsTable({ className }: ExtendedStatsTableProps) {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {['MCS', 'LSV', 'AAV', 'totalMU'].map(key => {
+                              {clusterMetrics.slice(0, 6).map(({ key, info }) => {
                                 const metricStats = stats[key as keyof typeof stats];
-                                if (!metricStats || typeof metricStats !== 'object') return null;
-                                const formatted = formatExtendedStat(metricStats);
+                                if (!metricStats || typeof metricStats !== 'object' || !('q1' in metricStats)) return null;
+                                const formatted = formatExtendedStat(metricStats, info.decimals);
                                 
                                 return (
                                   <TableRow key={key}>
-                                    <TableCell className="font-medium text-sm">{key}</TableCell>
+                                    <TableCell className="font-medium text-sm">{info.shortName}</TableCell>
                                     <TableCell className="font-mono text-xs">{formatted.mean}</TableCell>
                                     <TableCell className="font-mono text-xs">{formatted.median}</TableCell>
                                     <TableCell className="font-mono text-xs">{formatted.range}</TableCell>
