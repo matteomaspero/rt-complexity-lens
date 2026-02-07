@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, BookOpen, Calculator, Upload, Download, CheckCircle2, Info, Compass, Terminal, Github } from 'lucide-react';
+import { ArrowLeft, ExternalLink, BookOpen, Calculator, Upload, Download, CheckCircle2, Info, Compass, Terminal, Github, Layers, Settings2, BarChart3, GitCompare, Users, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -45,6 +45,37 @@ function MathFormula({ formula }: { formula: string }) {
   return (
     <div className="my-2 p-3 bg-muted/30 rounded-lg overflow-x-auto">
       <BlockMath math={formula} />
+    </div>
+  );
+}
+
+function ModeCard({ icon: Icon, title, description, features, linkTo }: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  features: string[];
+  linkTo: string;
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <h4 className="font-semibold">{title}</h4>
+      </div>
+      <p className="text-sm text-muted-foreground">{description}</p>
+      <ul className="space-y-1">
+        {features.map((f, i) => (
+          <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+            <CheckCircle2 className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <Button variant="outline" size="sm" asChild className="w-full">
+        <Link to={linkTo}>Open {title.split(' ')[0]}</Link>
+      </Button>
     </div>
   );
 }
@@ -110,8 +141,242 @@ export default function Help() {
                     'Parse DICOM-RT Plan files directly in the browser (no upload to servers)',
                     'Visualize MLC apertures and gantry positions per control point',
                     'Calculate complexity metrics at plan, beam, and control point levels',
-                    'Export metrics to CSV for external analysis',
-                    'Support for VMAT and static IMRT plans',
+                    'Compare plans side-by-side with automated beam matching',
+                    'Perform cohort analysis with statistical clustering',
+                    'Export metrics to CSV and charts as PNG',
+                  ].map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Analysis Modes - NEW SECTION */}
+            <Card id="analysis-modes">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-primary" />
+                  Analysis Modes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-muted-foreground leading-relaxed">
+                  RTp-lens provides four analysis modes for different workflows:
+                </p>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <ModeCard
+                    icon={BarChart3}
+                    title="Single Plan"
+                    description="Detailed analysis of individual DICOM-RT Plan files with interactive visualization."
+                    features={[
+                      'Interactive control point navigation with playback',
+                      'MLC aperture and gantry visualization',
+                      'Beam summary with MU and dose rate stats',
+                      'Delivery timeline and complexity heatmaps',
+                      'Per-CP metric calculation',
+                    ]}
+                    linkTo="/"
+                  />
+                  <ModeCard
+                    icon={Layers}
+                    title="Batch Analysis"
+                    description="Process multiple plans simultaneously with aggregate statistics."
+                    features={[
+                      'Upload multiple files or ZIP archives',
+                      'Nested folder structure support',
+                      'Distribution histograms for each metric',
+                      'Summary stats (mean, median, std, range)',
+                      'Batch CSV/JSON export',
+                    ]}
+                    linkTo="/batch"
+                  />
+                  <ModeCard
+                    icon={GitCompare}
+                    title="Plan Comparison"
+                    description="Side-by-side comparison of two treatment plans."
+                    features={[
+                      'Automated beam matching algorithm',
+                      'Metrics difference table with delta values',
+                      'Synchronized control point scrubber',
+                      'MLC aperture overlay visualization',
+                      'Comparison charts (MU, Polar, Delivery)',
+                    ]}
+                    linkTo="/compare"
+                  />
+                  <ModeCard
+                    icon={Users}
+                    title="Cohort Analysis"
+                    description="Population-level statistical analysis with clustering."
+                    features={[
+                      'Cluster by technique, complexity, MU level, etc.',
+                      'Extended statistics (IQR, percentiles, skewness)',
+                      'Box plots, scatter matrix, correlation heatmap',
+                      'Automatic outlier detection',
+                      'Cohort CSV/JSON export',
+                    ]}
+                    linkTo="/cohort"
+                  />
+                </div>
+
+                <Separator className="my-4" />
+
+                <h4 className="font-semibold text-base mb-3">Clustering Dimensions (Cohort Mode)</h4>
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-32 font-semibold">Dimension</TableHead>
+                        <TableHead className="font-semibold">Description</TableHead>
+                        <TableHead className="font-semibold">Example Groups</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Technique</TableCell>
+                        <TableCell className="text-muted-foreground">Treatment technique type</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-xs">VMAT, IMRT, 3DCRT</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Beam Count</TableCell>
+                        <TableCell className="text-muted-foreground">Number of beams in plan</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-xs">1-2, 3-4, 5-6, 7+</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Complexity</TableCell>
+                        <TableCell className="text-muted-foreground">MCS-based complexity level</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-xs">Low, Medium, High, Very High</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">MU Level</TableCell>
+                        <TableCell className="text-muted-foreground">Total monitor units range</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-xs">&lt;500, 500-1000, 1000-2000, &gt;2000</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Site</TableCell>
+                        <TableCell className="text-muted-foreground">Treatment site from plan name</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-xs">Brain, H&N, Thorax, Pelvis</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Machine Presets - NEW SECTION */}
+            <Card id="machine-presets">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings2 className="h-5 w-5 text-primary" />
+                  Machine Presets & Thresholds
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-muted-foreground leading-relaxed">
+                  Machine presets define delivery parameters and threshold alerts for different linac models.
+                </p>
+
+                <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-primary rounded-full" />
+                  Built-in Presets
+                </h4>
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-semibold">Preset</TableHead>
+                        <TableHead className="font-semibold">Max Dose Rate</TableHead>
+                        <TableHead className="font-semibold">Max Gantry Speed</TableHead>
+                        <TableHead className="font-semibold">Max MLC Speed</TableHead>
+                        <TableHead className="font-semibold">MLC Type</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="font-medium">Generic (Conservative)</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">600 MU/min</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">4.8 °/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">25 mm/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">MLCX</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Varian TrueBeam</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">600 (1400 FFF)</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">6.0 °/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">25 mm/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">MLCX</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Varian Halcyon</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">800 MU/min</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">4.0 °/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">50 mm/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">Dual-layer</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Elekta Versa HD</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">600 MU/min</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">6.0 °/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">35 mm/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">MLCY</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <Separator />
+
+                <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-primary rounded-full" />
+                  Threshold Alerts
+                </h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Each metric can trigger visual alerts based on configurable thresholds:
+                </p>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  <div className="rounded-lg border p-4 bg-card">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-3 h-3 rounded-full bg-muted-foreground/20" />
+                      <span className="font-medium text-sm">Normal</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Value within expected range</p>
+                  </div>
+                  <div className="rounded-lg border p-4 bg-yellow-500/10 border-yellow-500/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                      <span className="font-medium text-sm text-yellow-600 dark:text-yellow-400">Warning</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Approaching concerning levels</p>
+                  </div>
+                  <div className="rounded-lg border p-4 bg-red-500/10 border-red-500/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <span className="font-medium text-sm text-red-600 dark:text-red-400">Critical</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Exceeds recommended thresholds</p>
+                  </div>
+                </div>
+
+                <NoteBox>
+                  <strong>Threshold direction matters:</strong> Some metrics alert when values are too <em>low</em> (e.g., MCS &lt; 0.2), 
+                  while others alert when too <em>high</em> (e.g., Leaf Travel &gt; 50,000mm).
+                </NoteBox>
+
+                <Separator />
+
+                <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-primary rounded-full" />
+                  Custom Presets
+                </h4>
+                <ul className="space-y-2">
+                  {[
+                    'Create new presets from scratch or duplicate built-in presets',
+                    'Edit threshold warning and critical values for each metric',
+                    'Customize delivery parameters (dose rate, speeds)',
+                    'Import/export presets as JSON to share across teams',
                   ].map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
                       <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />

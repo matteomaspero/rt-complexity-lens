@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calculator, Upload, Download, Info, FileText, ChevronDown, Compass, Terminal } from 'lucide-react';
+import { BookOpen, Calculator, Upload, Download, Info, FileText, ChevronDown, Compass, Terminal, Layers, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -12,7 +12,9 @@ export interface Section {
 
 export const HELP_SECTIONS: Section[] = [
   { id: 'introduction', label: 'Introduction', icon: BookOpen },
+  { id: 'analysis-modes', label: 'Analysis Modes', icon: Layers },
   { id: 'metrics-reference', label: 'Metrics Reference', icon: Calculator },
+  { id: 'machine-presets', label: 'Machine Presets', icon: Settings2 },
   { id: 'coordinate-system', label: 'Coordinate System', icon: Compass },
   { id: 'how-to-use', label: 'How to Use', icon: Upload },
   { id: 'export-format', label: 'Export Format', icon: Download },
