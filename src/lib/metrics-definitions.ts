@@ -7,6 +7,7 @@ export interface MetricDefinition {
   name: string;
   shortDescription: string;
   fullDescription: string;
+  formula?: string; // LaTeX formula (optional)
   unit: string | null;
   category: MetricCategory;
   reference?: string;
@@ -19,6 +20,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Modulation Complexity Score',
     shortDescription: 'Overall plan modulation indicator',
     fullDescription: 'Combines LSV and AAV to quantify overall plan complexity. Values closer to 1 indicate less modulation (simpler plans), while values closer to 0 indicate higher modulation.',
+    formula: 'MCS = LSV \\times AAV',
     unit: null,
     category: 'primary',
     reference: 'McNiven et al., 2010',
@@ -29,6 +31,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Leaf Sequence Variability',
     shortDescription: 'Variability in leaf positions',
     fullDescription: 'Measures the variation in MLC leaf positions between adjacent leaves. Higher values indicate more uniform apertures; lower values suggest more irregular shapes.',
+    formula: 'LSV = \\frac{\\sum_{j} pos_{max,j} - \\sum_{j}|pos_{A,j} - pos_{B,j}|}{\\sum_{j} pos_{max,j}}',
     unit: null,
     category: 'primary',
     reference: 'Masi et al., 2013',
@@ -39,6 +42,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Aperture Area Variability',
     shortDescription: 'Changes in aperture area between control points',
     fullDescription: 'Quantifies the relative change in aperture area across control points. Higher variability indicates more dynamic aperture changes during delivery.',
+    formula: 'AAV = 1 - \\frac{1}{N-1}\\sum_{i=1}^{N-1}\\left|\\frac{A_{i+1} - A_i}{A_{max}}\\right|',
     unit: null,
     category: 'primary',
     reference: 'Masi et al., 2013',
@@ -49,6 +53,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Mean Field Area',
     shortDescription: 'Average aperture size',
     fullDescription: 'The average area of the MLC aperture across all control points. Smaller apertures are generally associated with higher complexity and delivery challenges.',
+    formula: 'MFA = \\frac{1}{N}\\sum_{i=1}^{N} A_i',
     unit: 'cm²',
     category: 'primary',
   },
@@ -57,6 +62,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Leaf Travel',
     shortDescription: 'Total MLC leaf movement',
     fullDescription: 'Sum of all individual leaf movements throughout the beam delivery. Higher leaf travel may indicate increased mechanical wear and potential for MLC errors.',
+    formula: 'LT = \\sum_{i=1}^{N-1}\\sum_{j=1}^{L}|pos_{j,i+1} - pos_{j,i}|',
     unit: 'mm',
     category: 'secondary',
   },
@@ -65,6 +71,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Leaf Travel-weighted MCS',
     shortDescription: 'Combined complexity and leaf travel metric',
     fullDescription: 'A composite metric that incorporates both modulation complexity and total leaf travel to provide a more comprehensive complexity assessment.',
+    formula: 'LTMCS = \\frac{LT}{MCS}',
     unit: null,
     category: 'secondary',
   },
@@ -198,6 +205,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Equivalent Field Size',
     shortDescription: 'Equivalent square field size',
     fullDescription: 'The equivalent square field size calculated using Sterling\'s formula (4 × Area / Perimeter). Useful for scatter factor estimation.',
+    formula: 'EFS = \\frac{4 \\times Area}{Perimeter}',
     unit: 'mm',
     category: 'accuracy',
     reference: 'Sterling et al.',
@@ -207,6 +215,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Percentage Small Fields',
     shortDescription: 'Fraction of small apertures',
     fullDescription: 'The fraction of control points with aperture area below 4 cm². Higher values indicate more small-field dosimetry challenges.',
+    formula: 'p_{small} = \\frac{N_{A < 4cm^2}}{N_{total}}',
     unit: null,
     category: 'accuracy',
     reference: 'UCoMX v1.1',
@@ -216,6 +225,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Edge Metric',
     shortDescription: 'Aperture edge irregularity',
     fullDescription: 'The ratio of MLC edge length to aperture area. Higher values indicate more irregular, jagged aperture boundaries.',
+    formula: 'EM = \\frac{Perimeter}{Area}',
     unit: 'mm⁻¹',
     category: 'accuracy',
     reference: 'Younge et al., 2016',
@@ -226,6 +236,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Plan Irregularity',
     shortDescription: 'Deviation from circular aperture',
     fullDescription: 'MU-weighted average deviation of apertures from a circular shape. PI = 1 for perfect circles; higher values indicate more irregular shapes.',
+    formula: 'PI = \\frac{Perimeter^2}{4\\pi \\times Area}',
     unit: null,
     category: 'accuracy',
     reference: 'Du et al., 2014',
@@ -346,6 +357,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     name: 'Plan Modulation',
     shortDescription: 'Degree of modulation',
     fullDescription: 'The complement of MCS (PM = 1 - MCS). Higher values indicate more modulated plans.',
+    formula: 'PM = 1 - MCS',
     unit: null,
     category: 'deliverability',
     reference: 'UCoMX v1.1',

@@ -132,7 +132,7 @@ export function AngularDistributionChart({
               dataKey="angle"
               type="number"
               domain={[0, 360]}
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
               label={{
@@ -144,7 +144,7 @@ export function AngularDistributionChart({
               }}
             />
             <YAxis
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v.toFixed(0)}`}
