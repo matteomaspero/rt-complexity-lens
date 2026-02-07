@@ -882,7 +882,7 @@ print(f"LSV: {metrics.LSV:.4f}")`}</code>
                   </Button>
                   <Button variant="outline" asChild>
                     <a
-                      href="https://github.com/rtplan-complexity/rtplan-complexity"
+                      href="https://github.com/matteomaspero/rt-complexity-lens/blob/main/python/README.md"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"

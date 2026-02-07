@@ -190,7 +190,7 @@ export function exportToJSON(plans: BatchPlan[], options: ExportOptions): string
   const exportData = {
     tool: 'RTp-lens',
     toolUrl: 'https://rt-complexity-lens.lovable.app',
-    pythonToolkit: 'https://github.com/matteomaspero/rt-complexity-lens/tree/main/python',
+    pythonToolkit: 'https://github.com/matteomaspero/rt-complexity-lens/blob/main/python/README.md',
     exportDate: new Date().toISOString(),
     planCount: successfulPlans.length,
     summary,

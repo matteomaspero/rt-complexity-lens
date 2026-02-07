@@ -191,7 +191,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               <TooltipTrigger asChild>
                 <Button variant="outline" asChild className="gap-2">
                   <a
-                    href="https://github.com/rtplan-complexity/rtplan-complexity"
+                    href="https://github.com/matteomaspero/rt-complexity-lens/blob/main/python/README.md"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
