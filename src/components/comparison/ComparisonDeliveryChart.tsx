@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   LineChart,
   Line,
@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChartExportButton } from '@/components/ui/exportable-chart';
 import type { Beam, BeamMetrics } from '@/lib/dicom/types';
 
 interface ComparisonDeliveryChartProps {
@@ -31,6 +32,7 @@ export function ComparisonDeliveryChart({
   currentCPIndex,
   height = 180,
 }: ComparisonDeliveryChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
   // Prepare aperture area data
   const apertureData = useMemo(() => {
     const maxCPs = Math.max(
@@ -118,9 +120,12 @@ export function ComparisonDeliveryChart({
   };
 
   return (
-    <Card>
+    <Card ref={chartRef}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Delivery Comparison</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">Delivery Comparison</CardTitle>
+          <ChartExportButton chartRef={chartRef} filename="delivery_comparison" />
+        </div>
       </CardHeader>
       <CardContent className="pt-0">
         <Tabs defaultValue="aperture" className="w-full">

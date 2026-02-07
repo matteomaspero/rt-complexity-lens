@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   BarChart,
   Bar,
@@ -12,6 +12,7 @@ import {
   ReferenceLine,
   Cell,
 } from 'recharts';
+import { ChartExportButton } from '@/components/ui/exportable-chart';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
 import { calculateControlPointSegments } from '@/lib/dicom/angular-binning';
 import { DEFAULT_MACHINE_PARAMS } from '@/lib/threshold-definitions';
@@ -35,6 +36,11 @@ export function DeliveryTimelineChart({
   currentIndex,
   machineParams = DEFAULT_MACHINE_PARAMS,
 }: DeliveryTimelineChartProps) {
+  const durationRef = useRef<HTMLDivElement>(null);
+  const doseRateRef = useRef<HTMLDivElement>(null);
+  const gantryRef = useRef<HTMLDivElement>(null);
+  const mlcRef = useRef<HTMLDivElement>(null);
+
   const segments = useMemo(
     () => calculateControlPointSegments(beam, controlPointMetrics, machineParams),
     [beam, controlPointMetrics, machineParams]
@@ -111,14 +117,17 @@ export function DeliveryTimelineChart({
       </div>
 
       {/* Segment Duration Bar Chart */}
-      <div className="rounded-lg border bg-card p-3">
+      <div ref={durationRef} className="rounded-lg border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">
             Segment Duration (colored by limiting factor)
           </h4>
-          <span className="font-mono text-sm font-medium">
-            {currentSegment?.duration.toFixed(2) ?? 0}s
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-medium">
+              {currentSegment?.duration.toFixed(2) ?? 0}s
+            </span>
+            <ChartExportButton chartRef={durationRef} filename="segment_duration" />
+          </div>
         </div>
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -166,12 +175,15 @@ export function DeliveryTimelineChart({
       </div>
 
       {/* Dose Rate Chart */}
-      <div className="rounded-lg border bg-card p-3">
+      <div ref={doseRateRef} className="rounded-lg border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">Dose Rate</h4>
-          <span className="font-mono text-sm font-medium">
-            {currentSegment?.doseRate.toFixed(0) ?? 0} MU/min
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-medium">
+              {currentSegment?.doseRate.toFixed(0) ?? 0} MU/min
+            </span>
+            <ChartExportButton chartRef={doseRateRef} filename="dose_rate" />
+          </div>
         </div>
         <ResponsiveContainer width="100%" height={chartHeight}>
           <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -218,12 +230,15 @@ export function DeliveryTimelineChart({
 
       {/* Gantry Speed Chart (only for arcs) */}
       {beam.isArc && (
-        <div className="rounded-lg border bg-card p-3">
+        <div ref={gantryRef} className="rounded-lg border bg-card p-3">
           <div className="mb-2 flex items-center justify-between">
             <h4 className="text-xs font-medium text-muted-foreground">Gantry Speed</h4>
-            <span className="font-mono text-sm font-medium">
-              {currentSegment?.gantrySpeed.toFixed(1) ?? 0} °/s
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-sm font-medium">
+                {currentSegment?.gantrySpeed.toFixed(1) ?? 0} °/s
+              </span>
+              <ChartExportButton chartRef={gantryRef} filename="gantry_speed" />
+            </div>
           </div>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -270,12 +285,15 @@ export function DeliveryTimelineChart({
       )}
 
       {/* MLC Speed Chart */}
-      <div className="rounded-lg border bg-card p-3">
+      <div ref={mlcRef} className="rounded-lg border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">Max MLC Speed</h4>
-          <span className="font-mono text-sm font-medium">
-            {currentSegment?.mlcSpeed.toFixed(1) ?? 0} mm/s
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-medium">
+              {currentSegment?.mlcSpeed.toFixed(1) ?? 0} mm/s
+            </span>
+            <ChartExportButton chartRef={mlcRef} filename="mlc_speed" />
+          </div>
         </div>
         <ResponsiveContainer width="100%" height={chartHeight}>
           <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>

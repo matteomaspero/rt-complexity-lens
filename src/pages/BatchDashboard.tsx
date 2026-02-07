@@ -41,6 +41,9 @@ export default function BatchDashboard() {
           </Link>
           <div className="flex-1">
             <h1 className="text-lg font-semibold">Batch Analysis</h1>
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Analyze multiple plans and compare complexity metrics
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {/* Machine Preset Selector */}

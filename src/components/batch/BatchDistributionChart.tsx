@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBatch } from '@/contexts/BatchContext';
 import {
@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import { ChartExportButton } from '@/components/ui/exportable-chart';
 
 interface DistributionData {
   range: string;
@@ -53,6 +54,7 @@ function createHistogram(
 }
 
 export function BatchDistributionChart() {
+  const chartRef = useRef<HTMLDivElement>(null);
   const { plans } = useBatch();
 
   const successfulPlans = useMemo(
@@ -72,9 +74,12 @@ export function BatchDistributionChart() {
   }
 
   return (
-    <Card>
+    <Card ref={chartRef}>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">MCS Distribution</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">MCS Distribution</CardTitle>
+          <ChartExportButton chartRef={chartRef} filename="mcs_distribution" />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-[200px]">

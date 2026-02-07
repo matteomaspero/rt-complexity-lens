@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   LineChart,
   Line,
@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartExportButton } from '@/components/ui/exportable-chart';
 import type { Beam } from '@/lib/dicom/types';
 
 interface ComparisonMUChartProps {
@@ -30,6 +31,7 @@ export function ComparisonMUChart({
   currentCPIndex,
   height = 180,
 }: ComparisonMUChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
   // Normalize control points to same x-axis (percentage of arc)
   const chartData = useMemo(() => {
     const maxCPs = Math.max(beamA.controlPoints.length, beamB.controlPoints.length);
@@ -63,9 +65,12 @@ export function ComparisonMUChart({
   const currentMU_B = chartData[currentCPIndex]?.muB ?? 0;
 
   return (
-    <Card>
+    <Card ref={chartRef}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Cumulative MU Comparison</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">Cumulative MU Comparison</CardTitle>
+          <ChartExportButton chartRef={chartRef} filename="cumulative_mu_comparison" />
+        </div>
         <div className="flex gap-4 text-xs">
           <span>
             <span className="text-[hsl(var(--chart-comparison-a))]">● Plan A:</span>{' '}

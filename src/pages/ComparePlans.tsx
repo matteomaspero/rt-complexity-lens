@@ -81,6 +81,9 @@ export default function ComparePlans() {
           </Link>
           <div className="flex-1">
             <h1 className="text-lg font-semibold">Plan Comparison</h1>
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Compare two DICOM-RT plans side-by-side
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {/* Machine Preset Selector */}
@@ -216,10 +219,15 @@ export default function ComparePlans() {
 
         {/* Empty state */}
         {!bothLoaded && (
-          <div className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
+          <div className="rounded-lg border border-dashed p-12 text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+              <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
             <p className="text-lg font-medium">Upload two plans to compare</p>
-            <p className="mt-1 text-sm">
-              Drop DICOM-RT Plan files in the zones above to see a side-by-side comparison
+            <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
+              Drop DICOM-RT Plan files in the zones above to see a side-by-side comparison of metrics, beams, and control points.
             </p>
           </div>
         )}

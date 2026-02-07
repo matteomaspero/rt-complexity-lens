@@ -109,8 +109,8 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
           <h1 className="mb-2 text-3xl font-bold tracking-tight">
             RT Plan Complexity Analyzer
           </h1>
-          <p className="text-muted-foreground">
-            Upload a DICOM-RT Plan file to analyze delivery complexity metrics
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Upload a DICOM-RT Plan file to analyze delivery complexity metrics, timing estimates, and quality indicators.
           </p>
         </div>
         <FileUploadZone
@@ -169,9 +169,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
           <MetricsSettings />
         </div>
         
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Supports VMAT and IMRT plans • Browser-based processing</p>
-          <p className="mt-1">Plan complexity metrics</p>
+        <div className="mt-8 text-center text-sm text-muted-foreground space-y-1">
+          <p>Supports <span className="font-medium">VMAT</span> and <span className="font-medium">IMRT</span> plans • Browser-based processing</p>
+          <p className="font-mono text-xs">MCS • PM • LSV • AAV • Delivery Timing</p>
         </div>
         
         {/* Help Link */}
@@ -266,7 +266,10 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 <div className="grid gap-6 md:grid-cols-3">
                   {/* Gantry View */}
                   <div className="rounded-lg border bg-card p-4">
-                    <h4 className="mb-4 text-sm font-medium">Gantry Position</h4>
+                    <h4 className="mb-4 text-sm font-medium flex items-center gap-2">
+                      <span className="w-1 h-4 bg-primary rounded-full" />
+                      Gantry Position
+                    </h4>
                     <div className="flex justify-center">
                       <GantryViewer
                         gantryAngle={currentCP.gantryAngle}
@@ -289,7 +292,10 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
 
                   {/* MLC Aperture */}
                   <div className="rounded-lg border bg-card p-4">
-                    <h4 className="mb-4 text-sm font-medium">MLC Aperture</h4>
+                    <h4 className="mb-4 text-sm font-medium flex items-center gap-2">
+                      <span className="w-1 h-4 bg-primary rounded-full" />
+                      MLC Aperture
+                    </h4>
                     <MLCApertureViewer
                       mlcPositions={currentCP.mlcPositions}
                       leafWidths={currentBeam.mlcLeafWidths}
@@ -318,7 +324,10 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 {/* MU Distribution Section */}
                 <Collapsible defaultOpen className="rounded-lg border bg-card">
                   <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
-                    <h4 className="text-sm font-medium">MU Distribution</h4>
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <span className="w-1 h-4 bg-primary rounded-full" />
+                      MU Distribution
+                    </h4>
                     <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="px-4 pb-4">
@@ -333,7 +342,10 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 {/* Delivery Analysis Section */}
                 <Collapsible defaultOpen className="rounded-lg border bg-card">
                   <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
-                    <h4 className="text-sm font-medium">Delivery Analysis</h4>
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <span className="w-1 h-4 bg-primary rounded-full" />
+                      Delivery Analysis
+                    </h4>
                     <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="px-4 pb-4">
@@ -348,7 +360,10 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 {/* Complexity Analysis Section */}
                 <Collapsible defaultOpen className="rounded-lg border bg-card">
                   <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
-                    <h4 className="text-sm font-medium">Complexity Analysis</h4>
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <span className="w-1 h-4 bg-primary rounded-full" />
+                      Complexity Analysis
+                    </h4>
                     <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="px-4 pb-4">
@@ -362,7 +377,10 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
 
                 {/* Current Control Point Details */}
                 <div className="rounded-lg border bg-card p-4">
-                  <h4 className="mb-3 text-sm font-medium">Control Point Details</h4>
+                  <h4 className="mb-3 text-sm font-medium flex items-center gap-2">
+                    <span className="w-1 h-4 bg-primary rounded-full" />
+                    Control Point Details
+                  </h4>
                   <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                     <div>
                       <span className="text-muted-foreground">Index</span>

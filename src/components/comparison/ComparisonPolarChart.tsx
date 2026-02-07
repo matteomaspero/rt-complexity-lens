@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   RadarChart,
   PolarGrid,
@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChartExportButton } from '@/components/ui/exportable-chart';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
 import {
   calculateControlPointSegments,
@@ -32,6 +33,7 @@ export function ComparisonPolarChart({
   controlPointMetricsB,
   machineParams = DEFAULT_MACHINE_PARAMS,
 }: ComparisonPolarChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
   // Calculate segments and bins for both plans
   const segmentsA = useMemo(
     () => calculateControlPointSegments(beamA, controlPointMetricsA, machineParams),
@@ -83,9 +85,12 @@ export function ComparisonPolarChart({
   }, [binsA, binsB]);
 
   return (
-    <Card>
+    <Card ref={chartRef}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">MU Distribution by Gantry Angle</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">MU Distribution by Gantry Angle</CardTitle>
+          <ChartExportButton chartRef={chartRef} filename="mu_distribution_comparison" />
+        </div>
         <div className="flex gap-4 text-xs text-muted-foreground">
           <span>
             <span className="text-[hsl(var(--chart-comparison-a))]">●</span> Plan A peak:{' '}
