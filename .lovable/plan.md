@@ -1,141 +1,187 @@
 
 
-# Plan: Machine ID to Preset Mapping System
+# Plan: Add New Machine Presets and Energy-Dependent Dose Rates
 
 ## Summary
 
-Add a system that automatically maps machine IDs/names from DICOM files to specific machine presets, enabling automatic preset selection when plans are loaded. This works across all analysis modes (Single, Batch, Compare, Cohort).
+Add three new built-in machine presets (Varian Ethos, Elekta Unity MR-Linac, Elekta Harmony) and extend the delivery parameters model to support energy-dependent dose rates, allowing users to configure different dose rate limits for different photon energies and beam modes.
 
 ---
 
-## Problem Statement
+## New Machine Presets
 
-Currently, users must manually select a machine preset for each session. In clinical workflows:
-- The same machine name appears consistently in DICOM files (e.g., "TrueBeam1", "Halcyon2")
-- Different institutions may name their machines differently
-- Even identical machine models may have site-specific configuration differences
-- Users want automatic preset selection based on the machine in the plan
+### 1. Varian Ethos
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Max Dose Rate (6 MV) | 800 MU/min | Standard 6 MV photon |
+| Max Dose Rate (6 FFF) | 1400 MU/min | Flattening filter free |
+| Max Gantry Speed | 6.0 deg/s | Fast rotation |
+| Max MLC Speed | 25 mm/s | Millennium-style MLC |
+| MLC Type | MLCX | Varian-style |
+
+Thresholds: Similar to Halcyon (AI-driven adaptive, typically simpler plans)
+
+### 2. Elekta Unity (MR-Linac)
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Max Dose Rate (7 MV) | 425 MU/min | Only energy available |
+| Max Gantry Speed | 6.0 deg/s | Full rotation |
+| Max MLC Speed | 25 mm/s | Agility-style |
+| MLC Type | MLCY | Elekta-style |
+
+Thresholds: More conservative due to MR environment constraints
+
+### 3. Elekta Harmony
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Max Dose Rate (6 MV) | 300 MU/min | Lower rate machine |
+| Max Dose Rate (10 MV) | 300 MU/min | Optional energy |
+| Max Gantry Speed | 6.0 deg/s | Standard |
+| Max MLC Speed | 35 mm/s | Agility MLC |
+| MLC Type | MLCY | Elekta-style |
+
+Thresholds: Similar to Versa HD
 
 ---
 
-## Solution Architecture
+## Energy-Dependent Dose Rates
+
+### Current Limitation
+
+The current model only supports:
+```typescript
+maxDoseRate: number;         // Single default rate
+maxDoseRateFFF?: number;     // Optional FFF rate
+```
+
+This doesn't handle:
+- Multiple photon energies (6X, 10X, 15X, 18X)
+- Electron energies (6e, 9e, 12e, etc.)
+- FFF variants per energy (6 FFF, 10 FFF)
+- Different dose rates per energy/mode combination
+
+### Proposed Model Extension
+
+```typescript
+interface EnergyDoseRate {
+  energy: string;         // e.g., "6X", "10X", "6FFF", "10FFF", "6e"
+  maxDoseRate: number;    // MU/min for this energy
+  isDefault?: boolean;    // Mark one as default for unknown energies
+}
+
+interface MachineDeliveryParams {
+  // Keep existing for backwards compatibility
+  maxDoseRate: number;              // Default/fallback dose rate
+  maxDoseRateFFF?: number;          // Legacy FFF support
+  
+  // New: Energy-specific rates (optional, overrides default)
+  energyDoseRates?: EnergyDoseRate[];
+  
+  maxGantrySpeed: number;
+  maxMLCSpeed: number;
+  mlcType: 'MLCX' | 'MLCY' | 'DUAL';
+}
+```
+
+### Energy Selection Logic
 
 ```text
-+----------------------+     +------------------------+     +------------------+
-| DICOM File           |     | Machine Mapping Table  |     | Preset Config    |
-|                      |     |                        |     |                  |
-| treatmentMachineName |---->| "TrueBeam1" -> truebeam|---->| thresholds +     |
-| manufacturer         |     | "Halcyon*"  -> halcyon |     | delivery params  |
-+----------------------+     | "LinacA"    -> user_123|     +------------------+
-                             +------------------------+
+function getDoseRateForBeam(beam, params):
+    1. Extract energy from beam (e.g., "6", "10", "6FFF")
+    2. Check if energyDoseRates exists and has matching entry
+    3. If match found, return that rate
+    4. If beam is FFF and maxDoseRateFFF exists, return that
+    5. Fall back to maxDoseRate
 ```
 
 ---
 
-## Data Model
+## UI Changes
 
-### New Type: MachineMappingEntry
+### PresetEditor.tsx Updates
 
-```typescript
-interface MachineMappingEntry {
-  id: string;                    // Unique mapping ID
-  pattern: string;               // Machine name pattern (exact or wildcard)
-  matchType: 'exact' | 'prefix' | 'contains' | 'regex';
-  presetId: string;              // Target preset ID (built-in or user)
-  manufacturer?: string;         // Optional: only match if manufacturer matches
-  priority: number;              // Higher priority wins on multiple matches
-  enabled: boolean;              // Toggle mapping on/off
-  createdAt: string;
-  updatedAt: string;
-}
+Add a new section "Energy-Specific Dose Rates":
+
+```text
++----------------------------------------------------------+
+| Energy-Specific Dose Rates                     [+ Add]    |
+|----------------------------------------------------------|
+| Energy    | Max Dose Rate (MU/min)  | Default | Actions  |
+|-----------|-------------------------|---------|----------|
+| 6X        | 600                     | [x]     | [Del]    |
+| 10X       | 600                     | [ ]     | [Del]    |
+| 6FFF      | 1400                    | [ ]     | [Del]    |
+| 10FFF     | 2400                    | [ ]     | [Del]    |
++----------------------------------------------------------+
 ```
-
-### Extended Context State
-
-```typescript
-interface ThresholdConfigState {
-  // ... existing fields ...
-  machineMappings: MachineMappingEntry[];
-  autoSelectEnabled: boolean;    // Global toggle for auto-selection
-}
-```
-
----
-
-## UI Components
-
-### 1. Machine Mapping Manager (new component)
-
-Location: `src/components/settings/MachineMappingManager.tsx`
 
 Features:
-- Table showing current mappings (pattern, preset, priority)
-- Add new mapping form
-- Edit/delete existing mappings
-- Drag-and-drop or manual priority ordering
-- Test a machine name against current mappings
-- Import/export mappings with presets
+- Add energy from dropdown or custom input
+- Set dose rate per energy
+- Mark one as default
+- Remove individual entries
+- Backwards compatible (empty list uses legacy fields)
 
-### 2. Integration Points
+### Common Energy Presets
 
-| Mode | Location | Behavior |
-|------|----------|----------|
-| Single Plan | `InteractiveViewer.tsx` | Auto-select preset when plan loads |
-| Batch | `BatchContext.tsx` | Show detected machines, suggest presets |
-| Compare | `ComparePlans.tsx` | Auto-select if both plans match same preset |
-| Cohort | `CohortContext.tsx` | Group statistics by matched preset |
+Dropdown with common energies:
+- Photon: 6X, 10X, 15X, 18X
+- FFF: 6FFF, 10FFF
+- Electron: 6e, 9e, 12e, 15e, 18e
+- Custom: Allow free-text entry
 
 ---
 
-## Matching Algorithm
+## Default Energy Configurations
 
-```text
-function findMatchingPreset(machineName: string, manufacturer?: string):
-    1. Filter mappings where enabled = true
-    2. Sort by priority (descending)
-    3. For each mapping:
-        a. If manufacturer specified and doesn't match, skip
-        b. Check pattern match based on matchType:
-           - exact: machineName === pattern
-           - prefix: machineName.startsWith(pattern)
-           - contains: machineName.includes(pattern)
-           - regex: new RegExp(pattern).test(machineName)
-        c. If match found, return presetId
-    4. Return null (no match, use current selection)
-```
+### Varian TrueBeam (Updated)
 
----
+| Energy | Max Dose Rate |
+|--------|---------------|
+| 6X | 600 MU/min |
+| 10X | 600 MU/min |
+| 15X | 600 MU/min |
+| 6FFF | 1400 MU/min |
+| 10FFF | 2400 MU/min |
 
-## User Workflow
+### Varian Ethos
 
-### Setting Up Mappings
+| Energy | Max Dose Rate |
+|--------|---------------|
+| 6X | 800 MU/min |
+| 6FFF | 1400 MU/min |
 
-1. Open Preset Manager dialog
-2. Click "Machine Mappings" tab
-3. Click "Add Mapping"
-4. Enter pattern (e.g., "TrueBeam", "Halcyon*")
-5. Select target preset
-6. Set priority (optional)
-7. Save
+### Elekta Unity
 
-### Automatic Selection in Action
+| Energy | Max Dose Rate |
+|--------|---------------|
+| 7X | 425 MU/min |
 
-1. User uploads DICOM file
-2. Parser extracts `treatmentMachineName` (e.g., "TrueBeam1")
-3. System checks mapping table
-4. Match found: "TrueBeam*" -> "truebeam" preset
-5. Preset auto-selected, threshold alerts use TrueBeam values
-6. Toast notification: "Machine: TrueBeam1 - Using TrueBeam preset"
+(Single energy only)
+
+### Elekta Harmony
+
+| Energy | Max Dose Rate |
+|--------|---------------|
+| 6X | 300 MU/min |
+| 10X | 300 MU/min |
+| 15X | 300 MU/min |
 
 ---
 
-## Files to Create
+## Default Machine Mappings (New)
 
-| File | Description |
-|------|-------------|
-| `src/lib/machine-mapping.ts` | Mapping types, matching algorithm, localStorage schema |
-| `src/components/settings/MachineMappingManager.tsx` | UI for managing mappings |
-| `src/components/settings/MachineMappingEditor.tsx` | Form for editing single mapping |
+Add to `createDefaultMappings()`:
+
+| Pattern | Match Type | Preset |
+|---------|------------|--------|
+| Ethos | prefix | ethos |
+| Unity | prefix | unity |
+| Harmony | prefix | harmony |
+| MRLinac | contains | unity |
 
 ---
 
@@ -143,191 +189,152 @@ function findMatchingPreset(machineName: string, manufacturer?: string):
 
 | File | Changes |
 |------|---------|
-| `src/contexts/ThresholdConfigContext.tsx` | Add mappings state, auto-select logic |
-| `src/lib/threshold-definitions.ts` | Export new types |
-| `src/components/settings/PresetManager.tsx` | Add tab for machine mappings |
-| `src/components/settings/index.ts` | Export new components |
-| `src/components/viewer/InteractiveViewer.tsx` | Trigger auto-select on plan load |
-| `src/contexts/BatchContext.tsx` | Add machine-based preset detection |
-| `src/pages/ComparePlans.tsx` | Handle mixed-machine comparisons |
-| `src/pages/CohortAnalysis.tsx` | Show machine distribution in clusters |
+| `src/lib/threshold-definitions.ts` | Add `EnergyDoseRate` type, 3 new preset configs, update `MachineDeliveryParams` |
+| `src/components/settings/PresetEditor.tsx` | Add energy dose rate editor section |
+| `src/lib/machine-mapping.ts` | Add default mappings for Ethos, Unity, Harmony |
 
 ---
 
-## Technical Implementation Details
+## Technical Details
 
-### 1. Machine Mapping Types (src/lib/machine-mapping.ts)
+### New Types (threshold-definitions.ts)
 
 ```typescript
-export type MappingMatchType = 'exact' | 'prefix' | 'contains' | 'regex';
-
-export interface MachineMappingEntry {
-  id: string;
-  pattern: string;
-  matchType: MappingMatchType;
-  presetId: string;
-  manufacturer?: string;
-  priority: number;
-  enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
+export interface EnergyDoseRate {
+  energy: string;
+  maxDoseRate: number;
+  isDefault?: boolean;
 }
 
-export function matchMachineToPreset(
-  machineName: string | undefined,
-  manufacturer: string | undefined,
-  mappings: MachineMappingEntry[],
-  availablePresetIds: string[]
-): string | null;
-
-export function createDefaultMappings(): MachineMappingEntry[];
+export interface MachineDeliveryParams {
+  maxDoseRate: number;
+  maxDoseRateFFF?: number;
+  energyDoseRates?: EnergyDoseRate[];  // NEW
+  maxGantrySpeed: number;
+  maxMLCSpeed: number;
+  mlcType: 'MLCX' | 'MLCY' | 'DUAL';
+}
 ```
 
-### 2. Context Updates (ThresholdConfigContext.tsx)
+### New Built-in Presets
 
-New state:
 ```typescript
-machineMappings: MachineMappingEntry[]
-autoSelectEnabled: boolean
+// Varian Ethos
+const ETHOS_THRESHOLDS: ThresholdSet = {
+  MCS: { metricKey: 'MCS', warningThreshold: 0.35, criticalThreshold: 0.25, direction: 'low' },
+  LSV: { metricKey: 'LSV', warningThreshold: 0.40, criticalThreshold: 0.30, direction: 'low' },
+  AAV: { metricKey: 'AAV', warningThreshold: 0.40, criticalThreshold: 0.30, direction: 'low' },
+  MFA: { metricKey: 'MFA', warningThreshold: 4, criticalThreshold: 2, direction: 'low' },
+  LT: { metricKey: 'LT', warningThreshold: 10000, criticalThreshold: 18000, direction: 'high' },
+  totalMU: { metricKey: 'totalMU', warningThreshold: 1500, criticalThreshold: 2500, direction: 'high' },
+};
+
+const ETHOS_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 800,
+  maxDoseRateFFF: 1400,
+  energyDoseRates: [
+    { energy: '6X', maxDoseRate: 800, isDefault: true },
+    { energy: '6FFF', maxDoseRate: 1400 },
+  ],
+  maxGantrySpeed: 6.0,
+  maxMLCSpeed: 25,
+  mlcType: 'MLCX',
+};
+
+// Elekta Unity (MR-Linac)
+const UNITY_THRESHOLDS: ThresholdSet = {
+  MCS: { metricKey: 'MCS', warningThreshold: 0.25, criticalThreshold: 0.15, direction: 'low' },
+  LSV: { metricKey: 'LSV', warningThreshold: 0.30, criticalThreshold: 0.20, direction: 'low' },
+  AAV: { metricKey: 'AAV', warningThreshold: 0.30, criticalThreshold: 0.20, direction: 'low' },
+  MFA: { metricKey: 'MFA', warningThreshold: 4, criticalThreshold: 2, direction: 'low' },
+  LT: { metricKey: 'LT', warningThreshold: 25000, criticalThreshold: 40000, direction: 'high' },
+  totalMU: { metricKey: 'totalMU', warningThreshold: 2000, criticalThreshold: 3500, direction: 'high' },
+};
+
+const UNITY_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 425,
+  energyDoseRates: [
+    { energy: '7X', maxDoseRate: 425, isDefault: true },
+  ],
+  maxGantrySpeed: 6.0,
+  maxMLCSpeed: 25,
+  mlcType: 'MLCY',
+};
+
+// Elekta Harmony
+const HARMONY_THRESHOLDS: ThresholdSet = {
+  MCS: { metricKey: 'MCS', warningThreshold: 0.28, criticalThreshold: 0.18, direction: 'low' },
+  LSV: { metricKey: 'LSV', warningThreshold: 0.32, criticalThreshold: 0.22, direction: 'low' },
+  AAV: { metricKey: 'AAV', warningThreshold: 0.32, criticalThreshold: 0.22, direction: 'low' },
+  MFA: { metricKey: 'MFA', warningThreshold: 4.5, criticalThreshold: 2.5, direction: 'low' },
+  LT: { metricKey: 'LT', warningThreshold: 22000, criticalThreshold: 35000, direction: 'high' },
+  totalMU: { metricKey: 'totalMU', warningThreshold: 1800, criticalThreshold: 2800, direction: 'high' },
+};
+
+const HARMONY_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 300,
+  energyDoseRates: [
+    { energy: '6X', maxDoseRate: 300, isDefault: true },
+    { energy: '10X', maxDoseRate: 300 },
+    { energy: '15X', maxDoseRate: 300 },
+  ],
+  maxGantrySpeed: 6.0,
+  maxMLCSpeed: 35,
+  mlcType: 'MLCY',
+};
 ```
 
-New methods:
-```typescript
-addMachineMapping(mapping: MachineMappingEntry): void
-updateMachineMapping(id: string, mapping: MachineMappingEntry): void
-deleteMachineMapping(id: string): void
-reorderMachineMappings(ids: string[]): void
-findPresetForMachine(machineName?: string, manufacturer?: string): string | null
-```
+### Dose Rate Resolution Function
 
-### 3. Auto-Selection Integration
-
-When a plan loads in any mode:
 ```typescript
-const handlePlanLoaded = useCallback((plan: SessionPlan) => {
-  // Existing logic...
-  
-  // Auto-select preset based on machine
-  if (autoSelectEnabled) {
-    const matchedPreset = findPresetForMachine(
-      plan.plan.treatmentMachineName,
-      plan.plan.manufacturer
+export function getDoseRateForEnergy(
+  params: MachineDeliveryParams,
+  energy?: string,
+  isFFF?: boolean
+): number {
+  // Check energy-specific rates first
+  if (params.energyDoseRates && energy) {
+    const normalizedEnergy = energy.toUpperCase();
+    const match = params.energyDoseRates.find(
+      (e) => e.energy.toUpperCase() === normalizedEnergy
     );
-    if (matchedPreset) {
-      setPreset(matchedPreset);
-      toast({
-        title: `Machine: ${plan.plan.treatmentMachineName}`,
-        description: `Using ${getPresetName(matchedPreset)} preset`
-      });
-    }
+    if (match) return match.maxDoseRate;
+    
+    // Check for default in energy list
+    const defaultEnergy = params.energyDoseRates.find((e) => e.isDefault);
+    if (defaultEnergy) return defaultEnergy.maxDoseRate;
   }
-}, [autoSelectEnabled, findPresetForMachine, setPreset]);
-```
-
-### 4. Batch Mode Enhancement
-
-Show detected machines summary:
-```typescript
-interface BatchMachineSummary {
-  machineName: string;
-  count: number;
-  matchedPreset: string | null;
-}
-```
-
-Display in BatchSummaryStats:
-- "3 machines detected: TrueBeam1 (45 plans), Halcyon2 (12 plans), Unknown (3 plans)"
-- Button to apply matched preset to all plans from that machine
-
----
-
-## Storage Schema
-
-```typescript
-const MachineMappingsSchema = z.array(z.object({
-  id: z.string(),
-  pattern: z.string(),
-  matchType: z.enum(['exact', 'prefix', 'contains', 'regex']),
-  presetId: z.string(),
-  manufacturer: z.string().optional(),
-  priority: z.number(),
-  enabled: z.boolean(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-}));
-
-const STORAGE_KEY = 'rtplan-machine-mappings';
-```
-
----
-
-## UI Mockup: Machine Mapping Manager
-
-```text
-+----------------------------------------------------------+
-| Machine Mappings                                          |
-|----------------------------------------------------------|
-| [x] Enable auto-select preset based on machine name       |
-|                                                           |
-| Pattern        | Match Type | Preset      | Actions       |
-|----------------|------------|-------------|---------------|
-| TrueBeam       | Prefix     | TrueBeam    | [Edit][Del]   |
-| Halcyon        | Prefix     | Halcyon     | [Edit][Del]   |
-| LINAC-A        | Exact      | My Custom   | [Edit][Del]   |
-| VersaHD.*      | Regex      | Versa HD    | [Edit][Del]   |
-|                                                           |
-| [+ Add Mapping]                                           |
-|                                                           |
-| Test: [Enter machine name    ] -> Matches: TrueBeam       |
-+----------------------------------------------------------+
-```
-
----
-
-## Export/Import Integration
-
-Extend preset export to include mappings:
-```json
-{
-  "version": "1.1",
-  "exportDate": "2026-02-07T...",
-  "presets": [...],
-  "machineMappings": [
-    {
-      "pattern": "TrueBeam",
-      "matchType": "prefix",
-      "presetId": "truebeam",
-      "priority": 100,
-      "enabled": true
-    }
-  ]
+  
+  // Legacy FFF fallback
+  if (isFFF && params.maxDoseRateFFF) {
+    return params.maxDoseRateFFF;
+  }
+  
+  // Default rate
+  return params.maxDoseRate;
 }
 ```
 
 ---
 
-## Default Mappings
+## PresetEditor Energy Section
 
-Pre-configured suggestions (user can modify):
+New component section with:
 
-| Pattern | Match Type | Preset |
-|---------|------------|--------|
-| TrueBeam | prefix | truebeam |
-| Halcyon | prefix | halcyon |
-| VersaHD | prefix | versa_hd |
-| VERSA | prefix | versa_hd |
-| Agility | contains | versa_hd |
+1. **Table of configured energies**
+   - Energy name (editable or dropdown)
+   - Max dose rate input
+   - Default checkbox (only one can be default)
+   - Delete button
 
----
+2. **Add energy row**
+   - Dropdown with common energies
+   - "Custom" option for free text
+   - Initial dose rate value
 
-## Edge Cases Handled
-
-1. **No machine name in DICOM**: Skip auto-selection, show info message
-2. **Multiple matches**: Use highest priority mapping
-3. **Deleted preset reference**: Fall back to generic, show warning
-4. **User preset deleted**: Remove associated mappings or warn
-5. **Regex errors**: Catch and treat as no-match
-6. **Mixed machines in batch**: Show summary, let user choose per-machine or global preset
+3. **Backwards compatibility**
+   - If no energyDoseRates, show simple legacy fields
+   - Migration: "Convert to energy-specific rates" button
 
 ---
 
@@ -335,14 +342,20 @@ Pre-configured suggestions (user can modify):
 
 | File | Lines Added/Modified |
 |------|---------------------|
-| `src/lib/machine-mapping.ts` | ~120 lines (new) |
-| `src/components/settings/MachineMappingManager.tsx` | ~200 lines (new) |
-| `src/components/settings/MachineMappingEditor.tsx` | ~150 lines (new) |
-| `src/contexts/ThresholdConfigContext.tsx` | ~60 lines |
-| `src/components/settings/PresetManager.tsx` | ~30 lines |
-| `src/components/viewer/InteractiveViewer.tsx` | ~15 lines |
-| `src/contexts/BatchContext.tsx` | ~40 lines |
-| Other mode files | ~30 lines each |
+| `src/lib/threshold-definitions.ts` | ~120 lines (new presets + types) |
+| `src/components/settings/PresetEditor.tsx` | ~100 lines (energy editor UI) |
+| `src/lib/machine-mapping.ts` | ~25 lines (new default mappings) |
 
-**Total: ~650 lines across 10+ files**
+**Total: ~245 lines across 3 files**
+
+---
+
+## Summary of Changes
+
+1. **3 new built-in presets**: Ethos, Unity, Harmony
+2. **New EnergyDoseRate type**: Allows per-energy dose rate configuration
+3. **Extended MachineDeliveryParams**: Optional energyDoseRates array
+4. **PresetEditor enhancement**: UI to add/edit energy-specific rates
+5. **New default mappings**: Auto-detect Ethos, Unity, Harmony machines
+6. **Dose rate resolver function**: Smart lookup with fallback logic
 
