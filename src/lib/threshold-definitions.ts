@@ -16,10 +16,18 @@ export interface ThresholdDefinition {
 
 export type ThresholdSet = Record<string, ThresholdDefinition>;
 
+// Energy-specific dose rate configuration
+export interface EnergyDoseRate {
+  energy: string; // e.g., "6X", "10X", "6FFF", "10FFF", "6e"
+  maxDoseRate: number; // MU/min for this energy
+  isDefault?: boolean; // Mark one as default for unknown energies
+}
+
 // Machine delivery parameters for time estimation
 export interface MachineDeliveryParams {
-  maxDoseRate: number; // MU/min
-  maxDoseRateFFF?: number; // MU/min for FFF beams
+  maxDoseRate: number; // MU/min (default/fallback)
+  maxDoseRateFFF?: number; // MU/min for FFF beams (legacy support)
+  energyDoseRates?: EnergyDoseRate[]; // Energy-specific rates
   maxGantrySpeed: number; // deg/s
   maxMLCSpeed: number; // mm/s
   mlcType: 'MLCX' | 'MLCY' | 'DUAL';
@@ -87,6 +95,36 @@ const VERSA_HD_THRESHOLDS: ThresholdSet = {
   totalMU: { metricKey: 'totalMU', warningThreshold: 1800, criticalThreshold: 2800, direction: 'high' },
 };
 
+// Varian Ethos - AI-driven adaptive, typically simpler plans
+const ETHOS_THRESHOLDS: ThresholdSet = {
+  MCS: { metricKey: 'MCS', warningThreshold: 0.35, criticalThreshold: 0.25, direction: 'low' },
+  LSV: { metricKey: 'LSV', warningThreshold: 0.40, criticalThreshold: 0.30, direction: 'low' },
+  AAV: { metricKey: 'AAV', warningThreshold: 0.40, criticalThreshold: 0.30, direction: 'low' },
+  MFA: { metricKey: 'MFA', warningThreshold: 4, criticalThreshold: 2, direction: 'low' },
+  LT: { metricKey: 'LT', warningThreshold: 10000, criticalThreshold: 18000, direction: 'high' },
+  totalMU: { metricKey: 'totalMU', warningThreshold: 1500, criticalThreshold: 2500, direction: 'high' },
+};
+
+// Elekta Unity (MR-Linac) - Conservative due to MR environment constraints
+const UNITY_THRESHOLDS: ThresholdSet = {
+  MCS: { metricKey: 'MCS', warningThreshold: 0.25, criticalThreshold: 0.15, direction: 'low' },
+  LSV: { metricKey: 'LSV', warningThreshold: 0.30, criticalThreshold: 0.20, direction: 'low' },
+  AAV: { metricKey: 'AAV', warningThreshold: 0.30, criticalThreshold: 0.20, direction: 'low' },
+  MFA: { metricKey: 'MFA', warningThreshold: 4, criticalThreshold: 2, direction: 'low' },
+  LT: { metricKey: 'LT', warningThreshold: 25000, criticalThreshold: 40000, direction: 'high' },
+  totalMU: { metricKey: 'totalMU', warningThreshold: 2000, criticalThreshold: 3500, direction: 'high' },
+};
+
+// Elekta Harmony - Similar to Versa HD
+const HARMONY_THRESHOLDS: ThresholdSet = {
+  MCS: { metricKey: 'MCS', warningThreshold: 0.28, criticalThreshold: 0.18, direction: 'low' },
+  LSV: { metricKey: 'LSV', warningThreshold: 0.32, criticalThreshold: 0.22, direction: 'low' },
+  AAV: { metricKey: 'AAV', warningThreshold: 0.32, criticalThreshold: 0.22, direction: 'low' },
+  MFA: { metricKey: 'MFA', warningThreshold: 4.5, criticalThreshold: 2.5, direction: 'low' },
+  LT: { metricKey: 'LT', warningThreshold: 22000, criticalThreshold: 35000, direction: 'high' },
+  totalMU: { metricKey: 'totalMU', warningThreshold: 1800, criticalThreshold: 2800, direction: 'high' },
+};
+
 // Machine delivery parameters
 export const DEFAULT_MACHINE_PARAMS: MachineDeliveryParams = {
   maxDoseRate: 600,
@@ -100,6 +138,13 @@ const GENERIC_DELIVERY: MachineDeliveryParams = DEFAULT_MACHINE_PARAMS;
 const TRUEBEAM_DELIVERY: MachineDeliveryParams = {
   maxDoseRate: 600,
   maxDoseRateFFF: 1400,
+  energyDoseRates: [
+    { energy: '6X', maxDoseRate: 600, isDefault: true },
+    { energy: '10X', maxDoseRate: 600 },
+    { energy: '15X', maxDoseRate: 600 },
+    { energy: '6FFF', maxDoseRate: 1400 },
+    { energy: '10FFF', maxDoseRate: 2400 },
+  ],
   maxGantrySpeed: 6.0,
   maxMLCSpeed: 25,
   mlcType: 'MLCX',
@@ -107,6 +152,10 @@ const TRUEBEAM_DELIVERY: MachineDeliveryParams = {
 
 const HALCYON_DELIVERY: MachineDeliveryParams = {
   maxDoseRate: 800,
+  energyDoseRates: [
+    { energy: '6X', maxDoseRate: 800, isDefault: true },
+    { energy: '6FFF', maxDoseRate: 800 },
+  ],
   maxGantrySpeed: 4.0,
   maxMLCSpeed: 50,
   mlcType: 'DUAL',
@@ -114,6 +163,47 @@ const HALCYON_DELIVERY: MachineDeliveryParams = {
 
 const VERSA_HD_DELIVERY: MachineDeliveryParams = {
   maxDoseRate: 600,
+  energyDoseRates: [
+    { energy: '6X', maxDoseRate: 600, isDefault: true },
+    { energy: '10X', maxDoseRate: 600 },
+    { energy: '15X', maxDoseRate: 600 },
+    { energy: '6FFF', maxDoseRate: 1400 },
+    { energy: '10FFF', maxDoseRate: 2400 },
+  ],
+  maxGantrySpeed: 6.0,
+  maxMLCSpeed: 35,
+  mlcType: 'MLCY',
+};
+
+const ETHOS_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 800,
+  maxDoseRateFFF: 1400,
+  energyDoseRates: [
+    { energy: '6X', maxDoseRate: 800, isDefault: true },
+    { energy: '6FFF', maxDoseRate: 1400 },
+  ],
+  maxGantrySpeed: 6.0,
+  maxMLCSpeed: 25,
+  mlcType: 'MLCX',
+};
+
+const UNITY_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 425,
+  energyDoseRates: [
+    { energy: '7X', maxDoseRate: 425, isDefault: true },
+  ],
+  maxGantrySpeed: 6.0,
+  maxMLCSpeed: 25,
+  mlcType: 'MLCY',
+};
+
+const HARMONY_DELIVERY: MachineDeliveryParams = {
+  maxDoseRate: 300,
+  energyDoseRates: [
+    { energy: '6X', maxDoseRate: 300, isDefault: true },
+    { energy: '10X', maxDoseRate: 300 },
+    { energy: '15X', maxDoseRate: 300 },
+  ],
   maxGantrySpeed: 6.0,
   maxMLCSpeed: 35,
   mlcType: 'MLCY',
@@ -150,6 +240,30 @@ export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
     description: 'Optimized for Agility MLC',
     thresholds: VERSA_HD_THRESHOLDS,
     deliveryParams: VERSA_HD_DELIVERY,
+    isBuiltIn: true,
+  },
+  ethos: {
+    id: 'ethos',
+    name: 'Varian Ethos',
+    description: 'AI-driven adaptive therapy system',
+    thresholds: ETHOS_THRESHOLDS,
+    deliveryParams: ETHOS_DELIVERY,
+    isBuiltIn: true,
+  },
+  unity: {
+    id: 'unity',
+    name: 'Elekta Unity (MR-Linac)',
+    description: 'MR-guided radiotherapy system',
+    thresholds: UNITY_THRESHOLDS,
+    deliveryParams: UNITY_DELIVERY,
+    isBuiltIn: true,
+  },
+  harmony: {
+    id: 'harmony',
+    name: 'Elekta Harmony',
+    description: 'Essential linac with Agility MLC',
+    thresholds: HARMONY_THRESHOLDS,
+    deliveryParams: HARMONY_DELIVERY,
     isBuiltIn: true,
   },
 };
@@ -304,3 +418,51 @@ export function createEmptyUserPreset(name: string): UserPreset {
     updatedAt: now,
   };
 }
+
+/**
+ * Get dose rate for a specific energy from machine params
+ */
+export function getDoseRateForEnergy(
+  params: MachineDeliveryParams,
+  energy?: string,
+  isFFF?: boolean
+): number {
+  // Check energy-specific rates first
+  if (params.energyDoseRates && energy) {
+    const normalizedEnergy = energy.toUpperCase();
+    const match = params.energyDoseRates.find(
+      (e) => e.energy.toUpperCase() === normalizedEnergy
+    );
+    if (match) return match.maxDoseRate;
+    
+    // Check for default in energy list
+    const defaultEnergy = params.energyDoseRates.find((e) => e.isDefault);
+    if (defaultEnergy) return defaultEnergy.maxDoseRate;
+  }
+  
+  // Legacy FFF fallback
+  if (isFFF && params.maxDoseRateFFF) {
+    return params.maxDoseRateFFF;
+  }
+  
+  // Default rate
+  return params.maxDoseRate;
+}
+
+/**
+ * Common energy presets for dropdown
+ */
+export const COMMON_ENERGIES = [
+  { value: '6X', label: '6 MV', category: 'Photon' },
+  { value: '10X', label: '10 MV', category: 'Photon' },
+  { value: '15X', label: '15 MV', category: 'Photon' },
+  { value: '18X', label: '18 MV', category: 'Photon' },
+  { value: '6FFF', label: '6 MV FFF', category: 'FFF' },
+  { value: '10FFF', label: '10 MV FFF', category: 'FFF' },
+  { value: '7X', label: '7 MV (Unity)', category: 'Photon' },
+  { value: '6e', label: '6 MeV', category: 'Electron' },
+  { value: '9e', label: '9 MeV', category: 'Electron' },
+  { value: '12e', label: '12 MeV', category: 'Electron' },
+  { value: '15e', label: '15 MeV', category: 'Electron' },
+  { value: '18e', label: '18 MeV', category: 'Electron' },
+];

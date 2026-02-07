@@ -3,6 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -23,8 +25,10 @@ import type {
   ThresholdSet,
   MachineDeliveryParams,
   ThresholdDefinition,
+  EnergyDoseRate,
 } from '@/lib/threshold-definitions';
 import { METRIC_DEFINITIONS } from '@/lib/metrics-definitions';
+import { COMMON_ENERGIES } from '@/lib/threshold-definitions';
 
 interface PresetEditorProps {
   preset: UserPreset;
@@ -44,6 +48,13 @@ export function PresetEditor({ preset, open, onOpenChange, onSave }: PresetEdito
   const [deliveryParams, setDeliveryParams] = useState<MachineDeliveryParams>(
     JSON.parse(JSON.stringify(preset.deliveryParams))
   );
+  const [energyRates, setEnergyRates] = useState<EnergyDoseRate[]>(
+    preset.deliveryParams.energyDoseRates 
+      ? JSON.parse(JSON.stringify(preset.deliveryParams.energyDoseRates))
+      : []
+  );
+  const [newEnergy, setNewEnergy] = useState('');
+  const [customEnergy, setCustomEnergy] = useState('');
 
   const handleThresholdChange = (
     metricKey: string,
@@ -69,13 +80,59 @@ export function PresetEditor({ preset, open, onOpenChange, onSave }: PresetEdito
     }));
   };
 
+  const handleAddEnergy = () => {
+    const energyToAdd = newEnergy === 'custom' ? customEnergy.trim().toUpperCase() : newEnergy;
+    if (!energyToAdd) return;
+    
+    // Check if already exists
+    if (energyRates.some(e => e.energy.toUpperCase() === energyToAdd.toUpperCase())) {
+      return;
+    }
+    
+    const newRate: EnergyDoseRate = {
+      energy: energyToAdd,
+      maxDoseRate: deliveryParams.maxDoseRate,
+      isDefault: energyRates.length === 0,
+    };
+    
+    setEnergyRates([...energyRates, newRate]);
+    setNewEnergy('');
+    setCustomEnergy('');
+  };
+
+  const handleRemoveEnergy = (index: number) => {
+    const updated = energyRates.filter((_, i) => i !== index);
+    // If removed the default, make the first one default
+    if (energyRates[index].isDefault && updated.length > 0) {
+      updated[0].isDefault = true;
+    }
+    setEnergyRates(updated);
+  };
+
+  const handleEnergyRateChange = (index: number, value: number) => {
+    const updated = [...energyRates];
+    updated[index] = { ...updated[index], maxDoseRate: value };
+    setEnergyRates(updated);
+  };
+
+  const handleSetDefaultEnergy = (index: number) => {
+    const updated = energyRates.map((e, i) => ({
+      ...e,
+      isDefault: i === index,
+    }));
+    setEnergyRates(updated);
+  };
+
   const handleSave = () => {
     const updated: UserPreset = {
       ...preset,
       name,
       description,
       thresholds,
-      deliveryParams,
+      deliveryParams: {
+        ...deliveryParams,
+        energyDoseRates: energyRates.length > 0 ? energyRates : undefined,
+      },
       updatedAt: new Date().toISOString(),
     };
     onSave(updated);
@@ -202,6 +259,105 @@ export function PresetEditor({ preset, open, onOpenChange, onSave }: PresetEdito
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Energy-Specific Dose Rates */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium">Energy-Specific Dose Rates</h4>
+            </div>
+            
+            {energyRates.length > 0 ? (
+              <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-muted-foreground">
+                  <div className="col-span-3">Energy</div>
+                  <div className="col-span-5">Max Rate (MU/min)</div>
+                  <div className="col-span-2 text-center">Default</div>
+                  <div className="col-span-2"></div>
+                </div>
+                {energyRates.map((rate, index) => (
+                  <div key={index} className="grid grid-cols-12 items-center gap-2">
+                    <div className="col-span-3 text-sm font-medium">{rate.energy}</div>
+                    <div className="col-span-5">
+                      <Input
+                        type="number"
+                        value={rate.maxDoseRate}
+                        onChange={(e) =>
+                          handleEnergyRateChange(index, parseFloat(e.target.value) || 0)
+                        }
+                        className="h-7 text-xs"
+                        step={50}
+                      />
+                    </div>
+                    <div className="col-span-2 flex justify-center">
+                      <Checkbox
+                        checked={rate.isDefault}
+                        onCheckedChange={() => handleSetDefaultEnergy(index)}
+                      />
+                    </div>
+                    <div className="col-span-2 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveEnergy(index)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No energy-specific rates configured. Using default dose rate for all energies.
+              </p>
+            )}
+            
+            {/* Add new energy */}
+            <div className="flex items-end gap-2">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">Add Energy</Label>
+                <Select value={newEnergy} onValueChange={setNewEnergy}>
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Select energy..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COMMON_ENERGIES.filter(
+                      (e) => !energyRates.some((r) => r.energy === e.value)
+                    ).map((energy) => (
+                      <SelectItem key={energy.value} value={energy.value}>
+                        {energy.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Custom...</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {newEnergy === 'custom' && (
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Custom Energy</Label>
+                  <Input
+                    value={customEnergy}
+                    onChange={(e) => setCustomEnergy(e.target.value)}
+                    placeholder="e.g., 20X"
+                    className="h-8"
+                  />
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={handleAddEnergy}
+                disabled={!newEnergy || (newEnergy === 'custom' && !customEnergy.trim())}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add
+              </Button>
             </div>
           </div>
 
