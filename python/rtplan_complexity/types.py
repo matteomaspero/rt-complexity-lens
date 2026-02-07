@@ -1,0 +1,326 @@
+"""
+Data types matching the TypeScript interfaces in src/lib/dicom/types.ts
+
+These dataclasses mirror the TypeScript types exactly to ensure
+consistent data structures between implementations.
+"""
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import List, Optional, Tuple
+
+
+class Technique(Enum):
+    """Treatment technique type."""
+    VMAT = "VMAT"
+    IMRT = "IMRT"
+    CONFORMAL = "CONFORMAL"
+    UNKNOWN = "UNKNOWN"
+
+
+class GantryDirection(Enum):
+    """Gantry rotation direction."""
+    CW = "CW"
+    CCW = "CCW"
+    NONE = "NONE"
+
+
+@dataclass
+class MLCLeafPositions:
+    """MLC leaf positions for both banks."""
+    bank_a: List[float] = field(default_factory=list)  # Negative X direction
+    bank_b: List[float] = field(default_factory=list)  # Positive X direction
+
+
+@dataclass
+class JawPositions:
+    """Jaw positions in mm."""
+    x1: float = 0.0
+    x2: float = 0.0
+    y1: float = 0.0
+    y2: float = 0.0
+
+
+@dataclass
+class ControlPoint:
+    """Control point data for a beam."""
+    index: int
+    gantry_angle: float  # degrees
+    gantry_rotation_direction: str  # 'CW', 'CCW', or 'NONE'
+    beam_limiting_device_angle: float  # collimator angle in degrees
+    cumulative_meterset_weight: float  # 0 to 1
+    mlc_positions: MLCLeafPositions = field(default_factory=MLCLeafPositions)
+    jaw_positions: JawPositions = field(default_factory=JawPositions)
+    isocenter_position: Optional[Tuple[float, float, float]] = None
+    patient_support_angle: Optional[float] = None  # Table rotation (degrees)
+    table_top_vertical: Optional[float] = None  # mm
+    table_top_longitudinal: Optional[float] = None  # mm
+    table_top_lateral: Optional[float] = None  # mm
+
+
+@dataclass
+class Beam:
+    """Beam data from RT Plan."""
+    beam_number: int
+    beam_name: str
+    beam_type: str  # 'STATIC' or 'DYNAMIC'
+    radiation_type: str
+    treatment_delivery_type: str  # 'TREATMENT', 'OPEN_PORTFILM', 'TRMT_PORTFILM'
+    number_of_control_points: int
+    control_points: List[ControlPoint] = field(default_factory=list)
+    beam_meterset_units: str = "MU"
+    final_cumulative_meterset_weight: float = 1.0
+    beam_dose: Optional[float] = None  # MU for this beam
+    gantry_angle_start: float = 0.0
+    gantry_angle_end: float = 0.0
+    is_arc: bool = False
+    mlc_leaf_widths: List[float] = field(default_factory=list)  # mm
+    number_of_leaves: int = 60
+    beam_description: Optional[str] = None
+    source_skin_distance: Optional[float] = None
+
+
+@dataclass
+class ReferencedBeam:
+    """Referenced beam in a fraction group."""
+    beam_number: int
+    beam_meterset: float  # MU
+
+
+@dataclass
+class FractionGroup:
+    """Fraction group data."""
+    fraction_group_number: int
+    number_of_fractions_planned: int
+    number_of_beams: int
+    referenced_beams: List[ReferencedBeam] = field(default_factory=list)
+
+
+@dataclass
+class RTPlan:
+    """Complete RT Plan structure."""
+    # Patient & Plan Identification
+    patient_id: str
+    patient_name: str
+    plan_label: str
+    plan_name: str
+    plan_date: Optional[str] = None
+    plan_time: Optional[str] = None
+    
+    # Plan Configuration
+    rt_plan_geometry: str = "PATIENT"  # 'PATIENT' or 'TREATMENT_DEVICE'
+    plan_intent: Optional[str] = None
+    
+    # Treatment Machine
+    treatment_machine_name: Optional[str] = None
+    manufacturer: Optional[str] = None
+    institution_name: Optional[str] = None
+    
+    # Beams & Fractions
+    beams: List[Beam] = field(default_factory=list)
+    fraction_groups: List[FractionGroup] = field(default_factory=list)
+    
+    # Derived Metrics
+    total_mu: float = 0.0
+    technique: Technique = Technique.UNKNOWN
+    
+    # Parsing metadata
+    parse_date: datetime = field(default_factory=datetime.now)
+    file_size: int = 0
+    sop_instance_uid: str = ""
+
+
+# ============================================================================
+# Metrics Types
+# ============================================================================
+
+@dataclass
+class SmallApertureFlags:
+    """Flags for small aperture detection."""
+    below_2mm: bool = False
+    below_5mm: bool = False
+    below_10mm: bool = False
+    below_20mm: bool = False
+
+
+@dataclass
+class ControlPointMetrics:
+    """Metrics calculated for a single control point."""
+    control_point_index: int
+    aperture_lsv: float  # Leaf Sequence Variability
+    aperture_aav: float  # Aperture Area Variability
+    aperture_area: float  # mm²
+    leaf_travel: float  # mm (from previous CP)
+    meterset_weight: float
+    aperture_perimeter: Optional[float] = None  # mm
+    small_aperture_flags: Optional[SmallApertureFlags] = None
+
+
+@dataclass
+class BeamMetrics:
+    """UCoMX metrics for a single beam."""
+    beam_number: int
+    beam_name: str
+    
+    # UCoMX Primary Metrics
+    MCS: float  # Modulation Complexity Score
+    LSV: float  # Leaf Sequence Variability
+    AAV: float  # Aperture Area Variability
+    MFA: float  # Mean Field Area (cm²)
+    LT: float   # Leaf Travel (mm)
+    LTMCS: float  # Combined Leaf Travel + MCS
+    
+    # Basic metrics
+    beam_mu: float
+    number_of_control_points: int
+    
+    # UCoMX Accuracy Metrics
+    LG: Optional[float] = None  # Leaf Gap (mm)
+    MAD: Optional[float] = None  # Mean Asymmetry Distance (mm)
+    EFS: Optional[float] = None  # Equivalent Field Size (mm)
+    psmall: Optional[float] = None  # Percentage of small fields
+    
+    # UCoMX Deliverability Metrics
+    MUCA: Optional[float] = None  # MU per Control Arc
+    LTMU: Optional[float] = None  # Leaf Travel per MU
+    LTNLMU: Optional[float] = None  # Leaf Travel per Leaf and MU
+    LNA: Optional[float] = None  # Leaf Travel per Leaf and CA
+    LTAL: Optional[float] = None  # Leaf Travel per Arc Length
+    mDRV: Optional[float] = None  # Mean Dose Rate Variation
+    GT: Optional[float] = None  # Gantry Travel (degrees)
+    GS: Optional[float] = None  # Gantry Speed (deg/s)
+    mGSV: Optional[float] = None  # Mean Gantry Speed Variation
+    LS: Optional[float] = None  # Leaf Speed (mm/s)
+    PA: Optional[float] = None  # Plan Area (cm²)
+    JA: Optional[float] = None  # Jaw Area (cm²)
+    PM: Optional[float] = None  # Plan Modulation (1 - MCS)
+    TG: Optional[float] = None  # Tongue-and-Groove Index
+    MD: Optional[float] = None  # Modulation Degree
+    MI: Optional[float] = None  # Modulation Index
+    
+    # Additional metrics
+    arc_length: Optional[float] = None  # degrees
+    average_gantry_speed: Optional[float] = None  # deg/s
+    estimated_delivery_time: Optional[float] = None  # seconds
+    MU_per_degree: Optional[float] = None
+    avg_dose_rate: Optional[float] = None  # MU/min
+    avg_mlc_speed: Optional[float] = None  # mm/s
+    limiting_factor: Optional[str] = None  # 'doseRate', 'gantrySpeed', 'mlcSpeed'
+    
+    # Collimator info
+    collimator_angle_start: Optional[float] = None
+    collimator_angle_end: Optional[float] = None
+    
+    # Additional complexity metrics
+    SAS5: Optional[float] = None  # Small Aperture Score (5mm)
+    SAS10: Optional[float] = None  # Small Aperture Score (10mm)
+    EM: Optional[float] = None  # Edge Metric
+    PI: Optional[float] = None  # Plan Irregularity
+    
+    # Per-control-point data
+    control_point_metrics: List[ControlPointMetrics] = field(default_factory=list)
+
+
+@dataclass
+class PlanMetrics:
+    """Aggregate UCoMX metrics for the entire plan."""
+    plan_label: str
+    
+    # UCoMX Primary Metrics (MU-weighted)
+    MCS: float
+    LSV: float
+    AAV: float
+    MFA: float  # cm²
+    LT: float   # mm
+    LTMCS: float
+    
+    # Plan-level metrics
+    total_mu: float
+    prescribed_dose: Optional[float] = None
+    mu_per_gy: Optional[float] = None
+    
+    # UCoMX Accuracy Metrics
+    LG: Optional[float] = None
+    MAD: Optional[float] = None
+    EFS: Optional[float] = None
+    psmall: Optional[float] = None
+    
+    # UCoMX Deliverability Metrics
+    MUCA: Optional[float] = None
+    LTMU: Optional[float] = None
+    LTNLMU: Optional[float] = None
+    LNA: Optional[float] = None
+    LTAL: Optional[float] = None
+    mDRV: Optional[float] = None
+    GT: Optional[float] = None
+    GS: Optional[float] = None
+    mGSV: Optional[float] = None
+    LS: Optional[float] = None
+    PA: Optional[float] = None
+    JA: Optional[float] = None
+    PM: Optional[float] = None
+    TG: Optional[float] = None
+    MD: Optional[float] = None
+    MI: Optional[float] = None
+    
+    # Delivery time
+    total_delivery_time: Optional[float] = None  # seconds
+    
+    # Additional complexity metrics
+    SAS5: Optional[float] = None
+    SAS10: Optional[float] = None
+    EM: Optional[float] = None
+    PI: Optional[float] = None
+    
+    # Per-beam breakdown
+    beam_metrics: List[BeamMetrics] = field(default_factory=list)
+    
+    calculation_date: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class MachineDeliveryParams:
+    """Machine delivery parameters for time estimation."""
+    max_dose_rate: float = 600.0  # MU/min
+    max_dose_rate_fff: Optional[float] = None  # MU/min for FFF beams
+    max_gantry_speed: float = 4.8  # deg/s
+    max_mlc_speed: float = 25.0  # mm/s
+    mlc_type: str = "MLCX"  # 'MLCX', 'MLCY', 'DUAL'
+
+
+# ============================================================================
+# Statistics Types
+# ============================================================================
+
+@dataclass
+class ExtendedStatistics:
+    """Extended statistics for cohort analysis."""
+    min: float
+    max: float
+    mean: float
+    std: float
+    median: float
+    q1: float  # 25th percentile
+    q3: float  # 75th percentile
+    iqr: float  # Interquartile range
+    p5: float  # 5th percentile
+    p95: float  # 95th percentile
+    skewness: float
+    count: int
+    outliers: List[float] = field(default_factory=list)
+
+
+@dataclass
+class BoxPlotData:
+    """Data for box plot visualization."""
+    metric: str
+    min: float
+    q1: float
+    median: float
+    q3: float
+    max: float
+    mean: float
+    whisker_low: float
+    whisker_high: float
+    outliers: List[float] = field(default_factory=list)
