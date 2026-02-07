@@ -12,6 +12,27 @@ import {
   getDefaultCustomThresholds,
   getDefaultDeliveryParams,
 } from '@/lib/threshold-definitions';
+import {
+  type MachineMappingEntry,
+  loadMachineMappings,
+  saveMachineMappings,
+  loadAutoSelectEnabled,
+  saveAutoSelectEnabled,
+  matchMachineToPreset,
+  createDefaultMappings,
+} from '@/lib/machine-mapping';
+
+/**
+ * Safe JSON parse with prototype pollution protection
+ */
+function safeParseJSON<T>(text: string): T {
+  return JSON.parse(text, (key, value) => {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      return undefined;
+    }
+    return value;
+  });
+}
 
 // Zod schemas for localStorage validation
 const ThresholdDefinitionSchema = z.object({
@@ -62,6 +83,9 @@ interface ThresholdConfigContextType {
   customThresholds: ThresholdSet;
   customDeliveryParams: MachineDeliveryParams;
   userPresets: UserPreset[];
+  // Machine mapping state
+  machineMappings: MachineMappingEntry[];
+  autoSelectEnabled: boolean;
   setEnabled: (enabled: boolean) => void;
   setPreset: (preset: MachinePreset) => void;
   updateCustomThreshold: (metricKey: string, values: Partial<ThresholdDefinition>) => void;
@@ -74,6 +98,12 @@ interface ThresholdConfigContextType {
   addUserPreset: (preset: UserPreset) => void;
   updateUserPreset: (id: string, preset: UserPreset) => void;
   deleteUserPreset: (id: string) => void;
+  // Machine mapping management
+  setAutoSelectEnabled: (enabled: boolean) => void;
+  addMachineMapping: (mapping: MachineMappingEntry) => void;
+  updateMachineMapping: (id: string, mapping: MachineMappingEntry) => void;
+  deleteMachineMapping: (id: string) => void;
+  findPresetForMachine: (machineName?: string, manufacturer?: string) => string | null;
 }
 
 const STORAGE_KEY = 'rtplan-threshold-config';
@@ -90,7 +120,7 @@ function loadFromStorage(): ThresholdConfigState {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const parsed = JSON.parse(stored);
+      const parsed = safeParseJSON<unknown>(stored);
       const validated = ThresholdConfigStateSchema.parse(parsed);
       return {
         enabled: validated.enabled,
@@ -117,7 +147,7 @@ function loadUserPresets(): UserPreset[] {
   try {
     const stored = localStorage.getItem(USER_PRESETS_KEY);
     if (stored) {
-      const parsed = JSON.parse(stored);
+      const parsed = safeParseJSON<unknown>(stored);
       const validated = UserPresetsArraySchema.parse(parsed);
       return validated as UserPreset[];
     }
@@ -140,6 +170,8 @@ const ThresholdConfigContext = createContext<ThresholdConfigContextType | undefi
 export function ThresholdConfigProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ThresholdConfigState>(loadFromStorage);
   const [userPresets, setUserPresets] = useState<UserPreset[]>(loadUserPresets);
+  const [machineMappings, setMachineMappings] = useState<MachineMappingEntry[]>(loadMachineMappings);
+  const [autoSelectEnabled, setAutoSelectEnabledState] = useState<boolean>(loadAutoSelectEnabled);
 
   // Persist to localStorage whenever state changes
   useEffect(() => {
@@ -150,6 +182,16 @@ export function ThresholdConfigProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveUserPresets(userPresets);
   }, [userPresets]);
+
+  // Persist machine mappings
+  useEffect(() => {
+    saveMachineMappings(machineMappings);
+  }, [machineMappings]);
+
+  // Persist auto-select setting
+  useEffect(() => {
+    saveAutoSelectEnabled(autoSelectEnabled);
+  }, [autoSelectEnabled]);
 
   const setEnabled = useCallback((enabled: boolean) => {
     setState((prev) => ({ ...prev, enabled }));
@@ -265,7 +307,38 @@ export function ThresholdConfigProvider({ children }: { children: ReactNode }) {
         ? { ...prev, selectedPreset: 'generic' } 
         : prev
     );
+    // Also remove any mappings referencing this preset
+    setMachineMappings((prev) => prev.filter((m) => m.presetId !== id));
   }, []);
+
+  // Machine mapping management
+  const setAutoSelectEnabled = useCallback((enabled: boolean) => {
+    setAutoSelectEnabledState(enabled);
+  }, []);
+
+  const addMachineMapping = useCallback((mapping: MachineMappingEntry) => {
+    setMachineMappings((prev) => [...prev, mapping]);
+  }, []);
+
+  const updateMachineMapping = useCallback((id: string, mapping: MachineMappingEntry) => {
+    setMachineMappings((prev) =>
+      prev.map((m) => (m.id === id ? mapping : m))
+    );
+  }, []);
+
+  const deleteMachineMapping = useCallback((id: string) => {
+    setMachineMappings((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
+  const findPresetForMachine = useCallback(
+    (machineName?: string, manufacturer?: string): string | null => {
+      if (!autoSelectEnabled) return null;
+      
+      const userPresetIds = userPresets.map((p) => p.id);
+      return matchMachineToPreset(machineName, manufacturer, machineMappings, userPresetIds);
+    },
+    [autoSelectEnabled, machineMappings, userPresets]
+  );
 
   const value: ThresholdConfigContextType = {
     enabled: state.enabled,
@@ -273,6 +346,8 @@ export function ThresholdConfigProvider({ children }: { children: ReactNode }) {
     customThresholds: state.customThresholds,
     customDeliveryParams: state.customDeliveryParams,
     userPresets,
+    machineMappings,
+    autoSelectEnabled,
     setEnabled,
     setPreset,
     updateCustomThreshold,
@@ -284,6 +359,11 @@ export function ThresholdConfigProvider({ children }: { children: ReactNode }) {
     addUserPreset,
     updateUserPreset,
     deleteUserPreset,
+    setAutoSelectEnabled,
+    addMachineMapping,
+    updateMachineMapping,
+    deleteMachineMapping,
+    findPresetForMachine,
   };
 
   return (
