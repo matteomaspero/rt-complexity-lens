@@ -5,28 +5,17 @@ interface PatientAxesDiagramProps {
   size?: number;
 }
 
-export function PatientAxesDiagram({ className, size = 300 }: PatientAxesDiagramProps) {
+export function PatientAxesDiagram({ className, size = 320 }: PatientAxesDiagramProps) {
   return (
     <div className={cn('flex flex-col items-center', className)}>
       <svg
         width={size}
-        height={size * 0.9}
-        viewBox="0 0 300 270"
+        height={size * 0.85}
+        viewBox="0 0 320 272"
         className="max-w-full"
-        aria-label="Patient coordinate system showing supine patient on treatment table with X-axis (left/right), Y-axis (posterior/anterior), and Z-axis (superior/inferior), with linac gantry ring for reference"
+        aria-label="Patient coordinate system: lateral view from patient's right side showing supine patient on treatment table with X-axis (left/right), Y-axis (posterior/anterior), and Z-axis (superior/inferior)"
       >
         <defs>
-          {/* X-axis arrow (red) */}
-          <marker
-            id="arrowAxisX"
-            markerWidth="10"
-            markerHeight="7"
-            refX="9"
-            refY="3.5"
-            orient="auto"
-          >
-            <polygon points="0 0, 10 3.5, 0 7" fill="hsl(0, 84%, 60%)" />
-          </marker>
           {/* Y-axis arrow (green) */}
           <marker
             id="arrowAxisY"
@@ -52,120 +41,133 @@ export function PatientAxesDiagram({ className, size = 300 }: PatientAxesDiagram
         </defs>
 
         {/* Background */}
-        <rect width="300" height="270" className="fill-background" />
+        <rect width="320" height="272" className="fill-background" />
 
-        {/* Treatment table (3D isometric box) */}
-        <g className="fill-muted/30 stroke-muted-foreground" strokeWidth="1.5">
-          {/* Table top surface */}
-          <path d="M 50,175 L 90,190 L 250,190 L 270,175 L 270,170 L 250,185 L 90,185 L 50,170 Z" />
-          {/* Table front edge */}
-          <path d="M 90,185 L 90,195 L 250,195 L 250,185" className="fill-muted/20" />
-          {/* Table legs hint */}
-          <line x1="100" y1="195" x2="100" y2="210" />
-          <line x1="240" y1="195" x2="240" y2="210" />
-        </g>
-
-        {/* Linac gantry ring (tilted ellipse around patient) */}
+        {/* Linac gantry ring (vertical circle around patient, viewed from side) */}
         <ellipse
-          cx="170"
+          cx="160"
           cy="130"
-          rx="95"
-          ry="70"
+          rx="110"
+          ry="105"
           className="fill-none stroke-muted"
-          strokeWidth="2"
-          strokeDasharray="6 3"
-          transform="rotate(-5, 170, 130)"
+          strokeWidth="2.5"
+          strokeDasharray="8 4"
         />
+        
         {/* Gantry label */}
         <text
-          x="275"
-          y="100"
-          className="fill-muted-foreground text-[8px]"
+          x="280"
+          y="50"
+          className="fill-muted-foreground text-[9px]"
           textAnchor="start"
         >
           Gantry
         </text>
+        <text
+          x="280"
+          y="60"
+          className="fill-muted-foreground text-[9px]"
+          textAnchor="start"
+        >
+          Ring
+        </text>
 
-        {/* Linac head representation at 0° (top) */}
+        {/* Linac head at 0° (top of ring) */}
         <rect
-          x="160"
-          y="45"
+          x="150"
+          y="15"
           width="20"
-          height="25"
+          height="28"
           rx="3"
           className="fill-muted/50 stroke-muted-foreground"
           strokeWidth="1"
         />
         <rect
-          x="165"
-          y="70"
+          x="155"
+          y="43"
           width="10"
-          height="8"
+          height="10"
           className="fill-muted-foreground/60"
         />
+        <text
+          x="160"
+          y="10"
+          className="fill-muted-foreground text-[8px]"
+          textAnchor="middle"
+        >
+          0°
+        </text>
 
-        {/* Patient body lying supine on table */}
+        {/* Treatment table */}
+        <g className="fill-muted/30 stroke-muted-foreground" strokeWidth="1.5">
+          {/* Table top */}
+          <rect x="30" y="190" width="260" height="12" rx="2" />
+          {/* Table legs */}
+          <rect x="50" y="202" width="8" height="25" rx="1" />
+          <rect x="262" y="202" width="8" height="25" rx="1" />
+        </g>
+        <text
+          x="160"
+          y="245"
+          className="fill-muted-foreground text-[9px]"
+          textAnchor="middle"
+        >
+          Treatment Table
+        </text>
+
+        {/* Patient body - lateral view (from patient's right side) */}
         <g>
-          {/* Torso */}
+          {/* Torso (horizontal ellipse) */}
           <ellipse
-            cx="170"
-            cy="150"
-            rx="50"
+            cx="160"
+            cy="165"
+            rx="70"
+            ry="25"
+            className="fill-secondary stroke-foreground"
+            strokeWidth="1"
+          />
+          {/* Head (on right = toward Z+) */}
+          <ellipse
+            cx="250"
+            cy="160"
+            rx="18"
             ry="22"
             className="fill-secondary stroke-foreground"
             strokeWidth="1"
           />
-          {/* Head */}
+          {/* Neck */}
           <ellipse
-            cx="235"
-            cy="148"
-            rx="18"
-            ry="14"
+            cx="228"
+            cy="165"
+            rx="10"
+            ry="12"
             className="fill-secondary stroke-foreground"
             strokeWidth="1"
           />
-          {/* Neck connection */}
+          {/* Legs/feet (on left = toward Z-) */}
           <ellipse
-            cx="215"
-            cy="150"
-            rx="8"
-            ry="10"
-            className="fill-secondary stroke-foreground"
-            strokeWidth="1"
-          />
-          {/* Legs/feet area */}
-          <ellipse
-            cx="100"
-            cy="155"
-            rx="25"
-            ry="15"
-            className="fill-secondary stroke-foreground"
-            strokeWidth="1"
-          />
-          {/* Left arm hint */}
-          <ellipse
-            cx="170"
+            cx="70"
             cy="170"
-            rx="35"
-            ry="6"
-            className="fill-secondary/80 stroke-foreground"
-            strokeWidth="0.5"
+            rx="30"
+            ry="18"
+            className="fill-secondary stroke-foreground"
+            strokeWidth="1"
           />
         </g>
 
-        {/* Labels for patient orientation */}
+        {/* Patient orientation labels */}
         <text
-          x="255"
-          y="148"
-          className="fill-foreground text-[9px] font-medium"
+          x="265"
+          y="140"
+          className="fill-foreground text-[10px] font-medium"
           textAnchor="start"
         >
           Head
         </text>
         <text
-          x="65"
-          y="158"
-          className="fill-foreground text-[9px] font-medium"
+          x="35"
+          y="150"
+          className="fill-foreground text-[10px] font-medium"
           textAnchor="end"
         >
           Feet
@@ -173,182 +175,184 @@ export function PatientAxesDiagram({ className, size = 300 }: PatientAxesDiagram
 
         {/* Isocenter point */}
         <circle
-          cx="170"
-          cy="140"
+          cx="160"
+          cy="150"
           r="4"
           className="fill-primary"
         />
         <circle
-          cx="170"
-          cy="140"
-          r="8"
+          cx="160"
+          cy="150"
+          r="9"
           className="fill-none stroke-primary"
           strokeWidth="1"
           strokeDasharray="2 2"
         />
 
-        {/* X-axis (Left/Right) - pointing to patient's left (viewer's right in this view) */}
+        {/* Z-axis (Superior/Inferior) - horizontal, pointing toward head (right) */}
         <line
-          x1="170"
-          y1="140"
-          x2="170"
-          y2="80"
-          stroke="hsl(0, 84%, 60%)"
-          strokeWidth="2.5"
-          markerEnd="url(#arrowAxisX)"
-        />
-        <text
-          x="178"
-          y="70"
-          fill="hsl(0, 84%, 60%)"
-          className="text-[11px] font-bold"
-        >
-          X+
-        </text>
-        <text
-          x="178"
-          y="82"
-          fill="hsl(0, 84%, 60%)"
-          className="text-[8px]"
-        >
-          (Left)
-        </text>
-        {/* X- indicator (dashed, toward Right) */}
-        <line
-          x1="170"
-          y1="140"
-          x2="170"
-          y2="175"
-          stroke="hsl(0, 84%, 60%)"
-          strokeWidth="1.5"
-          strokeDasharray="4 2"
-          opacity="0.5"
-        />
-        <text
-          x="175"
-          y="188"
-          fill="hsl(0, 84%, 60%)"
-          className="text-[7px]"
-          opacity="0.7"
-        >
-          Right (−)
-        </text>
-
-        {/* Y-axis (Posterior/Anterior) - pointing posterior (toward table/down in isometric) */}
-        <line
-          x1="170"
-          y1="140"
-          x2="135"
-          y2="175"
-          stroke="hsl(142, 71%, 45%)"
-          strokeWidth="2.5"
-          markerEnd="url(#arrowAxisY)"
-        />
-        <text
-          x="115"
-          y="188"
-          fill="hsl(142, 71%, 45%)"
-          className="text-[11px] font-bold"
-        >
-          Y+
-        </text>
-        <text
-          x="105"
-          y="200"
-          fill="hsl(142, 71%, 45%)"
-          className="text-[8px]"
-        >
-          (Post.)
-        </text>
-        {/* Y- indicator (dashed, toward Anterior/ceiling) */}
-        <line
-          x1="170"
-          y1="140"
-          x2="195"
-          y2="115"
-          stroke="hsl(142, 71%, 45%)"
-          strokeWidth="1.5"
-          strokeDasharray="4 2"
-          opacity="0.5"
-        />
-        <text
-          x="200"
-          y="108"
-          fill="hsl(142, 71%, 45%)"
-          className="text-[7px]"
-          opacity="0.7"
-        >
-          Ant. (−)
-        </text>
-
-        {/* Z-axis (Superior/Inferior) - pointing toward head (superior) */}
-        <line
-          x1="170"
-          y1="140"
-          x2="265"
-          y2="125"
+          x1="160"
+          y1="150"
+          x2="295"
+          y2="150"
           stroke="hsl(217, 91%, 60%)"
           strokeWidth="2.5"
           markerEnd="url(#arrowAxisZ)"
         />
         <text
-          x="272"
-          y="120"
+          x="305"
+          y="148"
           fill="hsl(217, 91%, 60%)"
-          className="text-[11px] font-bold"
+          className="text-[12px] font-bold"
         >
           Z+
         </text>
         <text
-          x="272"
-          y="132"
+          x="305"
+          y="162"
           fill="hsl(217, 91%, 60%)"
-          className="text-[8px]"
+          className="text-[9px]"
         >
-          (Sup.)
+          Superior
         </text>
-        {/* Z- indicator (dashed, toward feet/inferior) */}
+        {/* Z- indicator (dashed, toward feet) */}
         <line
-          x1="170"
-          y1="140"
-          x2="90"
-          y2="155"
+          x1="160"
+          y1="150"
+          x2="40"
+          y2="150"
           stroke="hsl(217, 91%, 60%)"
           strokeWidth="1.5"
           strokeDasharray="4 2"
           opacity="0.5"
         />
         <text
-          x="55"
-          y="145"
+          x="15"
+          y="160"
           fill="hsl(217, 91%, 60%)"
-          className="text-[7px]"
+          className="text-[8px]"
           opacity="0.7"
         >
-          Inf. (−)
+          Inf (−)
+        </text>
+
+        {/* Y-axis (Posterior/Anterior) - vertical */}
+        {/* Y+ points DOWN toward table (posterior) */}
+        <line
+          x1="160"
+          y1="150"
+          x2="160"
+          y2="250"
+          stroke="hsl(142, 71%, 45%)"
+          strokeWidth="2.5"
+          markerEnd="url(#arrowAxisY)"
+        />
+        <text
+          x="168"
+          y="262"
+          fill="hsl(142, 71%, 45%)"
+          className="text-[12px] font-bold"
+        >
+          Y+
+        </text>
+        <text
+          x="125"
+          y="268"
+          fill="hsl(142, 71%, 45%)"
+          className="text-[9px]"
+        >
+          Posterior
+        </text>
+        {/* Y- indicator (dashed, toward ceiling/anterior) */}
+        <line
+          x1="160"
+          y1="150"
+          x2="160"
+          y2="65"
+          stroke="hsl(142, 71%, 45%)"
+          strokeWidth="1.5"
+          strokeDasharray="4 2"
+          opacity="0.5"
+        />
+        <text
+          x="140"
+          y="72"
+          fill="hsl(142, 71%, 45%)"
+          className="text-[8px]"
+          opacity="0.7"
+        >
+          Ant (−)
+        </text>
+
+        {/* X-axis (Left/Right) - coming OUT of page (toward viewer) */}
+        {/* Shown as a dot-in-circle symbol (⊙) for "toward viewer" */}
+        <circle
+          cx="160"
+          cy="110"
+          r="12"
+          className="fill-none"
+          stroke="hsl(0, 84%, 60%)"
+          strokeWidth="2"
+        />
+        <circle
+          cx="160"
+          cy="110"
+          r="3"
+          fill="hsl(0, 84%, 60%)"
+        />
+        <text
+          x="178"
+          y="108"
+          fill="hsl(0, 84%, 60%)"
+          className="text-[12px] font-bold"
+        >
+          X+
+        </text>
+        <text
+          x="178"
+          y="120"
+          fill="hsl(0, 84%, 60%)"
+          className="text-[9px]"
+        >
+          Left
+        </text>
+        <text
+          x="120"
+          y="114"
+          fill="hsl(0, 84%, 60%)"
+          className="text-[8px]"
+          opacity="0.7"
+        >
+          (toward you)
         </text>
 
         {/* Origin label */}
         <text
-          x="152"
-          y="138"
-          className="fill-muted-foreground text-[8px]"
+          x="145"
+          y="145"
+          className="fill-muted-foreground text-[9px] font-medium"
         >
           O
         </text>
 
-        {/* Coordinate system note */}
-        <text
-          x="20"
-          y="255"
-          className="fill-muted-foreground text-[7px]"
-        >
-          Note: Y+ toward table (Posterior), Y− toward ceiling (Anterior)
-        </text>
+        {/* View direction indicator */}
+        <g transform="translate(25, 20)">
+          <text
+            className="fill-muted-foreground text-[8px]"
+          >
+            Viewing from
+          </text>
+          <text
+            y="12"
+            className="fill-muted-foreground text-[8px]"
+          >
+            patient's right
+          </text>
+        </g>
       </svg>
-      <p className="mt-2 text-xs text-muted-foreground text-center max-w-[280px]">
-        Patient supine (face-up) on treatment table, head-first. Origin at isocenter.
-        Linac gantry ring shown for context. Solid arrows = positive (+) directions.
+      <p className="mt-2 text-xs text-muted-foreground text-center max-w-[300px]">
+        Lateral view from patient's right side. Patient supine (face-up), head-first.
+        Origin at isocenter. X+ (⊙) points toward viewer (patient's left).
       </p>
     </div>
   );

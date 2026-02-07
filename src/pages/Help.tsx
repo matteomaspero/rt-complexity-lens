@@ -59,8 +59,8 @@ export default function Help() {
               <CardContent className="prose prose-sm dark:prose-invert max-w-none">
                 <p>
                   The <strong>RT Plan Complexity Analyzer</strong> is a browser-based tool for analyzing 
-                  DICOM-RT Plan files and calculating delivery complexity metrics based on the 
-                  <strong> UCoMX v1.1</strong> framework.
+                  DICOM-RT Plan files and calculating delivery complexity metrics inspired by 
+                  <strong> published research</strong> including the UCoMX framework.
                 </p>
                 <p>
                   This tool helps radiation therapy professionals evaluate plan complexity to predict 
@@ -71,7 +71,7 @@ export default function Help() {
                 <ul>
                   <li>Parse DICOM-RT Plan files directly in the browser (no upload to servers)</li>
                   <li>Visualize MLC apertures and gantry positions per control point</li>
-                  <li>Calculate UCoMX complexity metrics at plan, beam, and control point levels</li>
+                  <li>Calculate complexity metrics at plan, beam, and control point levels</li>
                   <li>Export metrics to CSV for external analysis</li>
                   <li>Support for VMAT and static IMRT plans</li>
                 </ul>
@@ -88,7 +88,7 @@ export default function Help() {
               </CardHeader>
               <CardContent>
                 <p className="mb-4 text-sm text-muted-foreground">
-                  The following metrics are calculated based on the UCoMX v1.1 MATLAB implementation 
+                  The following metrics are inspired by complexity metrics from the literature
                   and associated publications.
                 </p>
 
@@ -201,19 +201,19 @@ export default function Help() {
                       <TableBody>
                         <TableRow>
                           <TableCell className="font-mono font-medium">0°</TableCell>
-                          <TableCell>From above (superior) — beam vertical down toward patient</TableCell>
+                          <TableCell>From ceiling — AP beam (enters anterior surface)</TableCell>
                         </TableRow>
                         <TableRow>
                           <TableCell className="font-mono font-medium">90°</TableCell>
-                          <TableCell>From patient's left — beam horizontal toward right</TableCell>
+                          <TableCell>From patient's left — left lateral beam</TableCell>
                         </TableRow>
                         <TableRow>
                           <TableCell className="font-mono font-medium">180°</TableCell>
-                          <TableCell>From below (inferior) — beam vertical up toward patient</TableCell>
+                          <TableCell>From floor — PA beam (enters posterior, through couch)</TableCell>
                         </TableRow>
                         <TableRow>
                           <TableCell className="font-mono font-medium">270°</TableCell>
-                          <TableCell>From patient's right — beam horizontal toward left</TableCell>
+                          <TableCell>From patient's right — right lateral beam</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -416,9 +416,9 @@ export default function Help() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="font-medium">UCoMX Implementation</h4>
+                  <h4 className="font-medium">UCoMX Framework</h4>
                   <p className="text-sm text-muted-foreground">
-                    This tool is based on the UCoMX v1.1 MATLAB implementation.
+                    The metrics in this tool are inspired by the UCoMX framework. For the original MATLAB implementation, see:
                   </p>
                   <a
                     href="https://zenodo.org/records/8276837"
@@ -586,7 +586,7 @@ export default function Help() {
                 <ul>
                   <li>Version: 1.0.0</li>
                   <li>All processing occurs locally in your browser — no data is uploaded to servers</li>
-                  <li>Based on the UCoMX v1.1 framework from the University of Padova</li>
+                  <li>Complexity metrics inspired by published research (see References)</li>
                 </ul>
                 <p>
                   This tool is intended for research and educational purposes. Clinical use should 
