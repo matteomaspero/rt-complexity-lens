@@ -1,102 +1,138 @@
 
-
-# Plan: Update Logo Style and OG Image
+# Plan: Create Cross-Validation Reference Data Generator
 
 ## Summary
 
-Redesign the logo SVG to match the reference image style - a magnifying glass with a network/complexity pattern inside the lens, and update the text to show "RTp" with a subscript-style small "p". Also generate a new OG image matching this design.
+Create the missing reference data generation script that allows Python tests to validate against TypeScript metric calculations.
 
 ---
 
-## Reference Image Analysis
+## Current State
 
-The uploaded image shows:
-- A magnifying glass icon with a network graph pattern inside
-- Circular outer rings (silver/metallic style)
-- Dark blue gradient background
-- Text layout: "COMPLEXITY" / "LENS" (cyan) / "RT" (white)
-- The network pattern has nodes connected by lines
+| Component | Status |
+|-----------|--------|
+| Website metrics calculation | ✅ Working - verified with demo plan |
+| TypeScript unit tests | ✅ Available in `src/test/dicom-metrics.test.ts` |
+| Python parser | ✅ Complete in `python/rtplan_complexity/parser.py` |
+| Python metrics | ✅ Complete in `python/rtplan_complexity/metrics.py` |
+| Reference data generator | ❌ Missing - documented but not implemented |
+| Cross-validation tests | ⏸ Skipped - no reference data file |
 
 ---
 
 ## Changes Overview
 
-### 1. Update Logo SVG (`src/components/ui/logo.tsx`)
+### 1. Create Reference Data Generator Script
 
-Redesign the `LogoIcon` component to match the reference style:
-- **Magnifying glass**: Circle with a handle extending down-right
-- **Network pattern inside**: Nodes (small circles) connected by lines
-- **Outer ring**: Single or double circular border
-- Uses `currentColor` for theme compatibility
+Create `scripts/generate-reference-data.ts`:
+- Parse all test DICOM files from `public/test-data/`
+- Calculate metrics using TypeScript implementation
+- Export results as JSON to `python/tests/reference_data/expected_metrics.json`
 
-### 2. Update Logo Text
+### 2. Add npm Script
 
-Change the text display to "RTp-lens" with proper styling:
-- "RT" in bold
-- "p" as a smaller subscript-style character
-- "-lens" in regular weight
+Update `package.json`:
+```json
+{
+  "scripts": {
+    "generate-reference-data": "npx tsx scripts/generate-reference-data.ts"
+  }
+}
+```
 
-### 3. Generate New OG Image (`public/og-image.png`)
+### 3. Install tsx for Script Execution
 
-Create a new 1200x630 OG image featuring:
-- Dark blue gradient background (matching reference)
-- Centered magnifying glass with network pattern
-- "COMPLEXITY" text above
-- "LENS" in cyan, "RTp" in white below
-- Subtle outer ring decoration
+Add `tsx` as a dev dependency to run TypeScript scripts directly.
 
 ---
 
 ## Technical Details
 
-### New Logo SVG Structure
+### Generator Script Structure
 
 ```text
-LogoIcon SVG (viewBox 0 0 32 32)
-├── Outer ring circle (stroke only)
-├── Magnifying glass
-│   ├── Lens circle (filled semi-transparent)
-│   ├── Handle (angled line)
-│   └── Network pattern inside lens
-│       ├── Center node
-│       ├── Surrounding nodes (6-8 small circles)
-│       └── Connecting lines between nodes
-└── Theme-compatible colors (currentColor)
+scripts/generate-reference-data.ts
+├── Import parser and metrics from src/lib/dicom
+├── List all .dcm files in public/test-data/
+├── For each file:
+│   ├── Parse DICOM file using parseRTPlan()
+│   ├── Calculate metrics using calculatePlanMetrics()
+│   └── Store results with filename as key
+├── Write JSON to python/tests/reference_data/expected_metrics.json
+└── Print summary of generated data
 ```
 
-### Network Pattern Design
+### Reference Data JSON Format
 
-A simplified network graph that fits within the lens:
-- 1 center node
-- 6 outer nodes arranged in a hexagonal pattern
-- Lines connecting center to outer nodes
-- Some lines connecting adjacent outer nodes
-
-### Size Configurations
-
-| Size | Icon Dimension | Text Class |
-|------|----------------|------------|
-| sm | 20px | text-sm |
-| md | 28px | text-lg |
-| lg | 40px | text-2xl |
+```json
+{
+  "RTPLAN_MO_PT_01.dcm": {
+    "MCS": 0.2282,
+    "LSV": 0.7127,
+    "AAV": 0.1166,
+    "MFA": 15.9,
+    "LT": 41265.63,
+    "LTMCS": 0.0055,
+    "totalMU": 1055.05,
+    "beamCount": 4,
+    "beamMetrics": [
+      {
+        "beamName": "Arc 1",
+        "MCS": 0.2156,
+        "LSV": 0.6892,
+        "AAV": 0.1234,
+        "beamMU": 263.76
+      }
+    ]
+  }
+}
+```
 
 ---
 
-## Files to Modify
+## Files to Create/Modify
 
 | File | Change |
 |------|--------|
-| `src/components/ui/logo.tsx` | Redesign SVG with magnifying glass + network pattern |
-| `public/og-image.png` | Generate new image matching the design style |
+| `scripts/generate-reference-data.ts` | **New file** - TypeScript generator script |
+| `package.json` | Add `generate-reference-data` npm script |
 
 ---
 
-## Color Scheme (from reference)
+## Workflow After Implementation
 
-- **Background**: Dark navy gradient (`#1a2744` to `#0f1724`)
-- **Primary/Cyan accent**: `#3b9fd4` / `#5bb5e0`
-- **Text white**: `#ffffff`
-- **Metallic ring**: Linear gradient silver/gray
+1. Run `npm run generate-reference-data` to create reference data
+2. Reference data written to `python/tests/reference_data/expected_metrics.json`
+3. Run `pytest python/tests/` to validate Python against TypeScript
+4. All metrics should match within tolerance (1e-4)
 
-For the SVG component, we'll use `currentColor` and `text-primary` classes to maintain theme compatibility.
+---
 
+## Alternative: Manual Testing
+
+If script creation is not preferred, manual testing can verify parity:
+
+1. Load same test file in web app, record metrics
+2. Run Python on same file:
+   ```python
+   from rtplan_complexity import parse_rtplan, calculate_plan_metrics
+   plan = parse_rtplan("RTPLAN_MO_PT_01.dcm")
+   metrics = calculate_plan_metrics(plan)
+   print(f"MCS: {metrics.MCS}, LSV: {metrics.LSV}")
+   ```
+3. Compare values manually
+
+---
+
+## Test Files Available
+
+| Filename | Description |
+|----------|-------------|
+| `RTPLAN_MO_PT_01.dcm` | Monaco VMAT Plan 01 |
+| `RTPLAN_MO_PT_02.dcm` | Monaco VMAT Plan 02 |
+| `RTPLAN_MO_PT_03.dcm` | Monaco VMAT Plan 03 |
+| `RTPLAN_MO_PT_04.dcm` | Monaco VMAT Plan 04 |
+| `RTPLAN_MR_PT_01_PENALTY.dcm` | Monaco with penalty |
+| `RP.TG119.PR_ETH_7F.dcm` | TG-119 test plan (7 fields) |
+| `RP.TG119.PR_ETH_2A_2.dcm` | TG-119 test plan (2 arcs) |
+| `RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm` | Complex VMAT |
