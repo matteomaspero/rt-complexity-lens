@@ -1,279 +1,317 @@
 
 
-# Plan: Add Dark Mode Toggle and Mathematical Formulas to Help Page
+# Plan: Add Cohort Analysis Mode
 
-## Summary
-This plan adds three key features:
-1. **Dark mode toggle** - User-controlled theme switching across all pages (not default)
-2. **LaTeX-rendered formulas** - Mathematical descriptions for metrics in the Help page
-3. **Dark mode visibility** - Ensure all charts, figures, and diagrams are visible in dark mode
+## Proposed Mode Name: **Cohort Analysis**
+
+The name "Cohort Analysis" captures the essence of grouping plans into meaningful clusters and performing comparative statistical analysis. Alternative names considered:
+- "Statistical Explorer" - too generic
+- "Population Analysis" - clinical but less precise
+- "Plan Profiler" - doesn't convey grouping aspect
+- **"Cohort Analysis"** - best fit: implies grouping of plans with shared characteristics for comparative study
 
 ---
 
-## Part 1: Dark Mode Implementation
+## Summary
 
-### Approach
-Use `next-themes` (already installed) to add theme switching with localStorage persistence. The default will remain light mode unless the user explicitly selects dark.
+Create a new analysis mode at `/cohort` that enables:
+1. **Bulk upload** of DICOM-RT plans (reuse existing batch upload infrastructure)
+2. **Automatic clustering** by plan features (technique, beam count, control points, treatment site)
+3. **Enhanced descriptive statistics** with quartiles, IQR, percentiles
+4. **Comprehensive visualizations** including box plots, scatter matrices, correlation heatmaps, and violin plots
+5. **Export of statistical reports** with clustering results
+
+---
+
+## Feature Groups and Clustering Criteria
+
+### Automatic Clustering Dimensions
+
+| Dimension | Clustering Approach |
+|-----------|---------------------|
+| **Technique** | VMAT / IMRT / CONFORMAL / UNKNOWN |
+| **Number of Beams** | 1, 2, 3-4, 5+ beams |
+| **Control Points** | Low (less than 50), Medium (50-100), High (100+) |
+| **Beam Type** | Static / Dynamic / Mixed |
+| **Delivery Time** | Short (less than 3 min), Medium (3-6 min), Long (6+ min) |
+| **Complexity (MCS)** | Low (greater than 0.4), Medium (0.2-0.4), High (less than 0.2) |
+| **Total MU** | Low (less than 500), Medium (500-1000), High (1000+) |
+| **Treatment Machine** | Group by machine name if available |
+
+---
+
+## Descriptive Statistics Enhancements
+
+Extend the existing `MetricStatistics` interface with:
+
+```typescript
+interface ExtendedStatistics {
+  min: number;
+  max: number;
+  mean: number;
+  std: number;
+  median: number;
+  q1: number;           // 25th percentile
+  q3: number;           // 75th percentile
+  iqr: number;          // Interquartile range
+  p5: number;           // 5th percentile
+  p95: number;          // 95th percentile
+  skewness: number;     // Distribution skewness
+  count: number;
+  outliers: number[];   // Values outside 1.5×IQR
+}
+```
+
+---
+
+## Visualizations
+
+### 1. Box Plot Chart (Multiple Metrics Comparison)
+Display box plots for each complexity metric (MCS, LSV, AAV, MFA, LT) showing:
+- Median line
+- Q1-Q3 box
+- Whiskers at 1.5×IQR
+- Outlier points
+- Mean marker (diamond)
+
+### 2. Scatter Matrix
+2D scatter plots showing pairwise relationships between key metrics:
+- MCS vs Total MU
+- LSV vs AAV
+- MFA vs Delivery Time
+- Control Points vs MCS
+
+Color-coded by cluster group with interactive tooltips.
+
+### 3. Correlation Heatmap
+Matrix showing Pearson correlation coefficients between all numeric metrics:
+- Color scale from -1 (blue) to +1 (red)
+- Hover shows exact correlation value
+- Helps identify which metrics are related
+
+### 4. Distribution Violin/Density Plots
+Show the full distribution shape for each metric:
+- Kernel density estimate
+- Embedded box plot summary
+- Compare distributions across clusters
+
+### 5. Cluster Summary Cards
+For each identified cluster:
+- Plan count and percentage
+- Key characteristic summary
+- Mini sparkline of metric distributions
+- Representative plan examples
+
+### 6. Parallel Coordinates Plot
+Multi-dimensional visualization showing:
+- Each metric as a vertical axis
+- Each plan as a line connecting values
+- Color by cluster
+- Interactive brushing to filter
+
+---
+
+## Page Layout
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  Header: Cohort Analysis | Upload | Clear | Help | Theme        │
+├─────────────────────────────────────────────────────────────────┤
+│  Upload Zone (reuse BatchUploadZone)                            │
+│  Progress Bar (reuse BatchProgressBar)                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────────┐  ┌──────────────────────────────────┐  │
+│  │ Clustering Config   │  │ Cluster Summary Cards (grid)     │  │
+│  │ - Primary dimension │  │ ┌────────┐ ┌────────┐ ┌────────┐ │  │
+│  │ - Secondary dim     │  │ │ VMAT   │ │ IMRT   │ │ CONFML │ │  │
+│  │ - Show outliers     │  │ │ 45 pln │ │ 23 pln │ │ 12 pln │ │  │
+│  │ [Apply Clustering]  │  │ └────────┘ └────────┘ └────────┘ │  │
+│  └─────────────────────┘  └──────────────────────────────────┘  │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  Tabs: [Box Plots] [Scatter Matrix] [Correlation] [Violin]      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                                                           │  │
+│  │           Selected Visualization                          │  │
+│  │           (with export button)                            │  │
+│  │                                                           │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  Detailed Statistics Table (collapsible)                        │
+│  - Per-cluster breakdown                                        │
+│  - All extended statistics                                      │
+├─────────────────────────────────────────────────────────────────┤
+│  Export Panel: CSV | JSON | PDF Report                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Technical Implementation
 
 ### New Files
 
 | File | Description |
 |------|-------------|
-| `src/components/ui/theme-toggle.tsx` | Toggle button component with sun/moon icons |
-| `src/components/ThemeProvider.tsx` | Wrapper using next-themes' ThemeProvider |
-
-### `ThemeProvider.tsx`
-```typescript
-import { ThemeProvider as NextThemesProvider } from "next-themes";
-
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <NextThemesProvider 
-      attribute="class" 
-      defaultTheme="light"  // Light by default
-      enableSystem={false}   // Don't auto-detect system preference
-      storageKey="theme"
-    >
-      {children}
-    </NextThemesProvider>
-  );
-}
-```
-
-### `theme-toggle.tsx`
-```typescript
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
-
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-    >
-      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Toggle theme</span>
-    </Button>
-  );
-}
-```
+| `src/pages/CohortAnalysis.tsx` | Main page component |
+| `src/contexts/CohortContext.tsx` | State management for cohort analysis (extends BatchContext patterns) |
+| `src/lib/cohort/clustering.ts` | Clustering logic and dimension definitions |
+| `src/lib/cohort/extended-statistics.ts` | Enhanced statistical calculations (quartiles, IQR, percentiles, skewness) |
+| `src/lib/cohort/correlation.ts` | Correlation matrix calculation |
+| `src/lib/cohort/index.ts` | Barrel export |
+| `src/components/cohort/CohortUploadZone.tsx` | Reuse BatchUploadZone with cohort branding |
+| `src/components/cohort/ClusteringConfig.tsx` | Configuration panel for clustering dimensions |
+| `src/components/cohort/ClusterSummaryGrid.tsx` | Grid of cluster summary cards |
+| `src/components/cohort/BoxPlotChart.tsx` | Multi-metric box plot visualization |
+| `src/components/cohort/ScatterMatrix.tsx` | Pairwise scatter plot matrix |
+| `src/components/cohort/CorrelationHeatmap.tsx` | Metric correlation heatmap |
+| `src/components/cohort/ViolinPlot.tsx` | Violin/density distribution chart |
+| `src/components/cohort/ExtendedStatsTable.tsx` | Detailed per-cluster statistics table |
+| `src/components/cohort/CohortExportPanel.tsx` | Export options including statistical report |
+| `src/components/cohort/index.ts` | Barrel export |
 
 ### Modified Files
 
-#### `src/App.tsx`
-Wrap the app in `ThemeProvider`:
-```typescript
-import { ThemeProvider } from "@/components/ThemeProvider";
-
-const App = () => (
-  <ThemeProvider>
-    <QueryClientProvider client={queryClient}>
-      {/* ... existing providers */}
-    </QueryClientProvider>
-  </ThemeProvider>
-);
-```
-
-#### Add Toggle to All Pages
-
-| Page | Location for Toggle |
-|------|---------------------|
-| `InteractiveViewer.tsx` | Main header (when plan loaded) and home page (top right) |
-| `BatchDashboard.tsx` | Header, next to Help button |
-| `ComparePlans.tsx` | Header, next to Help button |
-| `Help.tsx` | Top header area |
-
----
-
-## Part 2: Mathematical Formulas with react-katex
-
-### Approach
-Install `react-katex` (lightweight, already uses KaTeX) to render mathematical formulas for complexity metrics. The formulas will be added to the metrics definitions and displayed in the Help page.
-
-### Dependencies to Install
-- `react-katex` - React wrapper for KaTeX
-- `katex` - Core KaTeX library (required peer dependency)
-
-### Enhanced Metric Definitions
-
-Add a `formula` field to `src/lib/metrics-definitions.ts` for metrics that have mathematical expressions:
-
-```typescript
-export interface MetricDefinition {
-  key: string;
-  name: string;
-  shortDescription: string;
-  fullDescription: string;
-  formula?: string;  // LaTeX formula (optional)
-  unit: string | null;
-  category: MetricCategory;
-  reference?: string;
-  doi?: string;
-}
-```
-
-### Key Formulas to Add
-
-| Metric | Formula (LaTeX) |
-|--------|-----------------|
-| MCS | `MCS = LSV \times AAV` |
-| LSV | `LSV = \frac{\sum_{j} pos_{max,j} - \sum_{j}\|pos_{A,j} - pos_{B,j}\|}{\sum_{j} pos_{max,j}}` |
-| AAV | `AAV = 1 - \frac{1}{N-1}\sum_{i=1}^{N-1}\left\|\frac{A_{i+1} - A_i}{A_{max}}\right\|` |
-| MFA | `MFA = \frac{1}{N}\sum_{i=1}^{N} A_i` |
-| LT | `LT = \sum_{i=1}^{N-1}\sum_{j=1}^{L}\|pos_{j,i+1} - pos_{j,i}\|` |
-| EFS | `EFS = \frac{4 \times Area}{Perimeter}` |
-| PI | `PI = \frac{Perimeter^2}{4\pi \times Area}` |
-| PM | `PM = 1 - MCS` |
-
-**Important**: Formulas use LaTeX syntax only where strictly necessary (summations, fractions, subscripts). Acronyms like "MCS", "LSV", etc. remain plain text in descriptions.
-
-### Help Page Update
-
-Create a `MathFormula` component that conditionally renders:
-
-```typescript
-import 'katex/dist/katex.min.css';
-import { InlineMath, BlockMath } from 'react-katex';
-
-function MathFormula({ formula }: { formula: string }) {
-  return (
-    <div className="my-2 p-3 bg-muted/30 rounded-lg overflow-x-auto">
-      <BlockMath math={formula} />
-    </div>
-  );
-}
-```
-
-In the metrics table, add a formula row below the description when available:
-```tsx
-{metric.formula && (
-  <div className="mt-3">
-    <span className="text-xs font-medium text-muted-foreground">Formula:</span>
-    <MathFormula formula={metric.formula} />
-  </div>
-)}
-```
-
----
-
-## Part 3: Dark Mode Visibility for Charts & Figures
-
-### Charts (Recharts)
-The charts already use CSS variables like `hsl(var(--chart-primary))` which have dark mode variants defined in `index.css`. This should work automatically once the theme class is applied.
-
-**Verify/Fix these components:**
-- `Charts.tsx` - Uses `hsl(var(--chart-grid))`, `hsl(var(--card))` - OK
-- `ComplexityHeatmap.tsx` - Uses CSS variables - OK
-- `DeliveryTimelineChart.tsx` - Verify tooltip styling
-- `AngularDistributionChart.tsx` - Verify polar chart colors
-- `ComparisonMUChart.tsx` - Verify both line colors are visible
-
-### Potential Issue: Axis text fill color
-Some charts use `tick={{ fontSize: 10 }}` without explicit fill. Add:
-```tsx
-tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
-```
-
-### SVG Diagrams
-
-#### `IEC61217Diagram.tsx`
-Uses Tailwind classes like `fill-background`, `stroke-muted`, `fill-foreground` which should adapt. Verify:
-- Background uses `fill-background` 
-- Text uses `fill-foreground` or `fill-muted-foreground`
-- Lines use `stroke-primary`, `stroke-muted-foreground`
-
-#### `PatientAxesDiagram.tsx`
-Uses hardcoded HSL values for axis colors (red, green, blue). These should remain visible in both modes as they're bright colors. Verify:
-- Background uses `fill-background` 
-- Text labels use class-based fills
-
-#### `MLCApertureViewer.tsx`
-Uses CSS variables for MLC colors:
-- `fill-[hsl(var(--mlc-bank-a))]`
-- `fill-[hsl(var(--mlc-bank-b))]`
-- `fill-[hsl(var(--mlc-aperture))]`
-
-These have dark mode variants defined. Add background:
-```tsx
-<rect ... className="fill-card" />  // Use card background
-```
-
-#### `GantryViewer.tsx`
-Uses `stroke-border`, `fill-muted`, `fill-primary` - should adapt.
-
-### Chart Export Background Fix
-
-In `src/lib/chart-export.ts`, the background detection already handles dark mode, but ensure proper background:
-```typescript
-if (document.documentElement.classList.contains('dark')) {
-  backgroundColor = 'hsl(220, 20%, 10%)'; // Match --background in dark
-}
-```
-
----
-
-## File Change Summary
-
-### New Files (4)
-| File | Description |
-|------|-------------|
-| `src/components/ThemeProvider.tsx` | Theme context provider |
-| `src/components/ui/theme-toggle.tsx` | Toggle button component |
-
-### Modified Files (8)
 | File | Changes |
 |------|---------|
-| `package.json` | Add `react-katex` and `katex` dependencies |
-| `src/App.tsx` | Wrap with ThemeProvider |
-| `src/lib/metrics-definitions.ts` | Add formula field to metric definitions |
-| `src/pages/Help.tsx` | Import KaTeX CSS, add MathFormula component, display formulas |
-| `src/pages/BatchDashboard.tsx` | Add ThemeToggle to header |
-| `src/pages/ComparePlans.tsx` | Add ThemeToggle to header |
-| `src/components/viewer/InteractiveViewer.tsx` | Add ThemeToggle to home and plan view headers |
-| `src/components/viewer/Charts.tsx` | Add fill color to axis ticks |
-
-### Minor Fixes for Dark Mode (as needed)
-| File | Fix |
-|------|-----|
-| `src/components/viewer/AngularDistributionChart.tsx` | Axis tick fill |
-| `src/components/viewer/DeliveryTimelineChart.tsx` | Axis tick fill |
-| `src/components/viewer/ComplexityHeatmap.tsx` | Axis tick fill |
-| `src/components/comparison/*.tsx` | Axis tick fills |
-| `src/components/batch/BatchDistributionChart.tsx` | Axis tick fill |
-| `src/lib/chart-export.ts` | Ensure proper dark mode background for exports |
+| `src/App.tsx` | Add CohortProvider wrapper and `/cohort` route |
+| `src/components/viewer/InteractiveViewer.tsx` | Add navigation link to Cohort Analysis in home view |
+| `src/pages/Help.tsx` | Add documentation section for Cohort Analysis features |
 
 ---
 
-## Formulas Guideline (Style)
+## Statistical Calculations Detail
 
-**Use LaTeX syntax only for:**
-- Mathematical operators and relationships
-- Summations (Σ), products (Π)
-- Fractions, subscripts, superscripts
-- Special mathematical symbols
+### Extended Statistics Function
 
-**Keep as plain text:**
-- Metric acronyms (MCS, LSV, AAV, etc.)
-- Variable names in descriptions
-- Units
+```typescript
+// src/lib/cohort/extended-statistics.ts
+function calculateExtendedStatistics(values: number[]): ExtendedStatistics {
+  const sorted = [...values].sort((a, b) => a - b);
+  const n = sorted.length;
+  
+  // Quartiles using linear interpolation
+  const q1 = percentile(sorted, 25);
+  const median = percentile(sorted, 50);
+  const q3 = percentile(sorted, 75);
+  const iqr = q3 - q1;
+  
+  // Outliers: values outside [Q1 - 1.5×IQR, Q3 + 1.5×IQR]
+  const lowerFence = q1 - 1.5 * iqr;
+  const upperFence = q3 + 1.5 * iqr;
+  const outliers = sorted.filter(v => v < lowerFence || v > upperFence);
+  
+  // Skewness
+  const mean = sum / n;
+  const m3 = values.reduce((acc, v) => acc + Math.pow(v - mean, 3), 0) / n;
+  const m2 = variance;
+  const skewness = m3 / Math.pow(m2, 1.5);
+  
+  return { min, max, mean, std, median, q1, q3, iqr, p5, p95, skewness, count, outliers };
+}
+```
 
-**Example:**
-- Good: "MCS is calculated as: `MCS = LSV \times AAV`"
-- Bad: "`\text{MCS} = \text{LSV} \times \text{AAV}`" (unnecessary \text{})
+### Clustering Assignment
+
+```typescript
+// src/lib/cohort/clustering.ts
+type ClusterDimension = 'technique' | 'beamCount' | 'controlPoints' | 
+                        'deliveryTime' | 'complexity' | 'totalMU' | 'machine';
+
+interface ClusterGroup {
+  id: string;
+  name: string;
+  description: string;
+  planIds: string[];
+  color: string;
+}
+
+function assignCluster(plan: BatchPlan, dimension: ClusterDimension): string {
+  switch (dimension) {
+    case 'technique':
+      return plan.plan.technique;
+    case 'beamCount':
+      const beams = plan.plan.beams.length;
+      if (beams === 1) return '1 beam';
+      if (beams === 2) return '2 beams';
+      if (beams <= 4) return '3-4 beams';
+      return '5+ beams';
+    case 'controlPoints':
+      const cps = plan.plan.beams.reduce((sum, b) => sum + b.numberOfControlPoints, 0);
+      if (cps < 50) return 'Low (<50 CPs)';
+      if (cps < 100) return 'Medium (50-100 CPs)';
+      return 'High (>100 CPs)';
+    // ... other dimensions
+  }
+}
+```
 
 ---
 
-## Expected Result
+## Visualization Implementation Notes
 
-1. **Theme Toggle**: Sun/moon icon button in all page headers
-2. **Persistence**: Theme choice saved in localStorage
-3. **Default**: Light mode unless user changes
-4. **Formulas**: Beautiful LaTeX-rendered math in Help page metrics
-5. **Dark Mode Visibility**: All charts, diagrams, and figures clearly visible with good contrast
+### Box Plots with Recharts
+
+Recharts doesn't have a native BoxPlot component, so implementation uses ComposedChart with:
+- `Bar` for the Q1-Q3 box
+- `Line` for median and mean markers
+- `Scatter` for outlier points
+- `ErrorBar` for whiskers
+
+Alternatively, use the `react-boxplot` library (lightweight SVG) for cleaner implementation.
+
+### Correlation Heatmap
+
+Use a custom SVG grid or Recharts heatmap pattern:
+- Calculate Pearson correlation for each metric pair
+- Render as colored cells with values
+- Include color legend
+
+### Scatter Matrix
+
+Grid of `ScatterChart` components from Recharts:
+- 4-6 key metrics (configurable)
+- Diagonal shows distribution/histogram
+- Off-diagonal shows scatter with regression line option
+
+---
+
+## Navigation Integration
+
+Add to InteractiveViewer home view alongside existing "Compare Plans" and "Batch Analysis":
+
+```tsx
+<Link to="/cohort" className="...">
+  <BarChart3 className="h-4 w-4" />
+  Cohort Analysis
+</Link>
+```
+
+---
+
+## File Summary
+
+| Category | New Files | Modified Files |
+|----------|-----------|----------------|
+| Pages | 1 | 0 |
+| Contexts | 1 | 1 (App.tsx) |
+| Libraries | 4 | 0 |
+| Components | 11 | 2 |
+| **Total** | **17** | **3** |
+
+---
+
+## Expected Outcome
+
+1. **New `/cohort` route** accessible from main page navigation
+2. **Automatic plan clustering** by technique, complexity, beam count, etc.
+3. **Rich statistical analysis** with quartiles, IQR, percentiles, and outlier detection
+4. **Four visualization types**: Box plots, scatter matrix, correlation heatmap, violin plots
+5. **Cluster comparison** with summary cards and detailed breakdown tables
+6. **Export capability** for statistical reports in CSV/JSON format
+7. **Consistent styling** matching the established Help page patterns
 
