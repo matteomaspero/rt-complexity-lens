@@ -1,117 +1,135 @@
 
 
-# Plan: Add Python Toolkit Documentation
+# Plan: Rebrand to RTplan Complexity Lens (RTp-lens)
 
 ## Summary
 
-Add information about the Python offline toolkit to the web application:
-1. Add a new "Python Toolkit" section to the Help page with a brief overview
-2. Create a dedicated `/python-docs` page with full package documentation
-3. Add a GitHub/Python package button to the home page
+Rename the application from "RT Plan Complexity Analyzer" to **RTplan Complexity Lens** (short: **RTp-lens**), remove the metric abbreviation line from the home page, add a logo placeholder, and ensure consistent naming throughout the codebase.
+
+---
+
+## Name Recommendation
+
+Based on the project's published URL (`rt-complexity-lens.lovable.app`) and the user's suggestions:
+
+| Form | Usage |
+|------|-------|
+| **RTplan Complexity Lens** | Full name in documentation and formal contexts |
+| **RTp-lens** | Short name for UI headers, badges, and informal references |
+
+The name "Lens" evokes the concept of looking into/analyzing plan complexity, which fits the tool's purpose well.
 
 ---
 
 ## Changes Overview
 
-### 1. Update Help Page (`src/pages/Help.tsx`)
+### 1. Remove Metric Abbreviation Line
 
-Add a new "Python Toolkit" section between "Export Format" and "References":
+Remove this line from the home page (InteractiveViewer.tsx line 219):
+```
+MCS • PM • LSV • AAV • Delivery Timing
+```
 
-- Brief introduction explaining the offline Python package availability
-- Key features list (offline analysis, identical metrics, visualization)
-- Quick start code snippet
-- Link to the dedicated Python documentation page
-- Link to GitHub repository
+### 2. Add Logo Placeholder
 
-### 2. Update Table of Contents (`src/components/help/TableOfContents.tsx`)
+Create a simple SVG logo component that can be used throughout the app:
+- Stylized "RTP" letters with a lens/magnifying element
+- Works in both light and dark themes
+- Can be replaced with actual logo later
 
-Add a new entry for the Python Toolkit section:
-- id: `python-toolkit`
-- label: `Python Toolkit`
-- icon: Terminal (from lucide-react)
+### 3. Update App Name Everywhere
 
-### 3. Create Python Documentation Page (`src/pages/PythonDocs.tsx`)
-
-A dedicated page with comprehensive documentation including:
-- Installation instructions (pip, development mode)
-- Quick start examples (single plan, batch, cohort)
-- API reference (core functions, statistics, clustering, visualization)
-- Code snippets with syntax highlighting
-- Links to GitHub and algorithm documentation
-
-### 4. Update Home Page (`src/components/viewer/InteractiveViewer.tsx`)
-
-Add a GitHub/Python button below the existing mode selection buttons:
-- Button linking to GitHub repository
-- Brief text explaining Python offline availability
-
-### 5. Update App Router (`src/App.tsx`)
-
-Add route for the new Python documentation page:
-- `/python-docs` -> `PythonDocs` component
-
----
-
-## File Changes
-
-| File | Change |
-|------|--------|
-| `src/pages/Help.tsx` | Add Python Toolkit section with overview and links |
-| `src/components/help/TableOfContents.tsx` | Add Python Toolkit to navigation sections |
-| `src/pages/PythonDocs.tsx` | **New file** - Full Python package documentation page |
-| `src/components/viewer/InteractiveViewer.tsx` | Add GitHub/Python toolkit button on home |
-| `src/App.tsx` | Add route for `/python-docs` |
+| File | Location | Old | New |
+|------|----------|-----|-----|
+| `index.html` | `<title>` | RT Plan Complexity Analyzer | RTplan Complexity Lens |
+| `index.html` | `og:title` | RT Plan Complexity Analyzer | RTplan Complexity Lens |
+| `index.html` | `description` | Update description text | Include "RTp-lens" |
+| `InteractiveViewer.tsx` | Home page title | RT Plan Complexity Analyzer | RTp-lens |
+| `Help.tsx` | Page subtitle | RT Plan Complexity Analyzer Guide | RTp-lens Documentation |
+| `Help.tsx` | Introduction text | RT Plan Complexity Analyzer | RTplan Complexity Lens |
+| `Help.tsx` | About section | RT Plan Complexity Analyzer | RTplan Complexity Lens |
+| `src/lib/dicom/metrics.ts` | CSV export header | RT Plan Complexity Analyzer | RTp-lens |
+| `python/README.md` | Title and references | RT Plan Complexity Analyzer | RTplan Complexity Lens / RTp-lens |
+| `python/pyproject.toml` | Description | RT Plan Complexity Analyzer | RTplan Complexity Lens |
+| `README.md` | Project title | RT Plan Complexity Analyzer | RTplan Complexity Lens |
 
 ---
 
 ## Technical Details
 
-### Help Page Python Section Content
+### New Logo Component
+
+Create `src/components/ui/logo.tsx`:
 
 ```text
-Python Toolkit (New Section)
-├── Introduction paragraph
-├── Key Features list
-│   ├── Identical metric calculations
-│   ├── Offline workstation analysis
-│   ├── Batch and cohort modes
-│   └── Matplotlib visualizations
-├── Quick Start code block
-├── Button: "View Full Documentation" -> /python-docs
-└── Button: "GitHub Repository" -> external link
+RTp-lens Logo Component
+├── Props: size (sm, md, lg), showText (boolean)
+├── SVG with stylized "RT" and lens icon
+├── Supports theme colors (uses currentColor)
+└── Export: Logo, LogoIcon (icon only)
 ```
 
-### Python Documentation Page Structure
+### Home Page Updates
 
 ```text
-/python-docs
-├── Header with back navigation
-├── Installation
-│   ├── pip install
-│   └── Development mode
-├── Quick Start Examples
-│   ├── Single Plan Analysis
-│   ├── Batch Analysis
-│   └── Cohort Analysis
-├── API Reference
-│   ├── Core Functions
-│   ├── Statistics Functions
-│   ├── Clustering Functions
-│   └── Visualization Functions
-├── Machine Parameters Configuration
-├── Export Formats
-└── Cross-Validation with Web App
+InteractiveViewer.tsx Changes
+├── Line 111-112: Replace h1 text with RTp-lens + Logo
+├── Line 217-220: Remove the metric abbreviation paragraph
+└── Add Logo import
 ```
 
-### Home Page Button Addition
+### Updated Home Page Header Structure
 
-Add after the mode selection grid:
-- GitHub icon button with "Python Toolkit" label
-- Links to GitHub repository
-- Tooltip explaining offline analysis capability
+```text
+Before:
+  h1: "RT Plan Complexity Analyzer"
+  p: "Upload a DICOM-RT Plan..."
+  ...
+  p: "Supports VMAT and IMRT plans..."
+  p: "MCS • PM • LSV • AAV • Delivery Timing"  <-- Remove this
 
-### Icon Selection
+After:
+  [Logo] + h1: "RTPlens"
+  p: "Upload a DICOM-RT Plan..."
+  ...
+  p: "Supports VMAT and IMRT plans • Browser-based processing"
+```
 
-- Python Toolkit section: `Terminal` icon (represents CLI/scripting)
-- GitHub button: `Github` icon from lucide-react
+---
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/components/ui/logo.tsx` | **New file** - Logo component |
+| `index.html` | Update title, og:title, description |
+| `src/components/viewer/InteractiveViewer.tsx` | Replace name, add logo, remove metric line |
+| `src/pages/Help.tsx` | Update name references (3 locations) |
+| `src/lib/dicom/metrics.ts` | Update CSV export header |
+| `python/README.md` | Update name references |
+| `python/pyproject.toml` | Update description |
+| `README.md` | Update project title and references |
+
+**Total: 7 files modified + 1 new file**
+
+---
+
+## Logo Design
+
+Simple SVG placeholder that can be easily replaced:
+
+```text
+Visual concept:
+┌─────────────────┐
+│  RT   ◎        │  
+│      Lens      │
+└─────────────────┘
+
+- "RT" in bold/monospace style
+- Circular lens icon (◎) representing analysis/focus
+- Clean, minimal design
+- Uses CSS currentColor for theme compatibility
+```
+
+The logo will be implemented as a React component with size variants, making it easy to use in the header, footer, and other locations consistently.
 
