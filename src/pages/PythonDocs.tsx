@@ -289,6 +289,26 @@ create_correlation_heatmap(all_metrics, save_path="output/correlation.png")`}</C
                     </div>
                   ))}
                 </div>
+
+                <div className="mt-4 rounded-lg border bg-muted/30 overflow-hidden">
+                  <div className="px-4 py-2 bg-muted/50 border-b text-xs font-medium text-muted-foreground">
+                    ClusterDimension Options
+                  </div>
+                  <div className="p-4 space-y-2 text-sm">
+                    {[
+                      { dim: 'TECHNIQUE', desc: 'VMAT, IMRT, 3DCRT' },
+                      { dim: 'BEAM_COUNT', desc: '1-2, 3-4, 5-6, 7+' },
+                      { dim: 'COMPLEXITY', desc: 'Low, Medium, High, Very High (based on MCS)' },
+                      { dim: 'MU_LEVEL', desc: '<500, 500-1000, 1000-2000, >2000' },
+                      { dim: 'SITE', desc: 'Brain, H&N, Thorax, Pelvis, etc.' },
+                    ].map(({ dim, desc }) => (
+                      <div key={dim} className="flex items-start gap-3">
+                        <code className="font-mono text-primary bg-primary/10 px-2 py-0.5 rounded text-xs shrink-0">{dim}</code>
+                        <span className="text-muted-foreground">{desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Visualization Functions */}
