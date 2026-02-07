@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calculator, Upload, Download, Info, FileText, ChevronDown, Compass } from 'lucide-react';
+import { BookOpen, Calculator, Upload, Download, Info, FileText, ChevronDown, Compass, Terminal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -16,6 +16,7 @@ export const HELP_SECTIONS: Section[] = [
   { id: 'coordinate-system', label: 'Coordinate System', icon: Compass },
   { id: 'how-to-use', label: 'How to Use', icon: Upload },
   { id: 'export-format', label: 'Export Format', icon: Download },
+  { id: 'python-toolkit', label: 'Python Toolkit', icon: Terminal },
   { id: 'references', label: 'References', icon: FileText },
   { id: 'about', label: 'About', icon: Info },
 ];
