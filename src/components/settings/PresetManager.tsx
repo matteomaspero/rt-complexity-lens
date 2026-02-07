@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import {
@@ -25,6 +26,7 @@ import {
   createEmptyUserPreset,
 } from '@/lib/threshold-definitions';
 import { PresetEditor } from './PresetEditor';
+import { MachineMappingManager } from './MachineMappingManager';
 
 interface PresetManagerProps {
   trigger?: React.ReactNode;
@@ -192,161 +194,174 @@ export function PresetManager({ trigger }: PresetManagerProps) {
             </Button>
           )}
         </DialogTrigger>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Machine Presets</DialogTitle>
             <DialogDescription>
-              Manage machine-specific thresholds and delivery parameters.
+              Manage machine-specific thresholds, delivery parameters, and auto-selection mappings.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* Import/Export Actions */}
-            <div className="flex gap-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Import
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                className="gap-2"
-                disabled={userPresets.length === 0}
-              >
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </div>
+          <Tabs defaultValue="presets" className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="presets">Presets</TabsTrigger>
+              <TabsTrigger value="mappings">Machine Mappings</TabsTrigger>
+            </TabsList>
 
-            <Separator />
-
-            {/* Built-in Presets */}
-            <div>
-              <h4 className="mb-2 text-sm font-medium text-muted-foreground">Built-in Presets</h4>
-              <ScrollArea className="h-32">
-                <div className="space-y-1">
-                  {builtInList.map((preset) => (
-                    <div
-                      key={preset.id}
-                      className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/50"
-                    >
-                      <div
-                        className="flex-1 cursor-pointer"
-                        onClick={() => handleSelectPreset(preset.id)}
-                      >
-                        <div className="text-sm font-medium">{preset.name}</div>
-                        <div className="text-xs text-muted-foreground">{preset.description}</div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleDuplicate(preset.id, true)}
-                        title="Duplicate as user preset"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+            <TabsContent value="presets" className="flex-1 overflow-auto mt-4">
+              <div className="space-y-4">
+                {/* Import/Export Actions */}
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".json"
+                    onChange={handleImport}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Import
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                    className="gap-2"
+                    disabled={userPresets.length === 0}
+                  >
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
                 </div>
-              </ScrollArea>
-            </div>
 
-            <Separator />
+                <Separator />
 
-            {/* User Presets */}
-            <div>
-              <h4 className="mb-2 text-sm font-medium text-muted-foreground">Your Presets</h4>
-              {userPresets.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  No custom presets yet. Create one or duplicate a built-in preset.
-                </p>
-              ) : (
-                <ScrollArea className="h-32">
-                  <div className="space-y-1">
-                    {userPresets.map((preset) => (
-                      <div
-                        key={preset.id}
-                        className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/50"
-                      >
+                {/* Built-in Presets */}
+                <div>
+                  <h4 className="mb-2 text-sm font-medium text-muted-foreground">Built-in Presets</h4>
+                  <ScrollArea className="h-32">
+                    <div className="space-y-1">
+                      {builtInList.map((preset) => (
                         <div
-                          className="flex-1 cursor-pointer"
-                          onClick={() => handleSelectPreset(preset.id)}
+                          key={preset.id}
+                          className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/50"
                         >
-                          <div className="text-sm font-medium">{preset.name}</div>
-                          <div className="text-xs text-muted-foreground">{preset.description}</div>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleEditPreset(preset)}
-                            title="Edit preset"
+                          <div
+                            className="flex-1 cursor-pointer"
+                            onClick={() => handleSelectPreset(preset.id)}
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                            <div className="text-sm font-medium">{preset.name}</div>
+                            <div className="text-xs text-muted-foreground">{preset.description}</div>
+                          </div>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => handleDuplicate(preset.id, false)}
-                            title="Duplicate preset"
+                            onClick={() => handleDuplicate(preset.id, true)}
+                            title="Duplicate as user preset"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(preset.id)}
-                            title="Delete preset"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+
+                <Separator />
+
+                {/* User Presets */}
+                <div>
+                  <h4 className="mb-2 text-sm font-medium text-muted-foreground">Your Presets</h4>
+                  {userPresets.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      No custom presets yet. Create one or duplicate a built-in preset.
+                    </p>
+                  ) : (
+                    <ScrollArea className="h-32">
+                      <div className="space-y-1">
+                        {userPresets.map((preset) => (
+                          <div
+                            key={preset.id}
+                            className="flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted/50"
+                          >
+                            <div
+                              className="flex-1 cursor-pointer"
+                              onClick={() => handleSelectPreset(preset.id)}
+                            >
+                              <div className="text-sm font-medium">{preset.name}</div>
+                              <div className="text-xs text-muted-foreground">{preset.description}</div>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEditPreset(preset)}
+                                title="Edit preset"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleDuplicate(preset.id, false)}
+                                title="Duplicate preset"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(preset.id)}
+                                title="Delete preset"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </ScrollArea>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Create New */}
+                <div className="space-y-2">
+                  <Label htmlFor="new-preset-name">Create New Preset</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="new-preset-name"
+                      placeholder="My Machine"
+                      value={newPresetName}
+                      onChange={(e) => setNewPresetName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCreateNew()}
+                    />
+                    <Button onClick={handleCreateNew} disabled={!newPresetName.trim()} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create
+                    </Button>
                   </div>
-                </ScrollArea>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Create New */}
-            <div className="space-y-2">
-              <Label htmlFor="new-preset-name">Create New Preset</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="new-preset-name"
-                  placeholder="My Machine"
-                  value={newPresetName}
-                  onChange={(e) => setNewPresetName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreateNew()}
-                />
-                <Button onClick={handleCreateNew} disabled={!newPresetName.trim()} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create
-                </Button>
+                </div>
               </div>
-            </div>
-          </div>
+            </TabsContent>
 
-          <DialogFooter>
+            <TabsContent value="mappings" className="flex-1 overflow-auto mt-4">
+              <MachineMappingManager />
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Close
             </Button>
