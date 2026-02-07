@@ -1,4 +1,5 @@
 import type { PlanMetrics } from '@/lib/dicom/types';
+import type { RTPlan } from '@/lib/dicom/types';
 
 export interface MetricStatistics {
   min: number;
@@ -11,17 +12,36 @@ export interface MetricStatistics {
 
 export interface BatchStatistics {
   planCount: number;
+  
+  // Geometric metrics
+  MFA: MetricStatistics;
+  EFS: MetricStatistics;
+  PA: MetricStatistics;
+  JA: MetricStatistics;
+  psmall: MetricStatistics;
+  
+  // Beam metrics
+  totalMU: MetricStatistics;
+  deliveryTime: MetricStatistics;
+  GT: MetricStatistics;
+  MUCA: MetricStatistics;
+  beamCount: MetricStatistics;
+  controlPointCount: MetricStatistics;
+  
+  // Complexity metrics
   MCS: MetricStatistics;
   LSV: MetricStatistics;
   AAV: MetricStatistics;
-  MFA: MetricStatistics;
   LT: MetricStatistics;
-  totalMU: MetricStatistics;
-  deliveryTime: MetricStatistics;
-  SAS5?: MetricStatistics;
-  SAS10?: MetricStatistics;
-  EM?: MetricStatistics;
-  PI?: MetricStatistics;
+  LTMCS: MetricStatistics;
+  SAS5: MetricStatistics;
+  SAS10: MetricStatistics;
+  EM: MetricStatistics;
+  PI: MetricStatistics;
+  LG: MetricStatistics;
+  MAD: MetricStatistics;
+  TG: MetricStatistics;
+  PM: MetricStatistics;
 }
 
 function calculateStatistics(values: number[]): MetricStatistics {
@@ -51,30 +71,58 @@ function calculateStatistics(values: number[]): MetricStatistics {
   };
 }
 
-export function calculateBatchStatistics(metricsArray: PlanMetrics[]): BatchStatistics {
+export interface BatchPlanInput {
+  metrics: PlanMetrics;
+  plan: RTPlan;
+}
+
+export function calculateBatchStatistics(inputs: BatchPlanInput[]): BatchStatistics {
   const extractMetric = (key: keyof PlanMetrics): number[] => {
-    return metricsArray
-      .map(m => m[key])
+    return inputs
+      .map(i => i.metrics[key])
       .filter((v): v is number => typeof v === 'number' && !isNaN(v));
   };
 
+  // Compute beam-level aggregates
+  const beamCounts = inputs.map(i => i.plan.beams?.length ?? 0);
+  const controlPointCounts = inputs.map(i => 
+    i.plan.beams?.reduce((sum, b) => sum + (b.numberOfControlPoints || 0), 0) ?? 0
+  );
+
   return {
-    planCount: metricsArray.length,
+    planCount: inputs.length,
+    
+    // Geometric metrics
+    MFA: calculateStatistics(extractMetric('MFA')),
+    EFS: calculateStatistics(extractMetric('EFS')),
+    PA: calculateStatistics(extractMetric('PA')),
+    JA: calculateStatistics(extractMetric('JA')),
+    psmall: calculateStatistics(extractMetric('psmall')),
+    
+    // Beam metrics
+    totalMU: calculateStatistics(extractMetric('totalMU')),
+    deliveryTime: calculateStatistics(
+      inputs.map(i => i.metrics.totalDeliveryTime).filter((v): v is number => typeof v === 'number' && !isNaN(v))
+    ),
+    GT: calculateStatistics(extractMetric('GT')),
+    MUCA: calculateStatistics(extractMetric('MUCA')),
+    beamCount: calculateStatistics(beamCounts),
+    controlPointCount: calculateStatistics(controlPointCounts),
+    
+    // Complexity metrics
     MCS: calculateStatistics(extractMetric('MCS')),
     LSV: calculateStatistics(extractMetric('LSV')),
     AAV: calculateStatistics(extractMetric('AAV')),
-    MFA: calculateStatistics(extractMetric('MFA')),
     LT: calculateStatistics(extractMetric('LT')),
-    totalMU: calculateStatistics(extractMetric('totalMU')),
-    deliveryTime: calculateStatistics(
-      metricsArray
-        .map(m => m.totalDeliveryTime)
-        .filter((v): v is number => typeof v === 'number' && !isNaN(v))
-    ),
+    LTMCS: calculateStatistics(extractMetric('LTMCS')),
     SAS5: calculateStatistics(extractMetric('SAS5')),
     SAS10: calculateStatistics(extractMetric('SAS10')),
     EM: calculateStatistics(extractMetric('EM')),
     PI: calculateStatistics(extractMetric('PI')),
+    LG: calculateStatistics(extractMetric('LG')),
+    MAD: calculateStatistics(extractMetric('MAD')),
+    TG: calculateStatistics(extractMetric('TG')),
+    PM: calculateStatistics(extractMetric('PM')),
   };
 }
 

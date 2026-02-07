@@ -2,11 +2,15 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
 import type { RTPlan, PlanMetrics } from '@/lib/dicom/types';
 import { 
-  generateClusters, 
+  generateClusters,
+  generateMultiDimensionalClusters,
   calculateExtendedStatistics,
   calculateCorrelationMatrix,
+  extractMetricValues,
+  METRIC_GROUPS,
   type ClusterDimension,
   type ClusterGroup,
+  type ClusterMode,
   type ExtendedStatistics,
   type CorrelationMatrix,
 } from '@/lib/cohort';
@@ -26,14 +30,37 @@ interface CohortProgress {
   total: number;
 }
 
+// Extended stats for all metrics
 export interface MetricExtendedStats {
+  // Geometric
+  MFA: ExtendedStatistics;
+  EFS: ExtendedStatistics;
+  PA: ExtendedStatistics;
+  JA: ExtendedStatistics;
+  psmall: ExtendedStatistics;
+  
+  // Beam
+  totalMU: ExtendedStatistics;
+  deliveryTime: ExtendedStatistics;
+  GT: ExtendedStatistics;
+  MUCA: ExtendedStatistics;
+  beamCount: ExtendedStatistics;
+  controlPointCount: ExtendedStatistics;
+  
+  // Complexity
   MCS: ExtendedStatistics;
   LSV: ExtendedStatistics;
   AAV: ExtendedStatistics;
-  MFA: ExtendedStatistics;
   LT: ExtendedStatistics;
-  totalMU: ExtendedStatistics;
-  deliveryTime: ExtendedStatistics;
+  LTMCS: ExtendedStatistics;
+  SAS5: ExtendedStatistics;
+  SAS10: ExtendedStatistics;
+  EM: ExtendedStatistics;
+  PI: ExtendedStatistics;
+  LG: ExtendedStatistics;
+  MAD: ExtendedStatistics;
+  TG: ExtendedStatistics;
+  PM: ExtendedStatistics;
 }
 
 interface CohortContextType {
@@ -47,8 +74,12 @@ interface CohortContextType {
   progress: CohortProgress;
   
   // Clustering
+  clusterMode: ClusterMode;
+  setClusterMode: (mode: ClusterMode) => void;
   primaryDimension: ClusterDimension;
   setPrimaryDimension: (dim: ClusterDimension) => void;
+  secondaryDimension: ClusterDimension;
+  setSecondaryDimension: (dim: ClusterDimension) => void;
   clusters: ClusterGroup[];
   
   // Statistics
@@ -62,26 +93,38 @@ interface CohortContextType {
 const CohortContext = createContext<CohortContextType | undefined>(undefined);
 
 function calculateMetricStats(plans: CohortPlan[]): MetricExtendedStats {
-  const metrics = plans.map(p => p.metrics);
-  
-  const extractValues = (key: keyof PlanMetrics): number[] => {
-    return metrics
-      .map(m => m[key])
-      .filter((v): v is number => typeof v === 'number' && !isNaN(v));
-  };
+  const extract = (key: string): number[] => extractMetricValues(plans, key);
 
   return {
-    MCS: calculateExtendedStatistics(extractValues('MCS')),
-    LSV: calculateExtendedStatistics(extractValues('LSV')),
-    AAV: calculateExtendedStatistics(extractValues('AAV')),
-    MFA: calculateExtendedStatistics(extractValues('MFA')),
-    LT: calculateExtendedStatistics(extractValues('LT')),
-    totalMU: calculateExtendedStatistics(extractValues('totalMU')),
-    deliveryTime: calculateExtendedStatistics(
-      metrics
-        .map(m => m.totalDeliveryTime)
-        .filter((v): v is number => typeof v === 'number' && !isNaN(v))
-    ),
+    // Geometric
+    MFA: calculateExtendedStatistics(extract('MFA')),
+    EFS: calculateExtendedStatistics(extract('EFS')),
+    PA: calculateExtendedStatistics(extract('PA')),
+    JA: calculateExtendedStatistics(extract('JA')),
+    psmall: calculateExtendedStatistics(extract('psmall')),
+    
+    // Beam
+    totalMU: calculateExtendedStatistics(extract('totalMU')),
+    deliveryTime: calculateExtendedStatistics(extract('totalDeliveryTime')),
+    GT: calculateExtendedStatistics(extract('GT')),
+    MUCA: calculateExtendedStatistics(extract('MUCA')),
+    beamCount: calculateExtendedStatistics(extract('beamCount')),
+    controlPointCount: calculateExtendedStatistics(extract('controlPointCount')),
+    
+    // Complexity
+    MCS: calculateExtendedStatistics(extract('MCS')),
+    LSV: calculateExtendedStatistics(extract('LSV')),
+    AAV: calculateExtendedStatistics(extract('AAV')),
+    LT: calculateExtendedStatistics(extract('LT')),
+    LTMCS: calculateExtendedStatistics(extract('LTMCS')),
+    SAS5: calculateExtendedStatistics(extract('SAS5')),
+    SAS10: calculateExtendedStatistics(extract('SAS10')),
+    EM: calculateExtendedStatistics(extract('EM')),
+    PI: calculateExtendedStatistics(extract('PI')),
+    LG: calculateExtendedStatistics(extract('LG')),
+    MAD: calculateExtendedStatistics(extract('MAD')),
+    TG: calculateExtendedStatistics(extract('TG')),
+    PM: calculateExtendedStatistics(extract('PM')),
   };
 }
 
@@ -89,7 +132,9 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
   const [plans, setPlans] = useState<CohortPlan[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<CohortProgress>({ current: 0, total: 0 });
+  const [clusterMode, setClusterMode] = useState<ClusterMode>('single');
   const [primaryDimension, setPrimaryDimension] = useState<ClusterDimension>('technique');
+  const [secondaryDimension, setSecondaryDimension] = useState<ClusterDimension>('complexity');
 
   // Get only successful plans
   const successfulPlans = useMemo(() => 
@@ -97,16 +142,22 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
     [plans]
   );
 
-  // Generate clusters based on primary dimension
+  // Generate clusters based on mode and dimensions
   const clusters = useMemo(() => {
     if (successfulPlans.length === 0) return [];
+    
     // Convert CohortPlan to BatchPlan-like structure for clustering
     const batchLikePlans = successfulPlans.map(p => ({
       ...p,
       selected: false,
     }));
+    
+    if (clusterMode === 'combined') {
+      return generateMultiDimensionalClusters(batchLikePlans, primaryDimension, secondaryDimension);
+    }
+    
     return generateClusters(batchLikePlans, primaryDimension);
-  }, [successfulPlans, primaryDimension]);
+  }, [successfulPlans, clusterMode, primaryDimension, secondaryDimension]);
 
   // Calculate extended statistics for all plans
   const extendedStats = useMemo(() => {
@@ -210,8 +261,12 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
       clearAll,
       isProcessing,
       progress,
+      clusterMode,
+      setClusterMode,
       primaryDimension,
       setPrimaryDimension,
+      secondaryDimension,
+      setSecondaryDimension,
       clusters,
       extendedStats,
       correlationMatrix,

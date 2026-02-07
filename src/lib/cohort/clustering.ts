@@ -1,6 +1,6 @@
 /**
  * Clustering logic for cohort analysis
- * Groups plans by various dimensions
+ * Groups plans by various dimensions with support for multidimensional clustering
  */
 
 import type { BatchPlan } from '@/contexts/BatchContext';
@@ -13,6 +13,8 @@ export type ClusterDimension =
   | 'complexity' 
   | 'totalMU' 
   | 'machine';
+
+export type ClusterMode = 'single' | 'combined';
 
 export interface ClusterDimensionInfo {
   id: ClusterDimension;
@@ -36,6 +38,9 @@ export interface ClusterGroup {
   description: string;
   planIds: string[];
   color: string;
+  // Multidimensional clustering support
+  dimensions?: Partial<Record<ClusterDimension, string>>;
+  parentCluster?: string;
 }
 
 // Color palette for clusters (using HSL values matching the theme)
@@ -48,6 +53,10 @@ const CLUSTER_COLORS = [
   'hsl(220, 70%, 55%)',
   'hsl(280, 65%, 60%)',
   'hsl(45, 85%, 55%)',
+  'hsl(160, 60%, 50%)',
+  'hsl(340, 70%, 55%)',
+  'hsl(90, 60%, 45%)',
+  'hsl(15, 75%, 55%)',
 ];
 
 /**
@@ -110,7 +119,7 @@ export function assignCluster(plan: BatchPlan, dimension: ClusterDimension): str
 }
 
 /**
- * Generate cluster groups from plans based on a dimension
+ * Generate cluster groups from plans based on a single dimension
  */
 export function generateClusters(
   plans: BatchPlan[], 
@@ -144,6 +153,62 @@ export function generateClusters(
       description: `${planIds.length} plan${planIds.length !== 1 ? 's' : ''}`,
       planIds,
       color: CLUSTER_COLORS[colorIndex % CLUSTER_COLORS.length],
+      dimensions: { [dimension]: id },
+    });
+    colorIndex++;
+  }
+
+  return clusters;
+}
+
+/**
+ * Generate multidimensional cluster groups by combining two dimensions
+ */
+export function generateMultiDimensionalClusters(
+  plans: BatchPlan[],
+  primaryDimension: ClusterDimension,
+  secondaryDimension: ClusterDimension
+): ClusterGroup[] {
+  const clusterMap = new Map<string, { planIds: string[]; dimensions: Partial<Record<ClusterDimension, string>> }>();
+
+  // Assign each plan to a compound cluster
+  for (const plan of plans) {
+    if (plan.status !== 'success') continue;
+    
+    const primaryValue = assignCluster(plan, primaryDimension);
+    const secondaryValue = assignCluster(plan, secondaryDimension);
+    const compoundId = `${primaryValue} + ${secondaryValue}`;
+    
+    const existing = clusterMap.get(compoundId) || { 
+      planIds: [], 
+      dimensions: { 
+        [primaryDimension]: primaryValue, 
+        [secondaryDimension]: secondaryValue 
+      } 
+    };
+    existing.planIds.push(plan.id);
+    clusterMap.set(compoundId, existing);
+  }
+
+  // Convert to ClusterGroup array
+  const clusters: ClusterGroup[] = [];
+  let colorIndex = 0;
+
+  // Sort by primary dimension first, then secondary
+  const sortedEntries = Array.from(clusterMap.entries()).sort((a, b) => 
+    a[0].localeCompare(b[0])
+  );
+
+  for (const [id, { planIds, dimensions }] of sortedEntries) {
+    const primaryValue = dimensions[primaryDimension];
+    clusters.push({
+      id,
+      name: id,
+      description: `${planIds.length} plan${planIds.length !== 1 ? 's' : ''}`,
+      planIds,
+      color: CLUSTER_COLORS[colorIndex % CLUSTER_COLORS.length],
+      dimensions,
+      parentCluster: primaryValue,
     });
     colorIndex++;
   }
@@ -178,4 +243,17 @@ export function getClusterPercentages(
   }
   
   return percentages;
+}
+
+/**
+ * Get unique parent clusters (for hierarchical display)
+ */
+export function getParentClusters(clusters: ClusterGroup[]): string[] {
+  const parents = new Set<string>();
+  for (const cluster of clusters) {
+    if (cluster.parentCluster) {
+      parents.add(cluster.parentCluster);
+    }
+  }
+  return Array.from(parents).sort();
 }

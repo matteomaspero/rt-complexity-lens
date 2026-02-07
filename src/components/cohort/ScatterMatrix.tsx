@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ScatterChart,
   Scatter,
@@ -10,21 +10,43 @@ import {
   Cell,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCohort } from '@/contexts/CohortContext';
+import { METRIC_DEFINITIONS, METRIC_GROUPS, extractMetricValue, getMetricColor } from '@/lib/cohort';
 
 interface ScatterMatrixProps {
   className?: string;
 }
 
-const METRIC_PAIRS = [
-  { x: 'MCS', y: 'totalMU', xLabel: 'MCS', yLabel: 'Total MU' },
-  { x: 'LSV', y: 'AAV', xLabel: 'LSV', yLabel: 'AAV' },
-  { x: 'MCS', y: 'LT', xLabel: 'MCS', yLabel: 'Leaf Travel (mm)' },
-  { x: 'MFA', y: 'totalMU', xLabel: 'MFA (cm²)', yLabel: 'Total MU' },
+// Flatten all available metrics for selection
+const ALL_METRICS = [
+  ...METRIC_GROUPS.complexity,
+  ...METRIC_GROUPS.geometric,
+  ...METRIC_GROUPS.beam,
+];
+
+interface MetricPair {
+  x: string;
+  y: string;
+}
+
+const DEFAULT_PAIRS: MetricPair[] = [
+  { x: 'MCS', y: 'totalMU' },
+  { x: 'LSV', y: 'AAV' },
+  { x: 'MCS', y: 'LT' },
+  { x: 'MFA', y: 'totalMU' },
 ];
 
 export function ScatterMatrix({ className }: ScatterMatrixProps) {
   const { successfulPlans, clusters } = useCohort();
+  const [pairs, setPairs] = useState<MetricPair[]>(DEFAULT_PAIRS);
+
+  const updatePair = (index: number, axis: 'x' | 'y', value: string) => {
+    setPairs(prev => prev.map((pair, i) => 
+      i === index ? { ...pair, [axis]: value } : pair
+    ));
+  };
 
   const scatterData = useMemo(() => {
     if (successfulPlans.length === 0) return null;
@@ -40,10 +62,13 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
       }
     }
 
-    return METRIC_PAIRS.map(pair => {
+    return pairs.map(pair => {
+      const xInfo = METRIC_DEFINITIONS[pair.x];
+      const yInfo = METRIC_DEFINITIONS[pair.y];
+      
       const data = successfulPlans.map(plan => {
-        const xValue = plan.metrics[pair.x as keyof typeof plan.metrics];
-        const yValue = plan.metrics[pair.y as keyof typeof plan.metrics];
+        const xValue = extractMetricValue(plan, pair.x);
+        const yValue = extractMetricValue(plan, pair.y);
         const clusterId = planClusterMap.get(plan.id) || 'Unknown';
         const color = clusterColorMap.get(clusterId) || 'hsl(var(--chart-1))';
         
@@ -54,14 +79,18 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
           cluster: clusterId,
           color,
         };
-      });
+      }).filter(d => d.x !== 0 || d.y !== 0);
 
       return {
         ...pair,
+        xLabel: xInfo?.shortName || pair.x,
+        yLabel: yInfo?.shortName || pair.y,
+        xUnit: xInfo?.unit,
+        yUnit: yInfo?.unit,
         data,
       };
     });
-  }, [successfulPlans, clusters]);
+  }, [successfulPlans, clusters, pairs]);
 
   if (!scatterData || scatterData.length === 0) {
     return (
@@ -87,9 +116,54 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {scatterData.map((pair, idx) => (
             <div key={idx} className="border rounded-lg p-3 bg-muted/20">
-              <p className="text-xs text-muted-foreground mb-2 text-center">
-                {pair.xLabel} vs {pair.yLabel}
-              </p>
+              {/* Metric selectors */}
+              <div className="flex gap-2 mb-2">
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground">X-axis</Label>
+                  <Select
+                    value={pairs[idx].x}
+                    onValueChange={(val) => updatePair(idx, 'x', val)}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALL_METRICS.map(key => {
+                        const info = METRIC_DEFINITIONS[key];
+                        return (
+                          <SelectItem key={key} value={key} className="text-xs">
+                            {info?.shortName || key}
+                            {info?.unit && ` (${info.unit})`}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground">Y-axis</Label>
+                  <Select
+                    value={pairs[idx].y}
+                    onValueChange={(val) => updatePair(idx, 'y', val)}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ALL_METRICS.map(key => {
+                        const info = METRIC_DEFINITIONS[key];
+                        return (
+                          <SelectItem key={key} value={key} className="text-xs">
+                            {info?.shortName || key}
+                            {info?.unit && ` (${info.unit})`}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 40 }}>
@@ -101,7 +175,7 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
                       tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
                       axisLine={{ stroke: 'hsl(var(--border))' }}
                       label={{ 
-                        value: pair.xLabel, 
+                        value: `${pair.xLabel}${pair.xUnit ? ` (${pair.xUnit})` : ''}`, 
                         position: 'bottom', 
                         offset: 0,
                         style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' }
@@ -114,7 +188,7 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
                       tick={{ fontSize: 9, fill: 'hsl(var(--foreground))' }}
                       axisLine={{ stroke: 'hsl(var(--border))' }}
                       label={{ 
-                        value: pair.yLabel, 
+                        value: `${pair.yLabel}${pair.yUnit ? ` (${pair.yUnit})` : ''}`, 
                         angle: -90, 
                         position: 'insideLeft',
                         style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' }

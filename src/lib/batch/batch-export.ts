@@ -85,7 +85,7 @@ export function exportToCSV(plans: BatchPlan[], options: ExportOptions): string 
 export function exportToJSON(plans: BatchPlan[], options: ExportOptions): string {
   const successfulPlans = plans.filter(p => p.status === 'success');
   
-  const stats = calculateBatchStatistics(successfulPlans.map(p => p.metrics));
+  const stats = calculateBatchStatistics(successfulPlans.map(p => ({ metrics: p.metrics, plan: p.plan })));
   
   const exportData = {
     exportDate: new Date().toISOString(),
