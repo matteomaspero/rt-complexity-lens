@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   RadarChart,
   PolarGrid,
@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import { ChartExportButton } from '@/components/ui/exportable-chart';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
 import {
   calculateControlPointSegments,
@@ -35,6 +36,9 @@ export function AngularDistributionChart({
   currentIndex,
   machineParams = DEFAULT_MACHINE_PARAMS,
 }: AngularDistributionChartProps) {
+  const polarRef = useRef<HTMLDivElement>(null);
+  const doseRateRef = useRef<HTMLDivElement>(null);
+
   // Calculate segments and bins
   const segments = useMemo(() => 
     calculateControlPointSegments(beam, controlPointMetrics, machineParams),
@@ -68,12 +72,15 @@ export function AngularDistributionChart({
   return (
     <div className="space-y-4">
       {/* Polar MU Distribution */}
-      <div className="rounded-lg border bg-card p-4">
+      <div ref={polarRef} className="rounded-lg border bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h4 className="text-sm font-medium">MU Distribution by Angle</h4>
-          <span className="text-xs text-muted-foreground">
-            Current: {currentAngle.toFixed(1)}°
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              Current: <span className="font-mono">{currentAngle.toFixed(1)}°</span>
+            </span>
+            <ChartExportButton chartRef={polarRef} filename="mu_distribution_polar" />
+          </div>
         </div>
         <div className="flex justify-center">
           <ResponsiveContainer width="100%" height={220}>
@@ -104,12 +111,15 @@ export function AngularDistributionChart({
       </div>
 
       {/* Dose Rate vs Gantry Angle */}
-      <div className="rounded-lg border bg-card p-4">
+      <div ref={doseRateRef} className="rounded-lg border bg-card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h4 className="text-sm font-medium">Dose Rate vs Gantry Angle</h4>
-          <span className="font-mono text-sm">
-            {doseRateData[Math.min(currentIndex, doseRateData.length - 1)]?.doseRate.toFixed(0) ?? 0} MU/min
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm">
+              {doseRateData[Math.min(currentIndex, doseRateData.length - 1)]?.doseRate.toFixed(0) ?? 0} MU/min
+            </span>
+            <ChartExportButton chartRef={doseRateRef} filename="dose_rate_vs_angle" />
+          </div>
         </div>
         <ResponsiveContainer width="100%" height={160}>
           <LineChart data={doseRateData} margin={{ top: 5, right: 5, bottom: 20, left: 5 }}>

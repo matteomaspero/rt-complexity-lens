@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   LineChart,
   Line,
@@ -11,6 +11,7 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
+import { ChartExportButton } from '@/components/ui/exportable-chart';
 import type { Beam, ControlPointMetrics } from '@/lib/dicom/types';
 
 interface ComplexityHeatmapProps {
@@ -24,6 +25,10 @@ export function ComplexityHeatmap({
   controlPointMetrics,
   currentIndex,
 }: ComplexityHeatmapProps) {
+  const lsvRef = useRef<HTMLDivElement>(null);
+  const aavRef = useRef<HTMLDivElement>(null);
+  const areaRef = useRef<HTMLDivElement>(null);
+
   // Build chart data with angle and complexity metrics
   const chartData = useMemo(() => {
     return beam.controlPoints.map((cp, idx) => {
@@ -53,14 +58,17 @@ export function ComplexityHeatmap({
   return (
     <div className="space-y-3">
       {/* LSV Chart Card */}
-      <div className="rounded-lg border bg-card p-3">
+      <div ref={lsvRef} className="rounded-lg border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">
             LSV (Leaf Sequence Variability)
           </h4>
-          <span className="font-mono text-sm font-medium">
-            {currentLSV.toFixed(4)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-medium">
+              {currentLSV.toFixed(4)}
+            </span>
+            <ChartExportButton chartRef={lsvRef} filename="lsv_chart" />
+          </div>
         </div>
         <ResponsiveContainer width="100%" height={100}>
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -110,14 +118,17 @@ export function ComplexityHeatmap({
       </div>
 
       {/* AAV Chart Card */}
-      <div className="rounded-lg border bg-card p-3">
+      <div ref={aavRef} className="rounded-lg border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">
             AAV (Aperture Area Variability)
           </h4>
-          <span className="font-mono text-sm font-medium">
-            {currentAAV.toFixed(4)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-medium">
+              {currentAAV.toFixed(4)}
+            </span>
+            <ChartExportButton chartRef={aavRef} filename="aav_chart" />
+          </div>
         </div>
         <ResponsiveContainer width="100%" height={100}>
           <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
@@ -166,14 +177,17 @@ export function ComplexityHeatmap({
       </div>
 
       {/* Aperture Area Chart Card */}
-      <div className="rounded-lg border bg-card p-3">
+      <div ref={areaRef} className="rounded-lg border bg-card p-3">
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">
             Aperture Area
           </h4>
-          <span className="font-mono text-sm font-medium">
-            {currentArea.toFixed(1)} cm²
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-medium">
+              {currentArea.toFixed(1)} cm²
+            </span>
+            <ChartExportButton chartRef={areaRef} filename="aperture_area" />
+          </div>
         </div>
         <ResponsiveContainer width="100%" height={100}>
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   LineChart,
   Line,
@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import { ChartExportButton } from '@/components/ui/exportable-chart';
 import type { ControlPoint } from '@/lib/dicom/types';
 
 interface CumulativeMUChartProps {
@@ -24,6 +25,8 @@ export function CumulativeMUChart({
   totalMU,
   height = 150,
 }: CumulativeMUChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
+
   const chartData = useMemo(() => {
     return controlPoints.map((cp, index) => ({
       index: index + 1,
@@ -35,12 +38,15 @@ export function CumulativeMUChart({
   const currentMU = chartData[currentIndex]?.cumulativeMU ?? 0;
 
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div ref={chartRef} className="rounded-lg border bg-card p-4">
       <div className="mb-2 flex items-baseline justify-between">
         <h4 className="text-sm font-medium">Cumulative MU</h4>
-        <span className="font-mono text-lg font-semibold tabular-nums">
-          {currentMU.toFixed(1)} <span className="text-sm text-muted-foreground">MU</span>
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-lg font-semibold tabular-nums">
+            {currentMU.toFixed(1)} <span className="text-sm text-muted-foreground">MU</span>
+          </span>
+          <ChartExportButton chartRef={chartRef} filename="cumulative_mu" />
+        </div>
       </div>
       
       <ResponsiveContainer width="100%" height={height}>
@@ -103,6 +109,8 @@ export function GantrySpeedChart({
   currentIndex,
   height = 150,
 }: GantrySpeedChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
+
   const chartData = useMemo(() => {
     const data: Array<{ index: number; speed: number; angle: number }> = [];
     
@@ -135,12 +143,15 @@ export function GantrySpeedChart({
   const currentSpeed = chartData[currentIndex]?.speed ?? 0;
 
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div ref={chartRef} className="rounded-lg border bg-card p-4">
       <div className="mb-2 flex items-baseline justify-between">
         <h4 className="text-sm font-medium">Gantry Speed (relative)</h4>
-        <span className="font-mono text-lg font-semibold tabular-nums">
-          {currentSpeed.toFixed(1)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-lg font-semibold tabular-nums">
+            {currentSpeed.toFixed(1)}
+          </span>
+          <ChartExportButton chartRef={chartRef} filename="gantry_speed" />
+        </div>
       </div>
       
       <ResponsiveContainer width="100%" height={height}>
