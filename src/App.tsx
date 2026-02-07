@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,15 +8,26 @@ import { MetricsConfigProvider } from "@/contexts/MetricsConfigContext";
 import { ThresholdConfigProvider } from "@/contexts/ThresholdConfigContext";
 import { BatchProvider } from "@/contexts/BatchContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
+
+// Eager load the main page for best FCP
 import Index from "./pages/Index";
-import Help from "./pages/Help";
-import BatchDashboard from "./pages/BatchDashboard";
-import ComparePlans from "./pages/ComparePlans";
-import CohortAnalysis from "./pages/CohortAnalysis";
-import PythonDocs from "./pages/PythonDocs";
 import NotFound from "./pages/NotFound";
 
+// Lazy load secondary pages to reduce initial bundle size
+const Help = lazy(() => import("./pages/Help"));
+const BatchDashboard = lazy(() => import("./pages/BatchDashboard"));
+const ComparePlans = lazy(() => import("./pages/ComparePlans"));
+const CohortAnalysis = lazy(() => import("./pages/CohortAnalysis"));
+const PythonDocs = lazy(() => import("./pages/PythonDocs"));
+
 const queryClient = new QueryClient();
+
+// Simple loading fallback
+const PageLoader = () => (
+  <div className="flex h-screen items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+  </div>
+);
 
 const App = () => (
   <ThemeProvider>
@@ -29,11 +41,11 @@ const App = () => (
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  <Route path="/help" element={<Help />} />
-                  <Route path="/batch" element={<BatchDashboard />} />
-                  <Route path="/compare" element={<ComparePlans />} />
-                  <Route path="/cohort" element={<CohortAnalysis />} />
-                  <Route path="/python-docs" element={<PythonDocs />} />
+                  <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
+                  <Route path="/batch" element={<Suspense fallback={<PageLoader />}><BatchDashboard /></Suspense>} />
+                  <Route path="/compare" element={<Suspense fallback={<PageLoader />}><ComparePlans /></Suspense>} />
+                  <Route path="/cohort" element={<Suspense fallback={<PageLoader />}><CohortAnalysis /></Suspense>} />
+                  <Route path="/python-docs" element={<Suspense fallback={<PageLoader />}><PythonDocs /></Suspense>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
