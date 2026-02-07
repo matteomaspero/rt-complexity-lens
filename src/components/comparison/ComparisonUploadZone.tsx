@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
 import type { SessionPlan, ParseStatus } from '@/lib/dicom/types';
 import { Button } from '@/components/ui/button';
+import { ComparisonDemoSelect } from './ComparisonDemoSelect';
 
 interface ComparisonUploadZoneProps {
   label: string;
@@ -153,6 +154,10 @@ export function ComparisonUploadZone({
           <p className="text-sm text-center text-muted-foreground">
             Drop DICOM file or click to browse
           </p>
+          <ComparisonDemoSelect 
+            onPlanLoaded={onPlanLoaded} 
+            className="mt-2"
+          />
         </>
       )}
 

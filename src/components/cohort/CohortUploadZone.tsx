@@ -3,6 +3,7 @@ import { Upload, FolderOpen, Archive } from 'lucide-react';
 import JSZip from 'jszip';
 import { cn } from '@/lib/utils';
 import { useCohort } from '@/contexts/CohortContext';
+import { CohortDemoLoader } from './CohortDemoLoader';
 
 interface CohortUploadZoneProps {
   className?: string;
@@ -234,6 +235,9 @@ export function CohortUploadZone({ className }: CohortUploadZoneProps) {
             Upload multiple plans to analyze clustering and statistics
           </p>
         </div>
+
+        {/* Demo data loader */}
+        <CohortDemoLoader className="mt-4 pt-4 border-t border-dashed border-muted-foreground/25 w-full" />
       </div>
     </div>
   );

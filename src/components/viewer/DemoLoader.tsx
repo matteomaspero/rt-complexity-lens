@@ -2,20 +2,9 @@ import { useState, useCallback } from 'react';
 import { Beaker, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
+import { DEMO_FILES, loadDemoFile } from '@/lib/demo-data';
 import type { SessionPlan } from '@/lib/dicom/types';
 import { cn } from '@/lib/utils';
-
-const DEMO_FILES = [
-  { name: 'VMAT Complex', file: 'RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm' },
-  { name: 'Monaco PT 01', file: 'RTPLAN_MO_PT_01.dcm' },
-  { name: 'Monaco PT 02', file: 'RTPLAN_MO_PT_02.dcm' },
-  { name: 'Monaco PT 03', file: 'RTPLAN_MO_PT_03.dcm' },
-  { name: 'Monaco PT 04', file: 'RTPLAN_MO_PT_04.dcm' },
-  { name: 'Monaco Penalty', file: 'RTPLAN_MR_PT_01_PENALTY.dcm' },
-  { name: 'TG-119 7F', file: 'RP.TG119.PR_ETH_7F.dcm' },
-  { name: 'TG-119 2A', file: 'RP.TG119.PR_ETH_2A_2.dcm' },
-] as const;
 
 interface DemoLoaderProps {
   onPlanLoaded: (plan: SessionPlan) => void;
@@ -27,28 +16,15 @@ export function DemoLoader({ onPlanLoaded, className }: DemoLoaderProps) {
   const [loadingFile, setLoadingFile] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const loadDemoFile = useCallback(async (filename: string, displayName: string) => {
+  const handleLoadDemoFile = useCallback(async (name: string) => {
+    const demoFile = DEMO_FILES.find(f => f.name === name);
+    if (!demoFile) return;
+
     setIsLoading(true);
-    setLoadingFile(displayName);
+    setLoadingFile(name);
 
     try {
-      const response = await fetch(`/test-data/${filename}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch demo file: ${response.status}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const plan = parseRTPlan(arrayBuffer, filename);
-      const metrics = calculatePlanMetrics(plan);
-
-      const sessionPlan: SessionPlan = {
-        id: crypto.randomUUID(),
-        fileName: filename,
-        uploadTime: new Date(),
-        plan,
-        metrics,
-      };
-
+      const sessionPlan = await loadDemoFile(demoFile);
       onPlanLoaded(sessionPlan);
     } catch {
       // Demo file loading failed - user sees loading state reset
@@ -59,8 +35,8 @@ export function DemoLoader({ onPlanLoaded, className }: DemoLoaderProps) {
   }, [onPlanLoaded]);
 
   const loadDefaultDemo = useCallback(() => {
-    loadDemoFile(DEMO_FILES[0].file, DEMO_FILES[0].name);
-  }, [loadDemoFile]);
+    handleLoadDemoFile(DEMO_FILES[0].name);
+  }, [handleLoadDemoFile]);
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -96,7 +72,7 @@ export function DemoLoader({ onPlanLoaded, className }: DemoLoaderProps) {
                 key={demo.file}
                 variant="ghost"
                 size="sm"
-                onClick={() => loadDemoFile(demo.file, demo.name)}
+                onClick={() => handleLoadDemoFile(demo.name)}
                 disabled={isLoading}
                 className="h-8 text-xs"
               >

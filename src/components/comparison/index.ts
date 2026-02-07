@@ -7,3 +7,4 @@ export { MLCDifferenceViewer } from './MLCDifferenceViewer';
 export { ComparisonMUChart } from './ComparisonMUChart';
 export { ComparisonPolarChart } from './ComparisonPolarChart';
 export { ComparisonDeliveryChart } from './ComparisonDeliveryChart';
+export { ComparisonDemoSelect } from './ComparisonDemoSelect';
