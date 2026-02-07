@@ -467,7 +467,26 @@ See the `python/examples/` directory for complete examples:
 
 ## License
 
-MIT License — see LICENSE file for details.
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+This project is licensed under the **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License**.
+
+You are free to:
+- **Share** — copy and redistribute the material
+- **Adapt** — remix, transform, and build upon the material
+
+Under these terms:
+- **Attribution** — Give appropriate credit and link to the license
+- **NonCommercial** — No commercial use
+- **ShareAlike** — Distribute derivatives under the same license
+
+### Citation
+
+When using this toolkit in academic work, please cite:
+
+> Maspero Matteo. RTplan Complexity Lens. (2026). A browser-based DICOM-RT Plan complexity analysis tool. Available at: https://rt-complexity-lens.lovable.app
+
+See [LICENSE](../LICENSE) for full details.
 
 ---
 
