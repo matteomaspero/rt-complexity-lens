@@ -1,233 +1,161 @@
 
 
-# Plan: Fix Coordinate System Diagrams
+# Plan: Remove UCoMX Implementation Claims and Fix Coordinate Diagrams
 
 ## Summary
-Correct both diagrams to show anatomically accurate representations:
-1. **IEC61217Diagram**: Change to transverse cross-sectional view (looking from feet toward head) with patient lying supine on table and gantry ring around them
-2. **PatientAxesDiagram**: Show patient lying supine on treatment table with linac/gantry representation
+
+Two changes are needed:
+1. **Remove explicit claims** that this tool is "based on" or "implements" UCoMX v1.1 source code (keep UCoMX in references as inspiration)
+2. **Fix coordinate system diagrams** to show correct anatomical orientations
 
 ---
 
-## Current Problems
+## Part 1: Remove UCoMX Implementation References
 
-### IEC61217Diagram (Gantry Angle)
-- **Wrong**: Bird's-eye view looking down at patient (coronal/top-down view)
-- **Wrong**: Patient shown longitudinally (head at top, feet at bottom of diagram)
-- **Correct View**: Transverse cross-section (viewing from feet toward head, as if standing at foot of table)
-- **In Correct View**: 
-  - 0° = gantry at top (beam comes from above patient)
-  - 90° = gantry on patient's left (viewer's right)
-  - 180° = gantry at bottom (beam from below, through couch)
-  - 270° = gantry on patient's right (viewer's left)
+### Problem
+The current text claims this tool is "based on the UCoMX v1.1 MATLAB implementation" and calculates "UCoMX complexity metrics." Since the source code is not available, we cannot claim to have implemented it - only that the metrics are **inspired by** the same publications.
 
-### PatientAxesDiagram (Patient Axes)
-- **Wrong**: Shows upright patient silhouette (standing)
-- **Wrong**: No treatment table or linac context
-- **Correct**: Patient lying supine (on back) on treatment table
-- **Correct**: Should show table, and optionally a simplified linac/gantry
+### Files & Changes
 
----
-
-## Corrected Layouts
-
-### IEC61217Diagram - Transverse View
-
-```text
-                    0° (Anterior/AP)
-                    Gantry at top
-                         ↓
-                    ┌────●────┐
-                   /     │     \
-         270°    /   ┌───┴───┐   \    90°
-        (Right) ●────│Patient│────● (Left)
-        Gantry   \   │ Cross │   /  Gantry
-                  \  │Section│  /
-                   \ └───────┘ /
-                    └────●────┘
-                         ↑
-                   180° (Posterior/PA)
-                   Gantry under couch
-
-Viewing direction: From feet toward head (into the page)
-Patient: Supine (face up), cross-section at isocenter level
+#### `src/pages/Index.tsx` (via InteractiveViewer.tsx)
+**Line 174** - Change:
+```
+UCoMX v1.1 complexity metrics
+```
+To:
+```
+Plan complexity metrics
 ```
 
-**Key elements to draw:**
-- Gantry ring (outer circle)
-- Treatment couch (flat rectangle at bottom of patient)
-- Patient cross-section (ellipse for body outline)
-- Left/Right labels on patient
-- Anterior/Posterior labels
-- Beam arrows from each cardinal position pointing to isocenter
+#### `src/pages/Help.tsx`
+Multiple changes:
 
-### PatientAxesDiagram - Side/Sagittal View with Context
-
-```text
-                Z+ (Superior)
-                     ↑
-                     │
-          ┌──────────┼──────────┐ ← Linac Gantry (ring)
-          │    ┌─────●─────┐    │
-          │    │  Patient  │    │
-    ←─────┼────│  (supine) │────┼─────→ X+ (Left)
-    Right │    │   body    │    │
-          │    └───────────┘    │
-          └──────────────────────┘
-                     │
-              ═══════════════════  ← Treatment Table
-                     │
-                     ↓
-                 Z- (Inferior)
-
-   Y+ (Posterior) points into page (toward table)
-   Y- (Anterior) points out of page (toward ceiling)
-```
-
-**Chose the 3/4 isometric view** showing patient lying on table with all three axes visible.
+| Line | Current Text | New Text |
+|------|--------------|----------|
+| 63 | "based on the **UCoMX v1.1** framework" | "calculating complexity metrics **inspired by published research** including the UCoMX framework" |
+| 73 | "Calculate UCoMX complexity metrics at plan, beam, and control point levels" | "Calculate complexity metrics at plan, beam, and control point levels" |
+| 91-92 | "based on the UCoMX v1.1 MATLAB implementation" | "inspired by complexity metrics from the literature" |
+| 419-430 | "This tool is based on the UCoMX v1.1 MATLAB implementation" with Zenodo link as primary | Reframe as "The metrics in this tool are inspired by the UCoMX framework. For the original MATLAB implementation, see:" |
+| 589 | "Based on the UCoMX v1.1 framework from the University of Padova" | "Complexity metrics inspired by published research (see References)" |
 
 ---
 
-## Implementation Details
+## Part 2: Fix Coordinate System Diagrams
 
-### 1. IEC61217Diagram.tsx - Complete Redesign
+### Problem Analysis
 
-**New SVG structure:**
-- Viewbox: 320x320 (slightly larger for labels)
-- Center: (160, 160)
+Looking at the current diagrams:
 
-**Elements:**
-1. **Gantry ring** - Large dashed circle (r=130) representing rotation path
-2. **Treatment couch** - Horizontal rectangle at bottom center of patient area
-3. **Patient cross-section** - Ellipse (wider than tall, representing transverse body section)
-4. **Spine indicator** - Small circle at posterior of patient (for orientation)
-5. **L/R labels** - Inside or near patient cross-section
-6. **Four beam arrows** - From cardinal positions pointing to isocenter
-7. **Isocenter marker** - Center crosshairs
-8. **CW rotation indicator** - Arc with arrow
+**IEC61217Diagram (Gantry Angle):**
+- The transverse view shows correct orientation (view from feet)
+- Labels L/R are correct (patient's left on viewer's right)
+- **But**: The labels say "0° (Anterior/AP)" which is wrong - 0° gantry means beam comes from ABOVE (ceiling), which is the **anterior** direction for a supine patient. But the diagram caption says "0° = beam from above (AP)" which mixes terminology.
+- The table description says "From above (superior)" which confuses superior (anatomical direction = toward head) with anterior (toward ceiling for supine patient)
 
-**Key positions (center at 160,160):**
-```text
-0°:   (160, 30)  → beam points down to (160, 100)
-90°:  (290, 160) → beam points left to (220, 160)
-180°: (160, 290) → beam points up to (160, 220)
-270°: (30, 160)  → beam points right to (100, 160)
+**PatientAxesDiagram (Patient Coordinate):**
+- The isometric view is confusing
+- X axis (red) points upward in the diagram, but it should represent patient's left-right axis
+- Y axis (green) points down-left toward table, representing posterior
+- Z axis (blue) points toward head, which is correct
 
-Patient ellipse: cx=160, cy=160, rx=50 (L-R width), ry=35 (A-P depth)
-Couch: rect at y=185, width=120, height=15, centered at x=160
-```
+The main issues:
+1. **Gantry diagram**: Terminology confusion between "superior/inferior" (head/feet directions) and "anterior/posterior" (front/back for supine patient)
+2. **Patient axes diagram**: The isometric projection makes the axes confusing - X appears to point to ceiling instead of sideways
 
-### 2. PatientAxesDiagram.tsx - Complete Redesign
+### Corrected Diagrams
 
-**New SVG structure:**
-- Viewbox: 280x260
-- Show lateral/side view or 3/4 isometric view
+#### IEC61217Diagram - Terminology Fix
 
-**Option A: Lateral View (simpler, clearer for axes)**
-- Patient lying on their back (profile view from side)
-- Table visible below patient
-- Simplified linac gantry ring around patient
-- X-axis pointing left (into page, shown with circle+dot or foreshortened)
-- Y-axis pointing down toward table (posterior)
-- Z-axis pointing toward head (horizontal in this view)
+The gantry angle diagram should use consistent terminology:
+- **0°** = Gantry at top, beam travels DOWNWARD (toward floor for supine patient = **Anterior-to-Posterior** beam direction, or AP beam)
+- **90°** = Gantry at patient's left, beam travels RIGHT (toward patient's right = **Left lateral**)
+- **180°** = Gantry at bottom (under couch), beam travels UPWARD = **Posterior-to-Anterior** (PA beam)
+- **270°** = Gantry at patient's right, beam travels LEFT = **Right lateral**
 
-**Option B: 3/4 Isometric View (more intuitive)**
-- Similar to current but patient is horizontal
-- Table clearly visible under patient
-- Gantry ring sketched around
-- All three axes visible with depth cues
+Current confusion: The table says "From above (superior)" but superior means toward the head, not toward the ceiling. For a supine patient:
+- Beam from ceiling = enters through anterior surface
+- Superior direction = toward head (Z+ axis)
 
-**Chosen: Option B (3/4 isometric)** - more intuitive spatial understanding
+**Fix**: Change terminology in the table from "From above (superior)" to "From ceiling (AP direction)" or similar clear language.
 
-**Elements:**
-1. **Treatment table** - 3D rectangle in isometric projection
-2. **Patient body** - Lying supine on table (ellipsoid shape, head at one end)
-3. **Gantry ring** - Ellipse around patient (tilted for perspective)
-4. **Three axis arrows** from isocenter with color coding
-5. **Anatomical labels** - Head, Feet, Left, Right, Anterior, Posterior
+#### PatientAxesDiagram - Clearer Orientation
+
+The current isometric view is confusing. A clearer approach would be to use a slightly different viewing angle or add clearer visual cues:
+
+Option A: **Use a true lateral view (from patient's right side)** showing:
+- Patient lying flat (horizontal)
+- Z-axis horizontal toward head
+- Y-axis vertical (up = anterior, down = posterior toward table)
+- X-axis coming "out of the page" (shown with a dot symbol ⊙ for +X toward viewer = patient's left)
+
+Option B: **Improve the current isometric view** by:
+- Making the patient body clearly horizontal on the table
+- Showing X-axis going truly to the side (not upward)
+- Adding clearer perspective cues
+
+**Recommended**: Option A (lateral view) is clearer because all axes are intuitive:
+- Looking from patient's right side
+- Head on right (Z+), feet on left (Z-)
+- Anterior (chest/face) up (Y-), Posterior (back/table) down (Y+)  
+- Left (+X) toward viewer (⊙ symbol), Right (-X) away from viewer (⊗ symbol)
 
 ---
 
-## File Changes
+## Detailed Changes
 
 ### `src/components/help/IEC61217Diagram.tsx`
 
-Full rewrite with transverse cross-sectional view:
+**Update table in Help.tsx (lines 202-217)** to use clearer beam direction terminology:
 
-```tsx
-// Key elements:
-// 1. Patient cross-section (ellipse, supine orientation)
-<ellipse cx="160" cy="155" rx="50" ry="35" /> // Body outline
+| Angle | Current | Corrected |
+|-------|---------|-----------|
+| 0° | "From above (superior)" | "From ceiling — AP beam (enters anterior)" |
+| 90° | "From patient's left" | "From patient's left — left lateral beam" |
+| 180° | "From below (inferior)" | "From floor — PA beam (enters posterior)" |
+| 270° | "From patient's right" | "From patient's right — right lateral beam" |
 
-// 2. Treatment couch below patient
-<rect x="100" y="185" width="120" height="12" rx="2" /> // Couch
-
-// 3. Gantry rotation ring
-<circle cx="160" cy="160" r="130" strokeDasharray="6 4" />
-
-// 4. Beam arrows from each cardinal angle
-// 0° from top
-<line x1="160" y1="30" x2="160" y2="110" />
-// etc.
-
-// 5. Anatomical orientation markers inside patient
-<text>L</text> // Left side
-<text>R</text> // Right side
-```
+**Update diagram caption** (line 289-291):
+Change "0° = beam from above (AP)" to clearer text about the transverse viewing convention.
 
 ### `src/components/help/PatientAxesDiagram.tsx`
 
-Full rewrite with isometric supine patient view:
+**Complete rewrite** to use a lateral view:
 
-```tsx
-// Key elements:
-// 1. Treatment table (3D box shape)
-<path d="M40,180 L80,200 L240,200 L260,180 L260,170 L240,190 L80,190 L40,170 Z" />
+```text
+New diagram structure (looking from patient's RIGHT side):
 
-// 2. Patient lying supine on table
-// Head end
-<ellipse cx="80" cy="150" rx="20" ry="15" />
-// Body
-<ellipse cx="150" cy="155" rx="60" ry="20" />
-// Feet end  
-<ellipse cx="220" cy="155" rx="15" ry="12" />
+      Y− (Anterior/ceiling)
+            ↑
+            │
+            │    ┌─────────────────────┐
+            │    │     Patient Body    │───→ Z+ (Superior/Head)
+            │    │    (horizontal)     │
+Z− (Feet) ←─┼────│                     │
+            │    └─────────────────────┘
+            │    ═══════════════════════ (Table)
+            ↓
+      Y+ (Posterior/table)
 
-// 3. Gantry ring (tilted ellipse around patient)
-<ellipse cx="150" cy="140" rx="90" ry="60" transform="rotate(-10)" />
-
-// 4. Three coordinate axes from isocenter
-// X-axis (Left/Right)
-<line x1="150" y1="150" x2="250" y2="165" stroke="red" />
-// Y-axis (Posterior/Anterior) 
-<line x1="150" y1="150" x2="130" y2="200" stroke="green" />
-// Z-axis (Superior/Inferior)
-<line x1="150" y1="150" x2="70" y2="130" stroke="blue" />
+      X+ (Left): ⊙ coming toward viewer
+      X− (Right): ⊗ going away from viewer
 ```
 
----
-
-## Caption Updates
-
-### IEC61217Diagram
-**New caption:**
-> Transverse view (looking from feet toward head). Patient is supine on treatment couch. Gantry rotates clockwise. 0° = beam from above (anterior-posterior).
-
-### PatientAxesDiagram
-**New caption:**
-> Patient lying supine (face-up) on treatment table, head-first orientation. Origin at isocenter. Linac gantry ring shown for reference. Solid arrows show positive (+) axis directions.
+Key elements:
+- Patient body as a horizontal ellipse/shape
+- Table as a horizontal bar below patient
+- Gantry ring as a vertical circle around the patient (optional)
+- Z-axis horizontal pointing toward head (right)
+- Y-axis vertical (down = posterior toward table, up = anterior toward ceiling)
+- X-axis shown with ⊙ (dot in circle) = coming toward viewer = patient's left
 
 ---
 
-## Summary of Changes
+## Summary of File Changes
 
-| File | Change | Description |
-|------|--------|-------------|
-| `IEC61217Diagram.tsx` | Rewrite | Change from bird's-eye to transverse cross-sectional view; add proper couch representation |
-| `PatientAxesDiagram.tsx` | Rewrite | Change from upright patient to supine patient on table; add linac gantry ring |
-
-Both diagrams will maintain:
-- Responsive sizing via props
-- Theme-aware colors using CSS classes
-- Accessible aria-labels
-- Descriptive captions
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `src/components/viewer/InteractiveViewer.tsx` | Edit line 174 | Remove "UCoMX v1.1" claim |
+| `src/pages/Help.tsx` | Edit lines 63, 73, 91-92, 202-218, 419-430, 589 | Soften UCoMX claims; fix beam direction terminology |
+| `src/components/help/IEC61217Diagram.tsx` | Minor edit | Update caption text |
+| `src/components/help/PatientAxesDiagram.tsx` | Full rewrite | Change from isometric to lateral view for clarity |
 
