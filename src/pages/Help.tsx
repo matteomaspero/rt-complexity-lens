@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, BookOpen, Calculator, Upload, Download } from 'lucide-react';
+import { ArrowLeft, ExternalLink, BookOpen, Calculator, Upload, Download, CheckCircle2, Info, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -16,6 +17,25 @@ import { TableOfContents, IEC61217Diagram, PatientAxesDiagram } from '@/componen
 
 function ExternalLinkIcon() {
   return <ExternalLink className="ml-1 inline h-3 w-3" />;
+}
+
+function StepBadge({ step }: { step: number }) {
+  return (
+    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-semibold mr-3 shrink-0">
+      {step}
+    </span>
+  );
+}
+
+function NoteBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4 text-sm my-4">
+      <div className="flex items-start gap-2">
+        <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+        <div>{children}</div>
+      </div>
+    </div>
+  );
 }
 
 export default function Help() {
@@ -49,31 +69,41 @@ export default function Help() {
             {/* Mobile TOC is rendered inside TableOfContents */}
 
             {/* Introduction */}
-            <Card id="introduction">
+            <Card id="introduction" className="border-l-4 border-l-primary">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
+                  <BookOpen className="h-5 w-5 text-primary" />
                   Introduction
                 </CardTitle>
               </CardHeader>
-              <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-                <p>
-                  The <strong>RT Plan Complexity Analyzer</strong> is a browser-based tool for analyzing 
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground leading-relaxed">
+                  The <strong className="text-foreground">RT Plan Complexity Analyzer</strong> is a browser-based tool for analyzing 
                   DICOM-RT Plan files and calculating delivery complexity metrics inspired by 
-                  <strong> published research</strong> including the UCoMX framework.
+                  <strong className="text-foreground"> published research</strong> including the UCoMX framework.
                 </p>
-                <p>
+                <p className="text-muted-foreground leading-relaxed">
                   This tool helps radiation therapy professionals evaluate plan complexity to predict 
                   delivery accuracy, identify potential QA challenges, and compare treatment planning 
                   approaches.
                 </p>
-                <h4>Key Features</h4>
-                <ul>
-                  <li>Parse DICOM-RT Plan files directly in the browser (no upload to servers)</li>
-                  <li>Visualize MLC apertures and gantry positions per control point</li>
-                  <li>Calculate complexity metrics at plan, beam, and control point levels</li>
-                  <li>Export metrics to CSV for external analysis</li>
-                  <li>Support for VMAT and static IMRT plans</li>
+                
+                <Separator className="my-4" />
+                
+                <h4 className="font-semibold text-base mb-3">Key Features</h4>
+                <ul className="space-y-2">
+                  {[
+                    'Parse DICOM-RT Plan files directly in the browser (no upload to servers)',
+                    'Visualize MLC apertures and gantry positions per control point',
+                    'Calculate complexity metrics at plan, beam, and control point levels',
+                    'Export metrics to CSV for external analysis',
+                    'Support for VMAT and static IMRT plans',
+                  ].map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
@@ -82,12 +112,12 @@ export default function Help() {
             <Card id="metrics-reference">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
+                  <Calculator className="h-5 w-5 text-primary" />
                   Metrics Reference
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="mb-4 text-sm text-muted-foreground">
+                <p className="mb-6 text-sm text-muted-foreground">
                   The following metrics are inspired by complexity metrics from the literature
                   and associated publications.
                 </p>
@@ -101,34 +131,39 @@ export default function Help() {
                   if (metrics.length === 0) return null;
 
                   return (
-                    <div key={category} className="mb-6">
-                      <h4 className="mb-2 font-medium">{categoryInfo.label}</h4>
-                      <p className="mb-3 text-sm text-muted-foreground">
+                    <div key={category} className="mb-8">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-base">{categoryInfo.label}</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {metrics.length} metrics
+                        </Badge>
+                      </div>
+                      <p className="mb-4 text-sm text-muted-foreground">
                         {categoryInfo.description}
                       </p>
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto rounded-lg border">
                         <Table>
                           <TableHeader>
-                            <TableRow>
-                              <TableHead className="w-24">Metric</TableHead>
-                              <TableHead>Description</TableHead>
-                              <TableHead className="w-20">Unit</TableHead>
+                            <TableRow className="bg-muted/50">
+                              <TableHead className="w-24 font-semibold">Metric</TableHead>
+                              <TableHead className="font-semibold">Description</TableHead>
+                              <TableHead className="w-20 font-semibold">Unit</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {metrics.map((metric) => (
                               <TableRow key={metric.key}>
-                                <TableCell className="font-mono font-medium">
+                                <TableCell className="font-mono font-medium text-primary">
                                   {metric.key}
                                 </TableCell>
                                 <TableCell>
                                   <div className="font-medium">{metric.name}</div>
-                                  <div className="text-sm text-muted-foreground">
+                                  <div className="text-sm text-muted-foreground mt-1">
                                     {metric.fullDescription}
                                   </div>
                                   {metric.reference && (
-                                    <div className="mt-1 text-xs text-muted-foreground">
-                                      Ref: {metric.reference}
+                                    <div className="mt-2 text-xs text-muted-foreground">
+                                      <span className="font-medium">Ref:</span> {metric.reference}
                                       {metric.doi && (
                                         <>
                                           {' '}
@@ -145,7 +180,7 @@ export default function Help() {
                                     </div>
                                   )}
                                 </TableCell>
-                                <TableCell className="text-muted-foreground">
+                                <TableCell className="text-muted-foreground font-mono text-sm">
                                   {metric.unit || '—'}
                                 </TableCell>
                               </TableRow>
@@ -163,175 +198,226 @@ export default function Help() {
             <Card id="coordinate-system">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="2" x2="12" y2="12" />
-                    <line x1="12" y1="12" x2="20" y2="12" />
-                  </svg>
+                  <Compass className="h-5 w-5 text-primary" />
                   IEC 61217 Coordinate System
                 </CardTitle>
               </CardHeader>
-              <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-                <p>
-                  The <strong>IEC 61217</strong> standard defines coordinate systems and angle conventions 
+              <CardContent className="space-y-8">
+                <p className="text-muted-foreground leading-relaxed">
+                  The <strong className="text-foreground">IEC 61217</strong> standard defines coordinate systems and angle conventions 
                   used universally in radiotherapy equipment. DICOM-RT files encode all geometric 
                   information using these conventions. Understanding this system is essential for 
                   correctly interpreting gantry angles, collimator rotations, and patient positioning 
                   in treatment plans.
                 </p>
 
-                <h4>Gantry Angle</h4>
-                <p className="text-sm text-muted-foreground">
-                  Gantry angle describes the rotation of the treatment head around the patient. 
-                  The angle is measured from the viewer's perspective facing the gantry. At 0°, 
-                  the radiation source is directly above the patient (superior), with the beam 
-                  directed downward. Rotation proceeds <strong>clockwise</strong> from this position.
-                </p>
-                
-                <div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
-                  <IEC61217Diagram className="shrink-0" />
-                  <div className="flex-1 min-w-0">
+                {/* Gantry Angle Section */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-base flex items-center gap-2">
+                    <span className="w-1 h-5 bg-primary rounded-full" />
+                    Gantry Angle
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Gantry angle describes the rotation of the treatment head around the patient. 
+                    The angle is measured from the viewer's perspective facing the gantry. At <code className="font-mono bg-muted px-1 py-0.5 rounded text-xs">0°</code>, 
+                    the radiation source is directly above the patient (superior), with the beam 
+                    directed downward. Rotation proceeds <strong>clockwise</strong> from this position.
+                  </p>
+                  
+                  <div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
+                    <div className="shrink-0 rounded-xl border bg-gradient-to-br from-muted/20 to-muted/40 p-4">
+                      <IEC61217Diagram />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="overflow-x-auto rounded-lg border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50">
+                              <TableHead className="w-20 font-semibold">Angle</TableHead>
+                              <TableHead className="font-semibold">Beam Direction</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell className="font-mono font-medium text-primary">0°</TableCell>
+                              <TableCell>From ceiling — AP beam (enters anterior surface)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-mono font-medium text-primary">90°</TableCell>
+                              <TableCell>From patient's left — left lateral beam</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-mono font-medium text-primary">180°</TableCell>
+                              <TableCell>From floor — PA beam (enters posterior, through couch)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-mono font-medium text-primary">270°</TableCell>
+                              <TableCell>From patient's right — right lateral beam</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Collimator Angle Section */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-base flex items-center gap-2">
+                    <span className="w-1 h-5 bg-primary rounded-full" />
+                    Collimator Angle
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    The collimator (beam-limiting device) can rotate independently within the gantry head. 
+                    At <code className="font-mono bg-muted px-1 py-0.5 rounded text-xs">0°</code>, the MLC leaves are perpendicular to the gantry rotation axis. Rotation is 
+                    <strong> counter-clockwise</strong> when viewed from the radiation source (beam's-eye view).
+                  </p>
+                  <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <code className="font-mono bg-background px-2 py-0.5 rounded border text-primary font-medium">0°</code>
+                      <span className="text-muted-foreground">— MLC leaves perpendicular to gantry rotation axis</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <code className="font-mono bg-background px-2 py-0.5 rounded border text-primary font-medium">+</code>
+                      <span className="text-muted-foreground">— <strong>Counter-clockwise</strong> when viewed from the radiation source (BEV)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Couch Angle Section */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-base flex items-center gap-2">
+                    <span className="w-1 h-5 bg-primary rounded-full" />
+                    Couch (Table) Angle
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Couch rotation allows non-coplanar beam arrangements. The angle is measured 
+                    as viewed from above the patient.
+                  </p>
+                  <div className="overflow-x-auto rounded-lg border">
                     <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-20">Angle</TableHead>
-                          <TableHead>Beam Direction</TableHead>
-                        </TableRow>
-                      </TableHeader>
                       <TableBody>
                         <TableRow>
-                          <TableCell className="font-mono font-medium">0°</TableCell>
-                          <TableCell>From ceiling — AP beam (enters anterior surface)</TableCell>
+                          <TableCell className="font-mono font-medium w-20 text-primary">0°</TableCell>
+                          <TableCell className="text-muted-foreground">Couch parallel to gantry rotation axis (standard position)</TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell className="font-mono font-medium">90°</TableCell>
-                          <TableCell>From patient's left — left lateral beam</TableCell>
+                          <TableCell className="font-mono font-medium text-primary">90°</TableCell>
+                          <TableCell className="text-muted-foreground">Counter-clockwise rotation (patient's head toward 90° gantry position)</TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell className="font-mono font-medium">180°</TableCell>
-                          <TableCell>From floor — PA beam (enters posterior, through couch)</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-mono font-medium">270°</TableCell>
-                          <TableCell>From patient's right — right lateral beam</TableCell>
+                          <TableCell className="font-mono font-medium text-primary">270°</TableCell>
+                          <TableCell className="text-muted-foreground">Clockwise rotation (patient's head toward 270° gantry position)</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
                   </div>
                 </div>
 
-                <h4>Collimator Angle</h4>
-                <p className="text-sm text-muted-foreground">
-                  The collimator (beam-limiting device) can rotate independently within the gantry head. 
-                  At 0°, the MLC leaves are perpendicular to the gantry rotation axis. Rotation is 
-                  <strong> counter-clockwise</strong> when viewed from the radiation source (beam's-eye view).
-                </p>
-                <ul>
-                  <li><strong>0°</strong> — MLC leaves perpendicular to gantry rotation axis</li>
-                  <li><strong>Positive rotation</strong> — Counter-clockwise when viewed from the radiation source (BEV)</li>
-                </ul>
+                <Separator />
 
-                <h4>Couch (Table) Angle</h4>
-                <p className="text-sm text-muted-foreground">
-                  Couch rotation allows non-coplanar beam arrangements. The angle is measured 
-                  as viewed from above the patient.
-                </p>
-                <Table>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-mono font-medium w-20">0°</TableCell>
-                      <TableCell>Couch parallel to gantry rotation axis (standard position)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono font-medium">90°</TableCell>
-                      <TableCell>Counter-clockwise rotation (patient's head toward 90° gantry position)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-mono font-medium">270°</TableCell>
-                      <TableCell>Clockwise rotation (patient's head toward 270° gantry position)</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                {/* Patient Coordinate Section */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-base flex items-center gap-2">
+                    <span className="w-1 h-5 bg-primary rounded-full" />
+                    Patient Coordinate System
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    The patient coordinate system assumes a supine (face-up) patient position with 
+                    head toward the gantry (head-first supine, HFS). The origin is at the machine 
+                    isocenter. This is a <strong>right-handed</strong> coordinate system.
+                  </p>
+                  
+                  <div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
+                    <div className="shrink-0 rounded-xl border bg-gradient-to-br from-muted/20 to-muted/40 p-4">
+                      <PatientAxesDiagram />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-4">
+                      <div className="overflow-x-auto rounded-lg border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50">
+                              <TableHead className="w-16 font-semibold">Axis</TableHead>
+                              <TableHead className="font-semibold">Positive (+)</TableHead>
+                              <TableHead className="font-semibold">Negative (−)</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell className="font-mono font-bold text-[hsl(0,84%,60%)]">X</TableCell>
+                              <TableCell>Patient's Left</TableCell>
+                              <TableCell className="text-muted-foreground">Patient's Right</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-mono font-bold text-[hsl(142,71%,45%)]">Y</TableCell>
+                              <TableCell>Posterior (back)</TableCell>
+                              <TableCell className="text-muted-foreground">Anterior (front)</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-mono font-bold text-[hsl(217,91%,60%)]">Z</TableCell>
+                              <TableCell>Superior (head)</TableCell>
+                              <TableCell className="text-muted-foreground">Inferior (feet)</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </div>
+                      <NoteBox>
+                        This differs from medical imaging conventions (LPS/RAS). 
+                        DICOM-RT patient coordinates follow IEC 61217 for consistency with machine geometry.
+                      </NoteBox>
+                    </div>
+                  </div>
+                </div>
 
-                <h4>Patient Coordinate System</h4>
-                <p className="text-sm text-muted-foreground">
-                  The patient coordinate system assumes a supine (face-up) patient position with 
-                  head toward the gantry (head-first supine, HFS). The origin is at the machine 
-                  isocenter. This is a <strong>right-handed</strong> coordinate system.
-                </p>
-                
-                <div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
-                  <PatientAxesDiagram className="shrink-0" />
-                  <div className="flex-1 min-w-0">
+                <Separator />
+
+                {/* Machine Variations Section */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-base flex items-center gap-2">
+                    <span className="w-1 h-5 bg-primary rounded-full" />
+                    Machine-Specific Variations
+                  </h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    While IEC 61217 defines the coordinate system, different linac manufacturers 
+                    use varying MLC and jaw configurations:
+                  </p>
+                  <div className="overflow-x-auto rounded-lg border">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-16">Axis</TableHead>
-                          <TableHead>Positive (+)</TableHead>
-                          <TableHead>Negative (−)</TableHead>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="font-semibold">Machine</TableHead>
+                          <TableHead className="font-semibold">MLC Type</TableHead>
+                          <TableHead className="font-semibold">Jaw Configuration</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         <TableRow>
-                          <TableCell className="font-mono font-bold text-[hsl(0,84%,60%)]">X</TableCell>
-                          <TableCell>Patient's Left</TableCell>
-                          <TableCell>Patient's Right</TableCell>
+                          <TableCell className="font-medium">Varian C-arm (TrueBeam, Clinac)</TableCell>
+                          <TableCell className="text-muted-foreground">MLCX (leaves move in X-direction)</TableCell>
+                          <TableCell className="text-muted-foreground">ASYMX, ASYMY jaws</TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell className="font-mono font-bold text-[hsl(142,71%,45%)]">Y</TableCell>
-                          <TableCell>Posterior (back)</TableCell>
-                          <TableCell>Anterior (front)</TableCell>
+                          <TableCell className="font-medium">Varian Halcyon/Ethos</TableCell>
+                          <TableCell className="text-muted-foreground">Dual-layer stacked MLC</TableCell>
+                          <TableCell className="text-muted-foreground">No physical jaws</TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell className="font-mono font-bold text-[hsl(217,91%,60%)]">Z</TableCell>
-                          <TableCell>Superior (head)</TableCell>
-                          <TableCell>Inferior (feet)</TableCell>
+                          <TableCell className="font-medium">Elekta Agility/Versa HD</TableCell>
+                          <TableCell className="text-muted-foreground">MLCY (leaves move in Y-direction)</TableCell>
+                          <TableCell className="text-muted-foreground">X, Y jaw pairs</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Note: This differs from medical imaging conventions (LPS/RAS). 
-                      DICOM-RT patient coordinates follow IEC 61217 for consistency with machine geometry.
-                    </p>
                   </div>
                 </div>
 
-                <h4>Machine-Specific Variations</h4>
-                <p className="text-sm text-muted-foreground">
-                  While IEC 61217 defines the coordinate system, different linac manufacturers 
-                  use varying MLC and jaw configurations:
-                </p>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Machine</TableHead>
-                        <TableHead>MLC Type</TableHead>
-                        <TableHead>Jaw Configuration</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Varian C-arm (TrueBeam, Clinac)</TableCell>
-                        <TableCell>MLCX (leaves move in X-direction)</TableCell>
-                        <TableCell>ASYMX, ASYMY jaws</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Varian Halcyon/Ethos</TableCell>
-                        <TableCell>Dual-layer stacked MLC</TableCell>
-                        <TableCell>No physical jaws</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Elekta Agility/Versa HD</TableCell>
-                        <TableCell>MLCY (leaves move in Y-direction)</TableCell>
-                        <TableCell>X, Y jaw pairs</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-
-                <div className="mt-6 p-3 rounded-md bg-muted/50 text-sm">
-                  <strong>References:</strong> For complete technical specifications, see the{' '}
+                <div className="mt-6 p-4 rounded-lg bg-muted/50 border text-sm">
+                  <strong className="text-foreground">References:</strong>{' '}
+                  <span className="text-muted-foreground">For complete technical specifications, see the{' '}</span>
                   <a
                     href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.8.25.6.html"
                     target="_blank"
@@ -340,7 +426,7 @@ export default function Help() {
                   >
                     DICOM PS3.3 Coordinate Systems<ExternalLinkIcon />
                   </a>{' '}
-                  and the IEC 61217:2011 standard for radiotherapy equipment coordinates.
+                  <span className="text-muted-foreground">and the IEC 61217:2011 standard for radiotherapy equipment coordinates.</span>
                 </div>
               </CardContent>
             </Card>
@@ -349,40 +435,73 @@ export default function Help() {
             <Card id="how-to-use">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
+                  <Upload className="h-5 w-5 text-primary" />
                   How to Use
                 </CardTitle>
               </CardHeader>
-              <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-                <h4>1. Upload a Plan</h4>
-                <p>
-                  Drag and drop a DICOM-RT Plan file (RP*.dcm) onto the upload zone, or click to 
-                  browse for a file. Alternatively, click "Load Demo Plan" to try with sample data.
-                </p>
+              <CardContent className="space-y-6">
+                <div className="flex items-start">
+                  <StepBadge step={1} />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-base">Upload a Plan</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Drag and drop a DICOM-RT Plan file (<code className="font-mono bg-muted px-1 py-0.5 rounded text-xs">RP*.dcm</code>) onto the upload zone, or click to 
+                      browse for a file. Alternatively, click "Load Demo Plan" to try with sample data.
+                    </p>
+                  </div>
+                </div>
 
-                <h4>2. Navigate Control Points</h4>
-                <p>
-                  Use the slider or playback controls to step through control points. The MLC 
-                  aperture and gantry position update in real-time.
-                </p>
+                <Separator />
 
-                <h4>3. Switch Beams</h4>
-                <p>
-                  For multi-beam plans, use the beam selector tabs to view different beams. 
-                  Each beam shows its own metrics and control point sequence.
-                </p>
+                <div className="flex items-start">
+                  <StepBadge step={2} />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-base">Navigate Control Points</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Use the slider or playback controls to step through control points. The MLC 
+                      aperture and gantry position update in real-time.
+                    </p>
+                  </div>
+                </div>
 
-                <h4>4. Configure Metrics</h4>
-                <p>
-                  Before uploading, expand "Metrics Settings" to choose which metrics to display 
-                  and export. Your preferences are saved for future sessions.
-                </p>
+                <Separator />
 
-                <h4>5. Export Data</h4>
-                <p>
-                  Click the CSV button in the metrics panel to download all complexity metrics 
-                  for external analysis in spreadsheet software.
-                </p>
+                <div className="flex items-start">
+                  <StepBadge step={3} />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-base">Switch Beams</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      For multi-beam plans, use the beam selector tabs to view different beams. 
+                      Each beam shows its own metrics and control point sequence.
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-start">
+                  <StepBadge step={4} />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-base">Configure Metrics</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Before uploading, expand "Metrics Settings" to choose which metrics to display 
+                      and export. Your preferences are saved for future sessions.
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-start">
+                  <StepBadge step={5} />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-base">Export Data</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Click the CSV button in the metrics panel to download all complexity metrics 
+                      for external analysis in spreadsheet software.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -390,41 +509,55 @@ export default function Help() {
             <Card id="export-format">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
+                  <Download className="h-5 w-5 text-primary" />
                   CSV Export Format
                 </CardTitle>
               </CardHeader>
-              <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-                <p>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground leading-relaxed">
                   The CSV export includes plan-level aggregate metrics and per-beam breakdowns:
                 </p>
-                <ul>
-                  <li><strong>Header section:</strong> Plan name, export date, tool version</li>
-                  <li><strong>Plan metrics:</strong> MCS, LSV, AAV, MFA, LT, LTMCS, Total MU</li>
-                  <li><strong>Beam metrics:</strong> Per-beam values with beam name, MU, and control point count</li>
-                </ul>
-                <p>
+                <div className="space-y-3">
+                  {[
+                    { label: 'Header section', desc: 'Plan name, export date, tool version' },
+                    { label: 'Plan metrics', desc: 'MCS, LSV, AAV, MFA, LT, LTMCS, Total MU' },
+                    { label: 'Beam metrics', desc: 'Per-beam values with beam name, MU, and control point count' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-3 text-sm">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <span className="font-medium text-foreground">{item.label}:</span>{' '}
+                        <span className="text-muted-foreground">{item.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <NoteBox>
                   Only metrics enabled in your settings will be included in the export.
-                </p>
+                </NoteBox>
               </CardContent>
             </Card>
 
             {/* References */}
             <Card id="references">
               <CardHeader>
-                <CardTitle>References & Citations</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  References & Citations
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-medium">UCoMX Framework</h4>
-                  <p className="text-sm text-muted-foreground">
+              <CardContent className="space-y-6">
+                {/* UCoMX Framework */}
+                <div className="rounded-lg bg-muted/30 p-4 border">
+                  <h4 className="font-semibold text-base mb-2">UCoMX Framework</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
                     The metrics in this tool are inspired by the UCoMX framework. For the original MATLAB implementation, see:
                   </p>
                   <a
                     href="https://zenodo.org/records/8276837"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-primary hover:underline"
+                    className="inline-flex items-center text-sm text-primary hover:underline font-medium"
                   >
                     Zenodo Repository: UCoMX v1.1<ExternalLinkIcon />
                   </a>
@@ -432,140 +565,112 @@ export default function Help() {
 
                 <Separator />
 
+                {/* Key Publications */}
                 <div>
-                  <h4 className="font-medium">Key Publications</h4>
-                  <ul className="mt-2 space-y-2 text-sm">
-                    <li>
-                      <span className="text-muted-foreground">MCS Definition:</span>
-                      <br />
-                      McNiven AL, et al. "A new metric for assessing IMRT modulation complexity 
-                      and plan deliverability." <em>Med Phys.</em> 2010;37(2):505-515.
-                      <br />
-                      <a
-                        href="https://doi.org/10.1118/1.3276775"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        DOI: 10.1118/1.3276775<ExternalLinkIcon />
-                      </a>
-                    </li>
-                    <li>
-                      <span className="text-muted-foreground">LSV and AAV:</span>
-                      <br />
-                      Masi L, et al. "Impact of plan parameters on the dosimetric accuracy of 
-                      volumetric modulated arc therapy." <em>Med Phys.</em> 2013;40(7):071718.
-                      <br />
-                      <a
-                        href="https://doi.org/10.1118/1.4810969"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        DOI: 10.1118/1.4810969<ExternalLinkIcon />
-                      </a>
-                    </li>
-                    <li>
-                      <span className="text-muted-foreground">Complexity Metrics Review:</span>
-                      <br />
-                      "Complexity metrics for IMRT and VMAT plans: a review of current literature 
-                      and applications." <em>J Appl Clin Med Phys.</em> 2019.
-                      <br />
-                      <a
-                        href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6774599/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        PMC6774599<ExternalLinkIcon />
-                      </a>
-                    </li>
-                    <li>
-                      <span className="text-muted-foreground">Small Aperture Score:</span>
-                      <br />
-                      Crowe SB, et al. "Treatment plan complexity metrics for predicting IMRT 
-                      pre-treatment quality assurance results." <em>Australas Phys Eng Sci Med.</em> 2014;37:475-482.
-                      <br />
-                      <a
-                        href="https://doi.org/10.1007/s13246-014-0274-9"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        DOI: 10.1007/s13246-014-0274-9<ExternalLinkIcon />
-                      </a>
-                    </li>
-                    <li>
-                      <span className="text-muted-foreground">Edge Metric:</span>
-                      <br />
-                      Younge KC, et al. "Predicting deliverability of VMAT plans using aperture 
-                      complexity analysis." <em>J Appl Clin Med Phys.</em> 2016;17(4):124-131.
-                      <br />
-                      <a
-                        href="https://doi.org/10.1120/jacmp.v17i4.6241"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        DOI: 10.1120/jacmp.v17i4.6241<ExternalLinkIcon />
-                      </a>
-                    </li>
-                    <li>
-                      <span className="text-muted-foreground">Plan Irregularity:</span>
-                      <br />
-                      Du W, et al. "Quantification of beam complexity in IMRT treatment plans." 
-                      <em>Med Phys.</em> 2014;41(2):021716.
-                      <br />
-                      <a
-                        href="https://doi.org/10.1118/1.4861821"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        DOI: 10.1118/1.4861821<ExternalLinkIcon />
-                      </a>
-                    </li>
-                    <li>
-                      <span className="text-muted-foreground">Delivery Time Estimation:</span>
-                      <br />
-                      Park JM, et al. "The effect of MLC speed and acceleration on the plan 
-                      delivery accuracy of VMAT." <em>Brit J Radiol.</em> 2015.
-                      <br />
-                      <a
-                        href="https://doi.org/10.1259/bjr.20140698"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        DOI: 10.1259/bjr.20140698<ExternalLinkIcon />
-                      </a>
-                    </li>
-                  </ul>
+                  <h4 className="font-semibold text-base mb-4">Key Publications</h4>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        label: 'MCS Definition',
+                        citation: 'McNiven AL, et al. "A new metric for assessing IMRT modulation complexity and plan deliverability."',
+                        journal: 'Med Phys. 2010;37(2):505-515.',
+                        doi: '10.1118/1.3276775',
+                      },
+                      {
+                        label: 'LSV and AAV',
+                        citation: 'Masi L, et al. "Impact of plan parameters on the dosimetric accuracy of volumetric modulated arc therapy."',
+                        journal: 'Med Phys. 2013;40(7):071718.',
+                        doi: '10.1118/1.4810969',
+                      },
+                      {
+                        label: 'Complexity Metrics Review',
+                        citation: '"Complexity metrics for IMRT and VMAT plans: a review of current literature and applications."',
+                        journal: 'J Appl Clin Med Phys. 2019.',
+                        link: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6774599/',
+                        linkText: 'PMC6774599',
+                      },
+                      {
+                        label: 'Small Aperture Score',
+                        citation: 'Crowe SB, et al. "Treatment plan complexity metrics for predicting IMRT pre-treatment quality assurance results."',
+                        journal: 'Australas Phys Eng Sci Med. 2014;37:475-482.',
+                        doi: '10.1007/s13246-014-0274-9',
+                      },
+                      {
+                        label: 'Edge Metric',
+                        citation: 'Younge KC, et al. "Predicting deliverability of VMAT plans using aperture complexity analysis."',
+                        journal: 'J Appl Clin Med Phys. 2016;17(4):124-131.',
+                        doi: '10.1120/jacmp.v17i4.6241',
+                      },
+                      {
+                        label: 'Plan Irregularity',
+                        citation: 'Du W, et al. "Quantification of beam complexity in IMRT treatment plans."',
+                        journal: 'Med Phys. 2014;41(2):021716.',
+                        doi: '10.1118/1.4861821',
+                      },
+                      {
+                        label: 'Delivery Time Estimation',
+                        citation: 'Park JM, et al. "The effect of MLC speed and acceleration on the plan delivery accuracy of VMAT."',
+                        journal: 'Brit J Radiol. 2015.',
+                        doi: '10.1259/bjr.20140698',
+                      },
+                    ].map((pub, idx) => (
+                      <div key={idx} className="rounded-lg border p-4 bg-card">
+                        <Badge variant="outline" className="mb-2 text-xs">
+                          {pub.label}
+                        </Badge>
+                        <p className="text-sm text-foreground">{pub.citation}</p>
+                        <p className="text-sm text-muted-foreground italic">{pub.journal}</p>
+                        {pub.doi && (
+                          <a
+                            href={`https://doi.org/${pub.doi}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline mt-1 inline-block"
+                          >
+                            DOI: {pub.doi}<ExternalLinkIcon />
+                          </a>
+                        )}
+                        {pub.link && (
+                          <a
+                            href={pub.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline mt-1 inline-block"
+                          >
+                            {pub.linkText}<ExternalLinkIcon />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <Separator />
 
+                {/* Technical Resources */}
                 <div>
-                  <h4 className="font-medium">Technical Resources</h4>
-                  <ul className="mt-2 space-y-1 text-sm">
-                    <li>
+                  <h4 className="font-semibold text-base mb-3">Technical Resources</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <a
                         href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.8.14.html"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        DICOM RT Plan IOD Specification<ExternalLinkIcon />
+                        DICOM RT Plan IOD Specification
                       </a>
                     </li>
-                    <li>
+                    <li className="flex items-center gap-2">
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <a
                         href="https://github.com/cornerstonejs/dicomParser"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline"
                       >
-                        dicom-parser Library (GitHub)<ExternalLinkIcon />
+                        dicom-parser Library (GitHub)
                       </a>
                     </li>
                   </ul>
@@ -574,24 +679,37 @@ export default function Help() {
             </Card>
 
             {/* About */}
-            <Card id="about">
+            <Card id="about" className="border-t-4 border-t-primary">
               <CardHeader>
-                <CardTitle>About</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-primary" />
+                  About
+                </CardTitle>
               </CardHeader>
-              <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-                <p>
-                  <strong>RT Plan Complexity Analyzer</strong> is a browser-based, open-source tool 
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">RT Plan Complexity Analyzer</strong> is a browser-based, open-source tool 
                   for analyzing radiotherapy plan complexity.
                 </p>
-                <ul>
-                  <li>Version: 1.0.0</li>
-                  <li>All processing occurs locally in your browser — no data is uploaded to servers</li>
-                  <li>Complexity metrics inspired by published research (see References)</li>
-                </ul>
-                <p>
+                <div className="grid gap-2 text-sm">
+                  {[
+                    { label: 'Version', value: '1.0.0' },
+                    { label: 'Privacy', value: 'All processing occurs locally in your browser — no data is uploaded to servers' },
+                    { label: 'Metrics', value: 'Complexity metrics inspired by published research (see References)' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <span className="font-medium text-foreground">{item.label}:</span>{' '}
+                        <span className="text-muted-foreground">{item.value}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <NoteBox>
                   This tool is intended for research and educational purposes. Clinical use should 
                   follow institutional validation protocols.
-                </p>
+                </NoteBox>
               </CardContent>
             </Card>
 
