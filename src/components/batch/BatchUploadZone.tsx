@@ -3,6 +3,7 @@ import { Upload, FolderOpen, Archive } from 'lucide-react';
 import JSZip from 'jszip';
 import { cn } from '@/lib/utils';
 import { useBatch } from '@/contexts/BatchContext';
+import { BatchDemoLoader } from './BatchDemoLoader';
 
 interface BatchUploadZoneProps {
   className?: string;
@@ -253,6 +254,10 @@ export function BatchUploadZone({ className }: BatchUploadZoneProps) {
           </p>
         </div>
       </div>
+
+      {/* Demo data loader */}
+      <BatchDemoLoader className="mt-4 pt-4 border-t border-dashed border-muted-foreground/25" />
     </div>
   );
 }
+
