@@ -417,23 +417,29 @@ export function parseRTPlan(arrayBuffer: ArrayBuffer, fileName: string): RTPlan 
     }
   }
   
-  // Anonymize patient info
+  // Anonymize patient info and sensitive metadata
   const rawPatientId = getString(dataSet, TAGS.PatientID);
   const anonymizedId = rawPatientId 
     ? `${rawPatientId.slice(0, 2)}***${rawPatientId.slice(-2)}`
     : 'Anonymous';
+  
+  // Mask institution name for privacy
+  const rawInstitution = getString(dataSet, TAGS.InstitutionName);
+  const anonymizedInstitution = rawInstitution 
+    ? `${rawInstitution.slice(0, 3)}***` 
+    : undefined;
   
   return {
     patientId: anonymizedId,
     patientName: 'Anonymized',
     planLabel: getString(dataSet, TAGS.RTPlanLabel) || fileName,
     planName: getString(dataSet, TAGS.RTPlanName) || fileName,
-    planDate: getString(dataSet, TAGS.RTPlanDate),
-    planTime: getString(dataSet, TAGS.RTPlanTime),
+    planDate: undefined, // Anonymized - dates can be identifying
+    planTime: undefined, // Anonymized - times can be identifying
     rtPlanGeometry: 'PATIENT',
     treatmentMachineName: beams[0] ? getString(dataSet, TAGS.TreatmentMachineName) : undefined,
     manufacturer: getString(dataSet, TAGS.Manufacturer),
-    institutionName: getString(dataSet, TAGS.InstitutionName),
+    institutionName: anonymizedInstitution,
     beams,
     fractionGroups,
     totalMU,
