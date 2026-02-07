@@ -192,53 +192,54 @@ export function CohortUploadZone({ className }: CohortUploadZoneProps) {
   const isBusy = isProcessing || isExtracting;
 
   return (
-    <div
-      className={cn(
-        'relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-all',
-        isDragOver && !isBusy && 'border-primary bg-primary/5',
-        isBusy && 'opacity-50 cursor-not-allowed',
-        !isDragOver && !isBusy && 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50',
-        className
-      )}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-    >
-      <input
-        type="file"
-        accept=".dcm,.zip,application/dicom,application/zip"
-        multiple
-        onChange={handleFileInput}
-        className="absolute inset-0 cursor-pointer opacity-0"
-        disabled={isBusy}
-        aria-label="Upload DICOM RT Plan files or ZIP archives for cohort analysis"
-      />
+    <div className={cn('flex flex-col gap-4', className)}>
+      <div
+        className={cn(
+          'relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-all',
+          isDragOver && !isBusy && 'border-primary bg-primary/5',
+          isBusy && 'opacity-50 cursor-not-allowed',
+          !isDragOver && !isBusy && 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+        )}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        <input
+          type="file"
+          accept=".dcm,.zip,application/dicom,application/zip"
+          multiple
+          onChange={handleFileInput}
+          className="absolute inset-0 cursor-pointer opacity-0"
+          disabled={isBusy}
+          aria-label="Upload DICOM RT Plan files or ZIP archives for cohort analysis"
+        />
 
-      <div className="flex flex-col items-center gap-3 text-center">
-        <div className="rounded-full bg-muted p-4">
-          {isDragOver ? (
-            <FolderOpen className="h-8 w-8 text-primary" />
-          ) : isExtracting ? (
-            <Archive className="h-8 w-8 animate-pulse text-primary" />
-          ) : (
-            <Upload className="h-8 w-8 text-muted-foreground" />
-          )}
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="rounded-full bg-muted p-4">
+            {isDragOver ? (
+              <FolderOpen className="h-8 w-8 text-primary" />
+            ) : isExtracting ? (
+              <Archive className="h-8 w-8 animate-pulse text-primary" />
+            ) : (
+              <Upload className="h-8 w-8 text-muted-foreground" />
+            )}
+          </div>
+          <div>
+            <p className="font-medium text-lg">
+              {isExtracting ? 'Extracting ZIP...' : isProcessing ? 'Processing plans...' : 'Upload Plans for Cohort Analysis'}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Drop DICOM-RT Plan files or ZIP archives here, or click to browse
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Upload multiple plans to analyze clustering and statistics
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-medium text-lg">
-            {isExtracting ? 'Extracting ZIP...' : isProcessing ? 'Processing plans...' : 'Upload Plans for Cohort Analysis'}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Drop DICOM-RT Plan files or ZIP archives here, or click to browse
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Upload multiple plans to analyze clustering and statistics
-          </p>
-        </div>
-
-        {/* Demo data loader */}
-        <CohortDemoLoader className="mt-4 pt-4 border-t border-dashed border-muted-foreground/25 w-full" />
       </div>
+
+      {/* Demo data loader - outside the file input overlay */}
+      <CohortDemoLoader />
     </div>
   );
 }

@@ -127,61 +127,63 @@ export function ComparisonUploadZone({
   }
 
   return (
-    <div
-      className={cn(
-        'relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-all',
-        isDragOver && 'border-primary bg-primary/5',
-        status === 'error' && 'border-destructive bg-destructive/5',
-        status === 'pending' && 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50',
-        className
-      )}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-    >
-      <input
-        type="file"
-        accept=".dcm,application/dicom"
-        onChange={handleFileInput}
-        className="absolute inset-0 cursor-pointer opacity-0"
-        aria-label={`Upload ${label}`}
-      />
+    <div className={cn('flex flex-col gap-2', className)}>
+      <div
+        className={cn(
+          'relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-all',
+          isDragOver && 'border-primary bg-primary/5',
+          status === 'error' && 'border-destructive bg-destructive/5',
+          status === 'pending' && 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50'
+        )}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        <input
+          type="file"
+          accept=".dcm,application/dicom"
+          onChange={handleFileInput}
+          className="absolute inset-0 cursor-pointer opacity-0"
+          aria-label={`Upload ${label}`}
+        />
 
+        {status === 'pending' && (
+          <>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
+            <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+            <p className="text-sm text-center text-muted-foreground">
+              Drop DICOM file or click to browse
+            </p>
+          </>
+        )}
+
+        {status === 'parsing' && (
+          <>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
+            <Loader2 className="mb-2 h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-center">Parsing...</p>
+          </>
+        )}
+
+        {status === 'error' && (
+          <>
+            <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
+            <p className="text-sm text-center text-destructive">
+              Failed to parse file
+            </p>
+            <button
+              onClick={() => setStatus('pending')}
+              className="mt-2 text-sm text-primary hover:underline"
+            >
+              Try again
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Demo selector - outside the file input overlay */}
       {status === 'pending' && (
-        <>
-          <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
-          <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-center text-muted-foreground">
-            Drop DICOM file or click to browse
-          </p>
-          <ComparisonDemoSelect 
-            onPlanLoaded={onPlanLoaded} 
-            className="mt-2"
-          />
-        </>
-      )}
-
-      {status === 'parsing' && (
-        <>
-          <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
-          <Loader2 className="mb-2 h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-center">Parsing...</p>
-        </>
-      )}
-
-      {status === 'error' && (
-        <>
-          <p className="text-xs font-medium text-muted-foreground mb-2">{label}</p>
-          <p className="text-sm text-center text-destructive">
-            Failed to parse file
-          </p>
-          <button
-            onClick={() => setStatus('pending')}
-            className="mt-2 text-sm text-primary hover:underline"
-          >
-            Try again
-          </button>
-        </>
+        <ComparisonDemoSelect onPlanLoaded={onPlanLoaded} />
       )}
     </div>
   );
