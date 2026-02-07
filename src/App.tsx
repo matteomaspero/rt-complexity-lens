@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Help from "./pages/Help";
 import BatchDashboard from "./pages/BatchDashboard";
 import ComparePlans from "./pages/ComparePlans";
+import CohortAnalysis from "./pages/CohortAnalysis";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
                   <Route path="/help" element={<Help />} />
                   <Route path="/batch" element={<BatchDashboard />} />
                   <Route path="/compare" element={<ComparePlans />} />
+                  <Route path="/cohort" element={<CohortAnalysis />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

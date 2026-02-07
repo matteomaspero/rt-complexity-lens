@@ -143,7 +143,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               <span className="bg-background px-2 text-muted-foreground">or select a mode</span>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="mt-4 grid grid-cols-3 gap-4">
             <Link to="/batch">
               <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,6 +160,15 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 </svg>
                 <span className="font-medium">Compare Plans</span>
                 <span className="text-xs text-muted-foreground">Side-by-side diff view</span>
+              </Button>
+            </Link>
+            <Link to="/cohort">
+              <Button variant="outline" className="w-full h-auto py-4 flex-col gap-2">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+                <span className="font-medium">Cohort Analysis</span>
+                <span className="text-xs text-muted-foreground">Statistical clustering</span>
               </Button>
             </Link>
           </div>
