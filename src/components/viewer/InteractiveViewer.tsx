@@ -206,7 +206,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
             </Tooltip>
           </div>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Same metrics, offline workstation • <Link to="/python-docs" className="text-primary hover:underline">View docs</Link>
+            Same metrics, offline workstation • <Link to="/python-docs" className="text-primary underline hover:no-underline">View docs</Link>
           </p>
         </div>
         
