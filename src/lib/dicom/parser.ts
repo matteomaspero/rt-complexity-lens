@@ -252,10 +252,10 @@ function parseControlPoint(
   };
 }
 
-function getLeafWidths(beamDataSet: dicomParser.DataSet): { widths: number[]; numLeaves: number } {
+function getLeafWidths(beamDataSet: dicomParser.DataSet): { widths: number[]; boundaries: number[]; numLeaves: number } {
   try {
     const bldSeq = beamDataSet.elements[TAGS.BeamLimitingDeviceSequence];
-    if (!bldSeq || !bldSeq.items) return { widths: [], numLeaves: 60 };
+    if (!bldSeq || !bldSeq.items) return { widths: [], boundaries: [], numLeaves: 60 };
     
     for (const item of bldSeq.items) {
       const itemDataSet = item.dataSet;
@@ -272,15 +272,22 @@ function getLeafWidths(beamDataSet: dicomParser.DataSet): { widths: number[]; nu
           widths.push(Math.abs(boundaries[i] - boundaries[i - 1]));
         }
         
-        return { widths, numLeaves: numPairs || widths.length };
+        return { widths, boundaries, numLeaves: numPairs || widths.length };
       }
     }
   } catch {
     // Silent fallback - will use default Millennium 120 configuration
   }
   
-  // Default: Varian Millennium 120 leaf configuration
-  return { widths: Array(60).fill(5), numLeaves: 60 };
+  // Default: Varian Millennium 120 leaf configuration (60 pairs × 5mm, centered)
+  const defaultWidths = Array(60).fill(5);
+  const defaultBoundaries: number[] = [];
+  let pos = -150; // 60 × 5mm = 300mm total, centered at 0
+  for (let i = 0; i <= 60; i++) {
+    defaultBoundaries.push(pos);
+    pos += 5;
+  }
+  return { widths: defaultWidths, boundaries: defaultBoundaries, numLeaves: 60 };
 }
 
 function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
@@ -290,7 +297,7 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
   const numCPs = getInt(beamDataSet, TAGS.NumberOfControlPoints);
   const finalMW = getFloat(beamDataSet, TAGS.FinalCumulativeMetersetWeight);
   
-  const { widths, numLeaves } = getLeafWidths(beamDataSet);
+  const { widths, boundaries, numLeaves } = getLeafWidths(beamDataSet);
   
   // Parse control points
   const controlPoints: ControlPoint[] = [];
@@ -328,6 +335,7 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     gantryAngleEnd: gantryEnd,
     isArc,
     mlcLeafWidths: widths,
+    mlcLeafBoundaries: boundaries,
     numberOfLeaves: numLeaves,
   };
 }

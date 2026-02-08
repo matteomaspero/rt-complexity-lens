@@ -41,6 +41,7 @@ export interface Beam {
   gantryAngleEnd: number;
   isArc: boolean;
   mlcLeafWidths: number[]; // Width of each leaf pair in mm
+  mlcLeafBoundaries: number[]; // N+1 boundary positions defining leaf pair edges (mm, centered at 0)
   numberOfLeaves: number;
   sourceSkinDistance?: number;
 }

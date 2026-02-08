@@ -1,5 +1,7 @@
 // UCoMX Complexity Metrics Implementation
-// Based on UCoMX v1.1 MATLAB implementation
+// Based on UCoMX v1.1 MATLAB implementation (Cavinato et al., Med Phys 2024)
+// Uses Control Arc (CA) midpoint interpolation, active leaf filtering,
+// and union aperture A_max per the UCoMx paper.
 // Extended with SAS, EM, PI metrics and delivery time estimation
 
 import type { 
@@ -13,10 +15,112 @@ import type {
   MachineDeliveryParams
 } from './types';
 
+// ===================================================================
+// CA-based UCoMx helper functions
+// ===================================================================
+
 /**
- * Calculate the aperture area for a given control point
+ * Compute leaf boundaries from widths if not directly available.
+ * Returns N+1 boundary positions centered at 0.
+ */
+function computeLeafBoundaries(leafWidths: number[], numPairs: number): number[] {
+  const n = Math.min(leafWidths.length, numPairs);
+  const boundaries: number[] = [0];
+  for (let i = 0; i < n; i++) {
+    boundaries.push(boundaries[i] + (leafWidths[i] || 5));
+  }
+  const totalWidth = boundaries[boundaries.length - 1];
+  const offset = totalWidth / 2;
+  return boundaries.map(b => b - offset);
+}
+
+/**
+ * Get effective leaf boundaries for a beam.
+ * Uses stored DICOM boundaries if available, otherwise computes from widths.
+ */
+function getEffectiveLeafBoundaries(beam: Beam): number[] {
+  if (beam.mlcLeafBoundaries && beam.mlcLeafBoundaries.length > 0) {
+    return beam.mlcLeafBoundaries;
+  }
+  return computeLeafBoundaries(beam.mlcLeafWidths, beam.numberOfLeaves || beam.mlcLeafWidths.length);
+}
+
+/**
+ * Determine active leaf pairs for a control arc midpoint.
+ * Active = gap > minGap AND leaf pair overlaps with Y-jaw opening.
+ * Per UCoMx: minGap is the minimum gap found anywhere in the entire plan.
+ */
+function determineActiveLeaves(
+  gaps: number[],
+  leafBounds: number[],
+  jawY1: number,
+  jawY2: number,
+  minGap: number
+): boolean[] {
+  const nPairs = gaps.length;
+  const active = new Array<boolean>(nPairs).fill(false);
+  for (let k = 0; k < nPairs; k++) {
+    const withinJaw = leafBounds[k + 1] > jawY1 && leafBounds[k] < jawY2;
+    active[k] = withinJaw && gaps[k] > minGap;
+  }
+  return active;
+}
+
+/**
+ * Calculate aperture area at a CA midpoint with Y-jaw clipping for active leaves.
+ * Area = Σ (gap_k × effective_width_k) for active leaves only.
+ */
+function calculateAreaCA(
+  bankA: number[],
+  bankB: number[],
+  leafBounds: number[],
+  jawY1: number,
+  jawY2: number,
+  activeMask: boolean[]
+): number {
+  let area = 0;
+  for (let k = 0; k < bankA.length; k++) {
+    if (!activeMask[k]) continue;
+    const gap = bankB[k] - bankA[k];
+    if (gap <= 0) continue; // Safety: skip closed/overlapping leaves
+    const effWidth = Math.max(0, Math.min(leafBounds[k + 1], jawY2) - Math.max(leafBounds[k], jawY1));
+    area += gap * effWidth;
+  }
+  return area;
+}
+
+/**
+ * LSV per bank using Masi (2008) position-based formula.
+ * For adjacent active leaves: mean(1 - |diff(pos)| / max|diff(pos)|)
+ * Returns 1.0 for uniform positions, 0.0 for maximum variability.
+ */
+function calculateLSVBank(positions: number[], activeMask: boolean[]): number {
+  const activeIdx: number[] = [];
+  for (let i = 0; i < positions.length; i++) {
+    if (activeMask[i]) activeIdx.push(i);
+  }
+  if (activeIdx.length < 2) return 1.0;
+
+  const diffs: number[] = [];
+  for (let i = 1; i < activeIdx.length; i++) {
+    diffs.push(Math.abs(positions[activeIdx[i]] - positions[activeIdx[i - 1]]));
+  }
+
+  const maxDiff = Math.max(...diffs);
+  if (maxDiff === 0) return 1.0;
+
+  let sum = 0;
+  for (const d of diffs) {
+    sum += 1 - d / maxDiff;
+  }
+  return sum / diffs.length;
+}
+
+/**
+ * Calculate the aperture area for a given control point.
  * Area is calculated as the sum of individual leaf pair openings
- * weighted by their respective leaf widths
+ * weighted by their respective leaf widths.
+ * If jaw X limits are both 0 (e.g., Monaco with no ASYMX), no X clipping is applied.
  */
 function calculateApertureArea(
   mlcPositions: MLCLeafPositions,
@@ -29,19 +133,18 @@ function calculateApertureArea(
   
   let totalArea = 0;
   const numPairs = Math.min(bankA.length, bankB.length, leafWidths.length || bankA.length);
-  
-  // Default leaf width if not specified
   const defaultWidth = 5; // mm
+  const hasXJaw = jawPositions.x1 !== 0 || jawPositions.x2 !== 0;
   
   for (let i = 0; i < numPairs; i++) {
     const leafWidth = leafWidths[i] || defaultWidth;
-    
-    // Leaf opening = bankB - bankA (bankB is positive side)
     const opening = bankB[i] - bankA[i];
     
     if (opening > 0) {
-      // Clip to jaw positions
-      const effectiveOpening = Math.max(0, Math.min(opening, jawPositions.x2 - jawPositions.x1));
+      // Clip to X-jaw if present, otherwise use full opening
+      const effectiveOpening = hasXJaw
+        ? Math.max(0, Math.min(opening, jawPositions.x2 - jawPositions.x1))
+        : opening;
       totalArea += effectiveOpening * leafWidth;
     }
   }
@@ -228,9 +331,8 @@ function calculateApertureIrregularity(
 }
 
 /**
- * Calculate Leaf Sequence Variability (LSV) for a control point
- * LSV measures the variability in leaf positions within an aperture
- * Higher LSV = more irregular aperture shape
+ * Calculate Leaf Sequence Variability (LSV) for a control point (legacy per-CP version).
+ * Used for per-CP display; beam-level LSV uses the CA-based Masi formula.
  */
 function calculateLSV(mlcPositions: MLCLeafPositions, leafWidths: number[]): number {
   const { bankA, bankB } = mlcPositions;
@@ -239,30 +341,16 @@ function calculateLSV(mlcPositions: MLCLeafPositions, leafWidths: number[]): num
   
   const numPairs = Math.min(bankA.length, bankB.length);
   
-  // Calculate position differences between adjacent leaves for each bank
-  let sumPosMaxA = 0;
-  let sumPosMaxB = 0;
-  
-  for (let i = 0; i < numPairs - 1; i++) {
-    const diffA = Math.abs(bankA[i + 1] - bankA[i]);
-    const diffB = Math.abs(bankB[i + 1] - bankB[i]);
-    
-    sumPosMaxA += diffA;
-    sumPosMaxB += diffB;
+  // Per-CP LSV: use simplified Masi formula on all open leaves
+  const openMask: boolean[] = [];
+  for (let i = 0; i < numPairs; i++) {
+    openMask.push(bankB[i] - bankA[i] > 0);
   }
   
-  // Normalize by number of leaf pairs
-  const posMax = Math.max(
-    Math.max(...bankA) - Math.min(...bankA),
-    Math.max(...bankB) - Math.min(...bankB),
-    1 // Avoid division by zero
-  );
+  const lsvA = calculateLSVBank(bankA, openMask);
+  const lsvB = calculateLSVBank(bankB, openMask);
   
-  const lsvA = sumPosMaxA / ((numPairs - 1) * posMax);
-  const lsvB = sumPosMaxB / ((numPairs - 1) * posMax);
-  
-  // LSV is 1 - normalized variability (1 = perfectly uniform, 0 = maximum variability)
-  return 1 - Math.min((lsvA + lsvB) / 2, 1);
+  return (lsvA + lsvB) / 2;
 }
 
 /**
@@ -445,7 +533,16 @@ function estimateBeamDeliveryTime(
 }
 
 /**
- * Calculate beam-level UCoMX metrics
+ * Calculate beam-level UCoMX metrics using CA midpoint interpolation.
+ * 
+ * Core UCoMx metrics (LSV, AAV, MCS, LT) use Control Arc (CA) midpoint
+ * interpolation with active leaf filtering per Cavinato et al. (Med Phys, 2024):
+ * - CA midpoint: MLC/jaw positions averaged between adjacent CPs
+ * - Active leaves: gap > plan_min_gap AND within Y-jaw
+ * - A_max: union/envelope aperture (per-leaf max gap summed)
+ * - LSV: Masi (2008) per-bank position-based formula
+ * - AAV: A_ca / A_max_union (McNiven 2010)
+ * - MCS: LSV × AAV, aggregated with Eq. 2 (MU-weighted)
  */
 function calculateBeamMetrics(
   beam: Beam,
@@ -456,40 +553,57 @@ function calculateBeamMetrics(
     mlcType: 'MLCX',
   }
 ): BeamMetrics {
-  const controlPointMetrics: ControlPointMetrics[] = [];
+  const nPairs = beam.numberOfLeaves || beam.mlcLeafWidths.length || 60;
+  const leafBounds = getEffectiveLeafBoundaries(beam);
+  const nCPs = beam.controlPoints.length;
+  const nCA = nCPs - 1;
   
-  // Calculate per-control-point metrics
-  for (let i = 0; i < beam.controlPoints.length; i++) {
+  // ===== Per-CP metrics (for UI display and delivery time estimation) =====
+  const controlPointMetrics: ControlPointMetrics[] = [];
+  for (let i = 0; i < nCPs; i++) {
     const cp = beam.controlPoints[i];
     const prevCP = i > 0 ? beam.controlPoints[i - 1] : null;
-    
     controlPointMetrics.push(
       calculateControlPointMetrics(cp, prevCP, beam.mlcLeafWidths)
     );
   }
   
-  // Aggregate metrics (MU-weighted where applicable)
-  let totalMetersetWeight = 0;
-  let weightedLSV = 0;
-  let weightedAAV = 0;
+  // ===== CA-based UCoMx metrics =====
+  // Pass 1: Find min_gap across ALL CPs
+  let planMinGap = Infinity;
+  for (let i = 0; i < nCPs; i++) {
+    const { bankA, bankB } = beam.controlPoints[i].mlcPositions;
+    const n = Math.min(bankA.length, bankB.length, nPairs);
+    for (let k = 0; k < n; k++) {
+      const gap = bankB[k] - bankA[k];
+      if (gap < planMinGap) planMinGap = gap;
+    }
+  }
+  if (!isFinite(planMinGap) || planMinGap < 0) planMinGap = 0;
+  
+  // Pass 2: Compute per-CA metrics with midpoint interpolation
+  const caAreas: number[] = [];
+  const caLSVs: number[] = [];
+  const caLTs: number[] = [];
+  const caDeltaMU: number[] = [];
+  const perLeafMaxContrib = new Float64Array(nPairs); // for union A_max
+  let totalActiveLeafTravel = 0;
+  let caActiveLeafCount = 0; // for NL computation
+  
+  // Also accumulate per-CP-like metrics for secondary computations
+  let totalArea = 0;
+  let totalPerimeter = 0;
+  let areaCount = 0;
+  let sas5Count = 0;
+  let sas10Count = 0;
+  let smallFieldCount = 0;
+  let totalJawArea = 0;
   let weightedPI = 0;
   let weightedLG = 0;
   let weightedMAD = 0;
   let weightedEFS = 0;
   let weightedTG = 0;
-  let totalArea = 0;
-  let totalPerimeter = 0;
-  let totalLeafTravel = 0;
-  let areaCount = 0;
-  let sas5Count = 0;
-  let sas10Count = 0;
-  let smallFieldCount = 0; // area < 400 mm² (4 cm²)
-  let totalJawArea = 0;
-  
-  // For dose rate and gantry speed variation
-  const doseRates: number[] = [];
-  const gantryAngles: number[] = [];
-  const segmentTimes: number[] = [];
+  let totalMetersetWeight = 0;
   
   for (let i = 0; i < controlPointMetrics.length; i++) {
     const cpm = controlPointMetrics[i];
@@ -497,7 +611,6 @@ function calculateBeamMetrics(
     const weight = cpm.metersetWeight;
     totalMetersetWeight += weight;
     
-    // Calculate per-CP accuracy metrics
     const lg = calculateLeafGap(cp.mlcPositions);
     const mad = calculateMAD(cp.mlcPositions);
     const perimeter = cpm.aperturePerimeter || 0;
@@ -506,80 +619,133 @@ function calculateBeamMetrics(
     const jawArea = calculateJawArea(cp.jawPositions);
     
     if (weight > 0) {
-      weightedLSV += cpm.apertureLSV * weight;
-      weightedAAV += cpm.apertureAAV * weight;
       weightedLG += lg * weight;
       weightedMAD += mad * weight;
       weightedEFS += efs * weight;
       weightedTG += tg * weight;
-      
-      // Calculate PI contribution
-      const ai = calculateApertureIrregularity(
-        cp.mlcPositions,
-        beam.mlcLeafWidths,
-        cp.jawPositions
-      );
+      const ai = calculateApertureIrregularity(cp.mlcPositions, beam.mlcLeafWidths, cp.jawPositions);
       weightedPI += ai * weight;
     }
-    
     if (cpm.apertureArea > 0) {
       totalArea += cpm.apertureArea;
       totalPerimeter += perimeter;
       areaCount++;
-      
-      // Small field detection (< 4 cm² = 400 mm²)
-      if (cpm.apertureArea < 400) {
-        smallFieldCount++;
-      }
+      if (cpm.apertureArea < 400) smallFieldCount++;
     }
-    
     totalJawArea += jawArea;
-    
     if (cpm.smallApertureFlags?.below5mm) sas5Count++;
     if (cpm.smallApertureFlags?.below10mm) sas10Count++;
-    
-    totalLeafTravel += cpm.leafTravel;
-    
-    gantryAngles.push(cp.gantryAngle);
   }
   
-  // Normalize weighted averages
-  const LSV = totalMetersetWeight > 0 ? weightedLSV / totalMetersetWeight : 0;
-  const AAV = totalMetersetWeight > 0 ? weightedAAV / totalMetersetWeight : 0;
+  if (nCA > 0) {
+    for (let j = 0; j < nCA; j++) {
+      const cp1 = beam.controlPoints[j];
+      const cp2 = beam.controlPoints[j + 1];
+      const { bankA: a1, bankB: b1 } = cp1.mlcPositions;
+      const { bankA: a2, bankB: b2 } = cp2.mlcPositions;
+      const n = Math.min(a1.length, b1.length, a2.length, b2.length, nPairs);
+      
+      // CA midpoint interpolation
+      const midA = new Float64Array(n);
+      const midB = new Float64Array(n);
+      const gaps = new Float64Array(n);
+      for (let k = 0; k < n; k++) {
+        midA[k] = (a1[k] + a2[k]) / 2;
+        midB[k] = (b1[k] + b2[k]) / 2;
+        gaps[k] = midB[k] - midA[k];
+      }
+      
+      const midJawY1 = (cp1.jawPositions.y1 + cp2.jawPositions.y1) / 2;
+      const midJawY2 = (cp1.jawPositions.y2 + cp2.jawPositions.y2) / 2;
+      
+      // Active leaves
+      const active = determineActiveLeaves(
+        Array.from(gaps), leafBounds, midJawY1, midJawY2, planMinGap
+      );
+      
+      // Area with Y-jaw clipping
+      const area = calculateAreaCA(
+        Array.from(midA), Array.from(midB), leafBounds, midJawY1, midJawY2, active
+      );
+      caAreas.push(area);
+      
+      // Track per-leaf max contribution for union A_max
+      for (let k = 0; k < n; k++) {
+        if (active[k]) {
+          const effW = Math.max(0, Math.min(leafBounds[k + 1], midJawY2) - Math.max(leafBounds[k], midJawY1));
+          const contrib = gaps[k] * effW;
+          if (contrib > perLeafMaxContrib[k]) perLeafMaxContrib[k] = contrib;
+        }
+      }
+      
+      // LSV per bank (Masi formula)
+      const lsvA = calculateLSVBank(Array.from(midA), active);
+      const lsvB = calculateLSVBank(Array.from(midB), active);
+      caLSVs.push((lsvA + lsvB) / 2);
+      
+      // Active leaf travel (between actual CPs)
+      let lt = 0;
+      let activeCount = 0;
+      for (let k = 0; k < n; k++) {
+        if (active[k]) {
+          lt += Math.abs(a2[k] - a1[k]);
+          lt += Math.abs(b2[k] - b1[k]);
+          activeCount++;
+        }
+      }
+      caLTs.push(lt);
+      totalActiveLeafTravel += lt;
+      caActiveLeafCount += activeCount;
+      
+      // Delta MU
+      const deltaMU = cp2.cumulativeMetersetWeight - cp1.cumulativeMetersetWeight;
+      caDeltaMU.push(Math.max(0, deltaMU));
+    }
+  }
+  
+  // ===== Union aperture A_max =====
+  let aMaxUnion = 0;
+  for (let k = 0; k < nPairs; k++) {
+    aMaxUnion += perLeafMaxContrib[k];
+  }
+  
+  // ===== Compute AAV and MCS per CA =====
+  const caAAVs = caAreas.map(a => aMaxUnion > 0 ? a / aMaxUnion : 0);
+  const caMCSs = caLSVs.map((lsv, i) => lsv * caAAVs[i]);
+  
+  // ===== Aggregate: Eq. (1) unweighted for LSV/AAV, Eq. (2) MU-weighted for MCS =====
+  const LSV = nCA > 0 ? caLSVs.reduce((s, v) => s + v, 0) / nCA : 0;
+  const AAV = nCA > 0 ? caAAVs.reduce((s, v) => s + v, 0) / nCA : 0;
+  
+  const totalDeltaMU = caDeltaMU.reduce((s, v) => s + v, 0);
+  const MCS = totalDeltaMU > 0
+    ? caMCSs.reduce((s, v, i) => s + v * caDeltaMU[i], 0) / totalDeltaMU
+    : LSV * AAV;
+  
+  // LT: total active leaf travel
+  const LT = totalActiveLeafTravel;
+  
+  // NL: 2 × mean active leaf pairs per CA (both banks)
+  const NL = nCA > 0 ? (2 * caActiveLeafCount) / nCA : 0;
+  
+  // Secondary metrics from per-CP data
   const PI = totalMetersetWeight > 0 ? weightedPI / totalMetersetWeight : 1;
   const LG = totalMetersetWeight > 0 ? weightedLG / totalMetersetWeight : 0;
-  const MAD = totalMetersetWeight > 0 ? weightedMAD / totalMetersetWeight : 0;
+  const MAD_val = totalMetersetWeight > 0 ? weightedMAD / totalMetersetWeight : 0;
   const EFS = totalMetersetWeight > 0 ? weightedEFS / totalMetersetWeight : 0;
   const TG = totalMetersetWeight > 0 ? weightedTG / totalMetersetWeight : 0;
   
-  // MCS = LSV × AAV (simplified UCoMX formulation)
-  const MCS = LSV * (1 - AAV);
-  
-  // PM = 1 - MCS
   const PM = 1 - MCS;
-  
-  // Mean Field Area in cm²
   const MFA = areaCount > 0 ? (totalArea / areaCount) / 100 : 0;
-  
-  // Edge Metric: perimeter / area (mm⁻¹)
   const EM = totalArea > 0 ? totalPerimeter / totalArea : 0;
-  
-  // Plan Area in cm² (total aperture area weighted by meterset)
   const PA = totalArea / 100;
-  
-  // Jaw Area in cm²
   const JA = areaCount > 0 ? totalJawArea / areaCount : 0;
   
-  // Small Aperture Scores
   const totalCPs = controlPointMetrics.length;
   const SAS5 = totalCPs > 0 ? sas5Count / totalCPs : 0;
   const SAS10 = totalCPs > 0 ? sas10Count / totalCPs : 0;
   const psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
   
-  // Leaf Travel
-  const LT = totalLeafTravel;
-  
-  // LTMCS: Combined metric
   const LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
   
   // Calculate arc length and collimator angles
@@ -695,11 +861,9 @@ function calculateBeamMetrics(
   
   // MI - Modulation Index (simplified: based on fluence gradients)
   let MI: number | undefined;
-  if (controlPointMetrics.length > 1 && totalLeafTravel > 0) {
-    // Simplified MI based on normalized leaf travel and area changes
+  if (controlPointMetrics.length > 1 && LT > 0) {
     const normalizedLT = LT / (numLeaves * numCPs);
-    const avgAreaChange = controlPointMetrics.reduce((sum, cpm) => sum + cpm.apertureAAV, 0) / controlPointMetrics.length;
-    MI = normalizedLT * (1 + avgAreaChange);
+    MI = normalizedLT;
   }
   
   return {
@@ -713,7 +877,7 @@ function calculateBeamMetrics(
     LTMCS,
     // Accuracy metrics
     LG,
-    MAD,
+    MAD: MAD_val,
     EFS,
     psmall,
     // Deliverability metrics
@@ -764,22 +928,24 @@ export function calculatePlanMetrics(
     calculateBeamMetrics(beam, machineParams)
   );
   
-  // Aggregate across beams (MU-weighted)
+  // Aggregate across beams
+  // UCoMx Eq. (1): unweighted average for LSV, AAV, LT, NL
+  // UCoMx Eq. (2): MU-weighted for MCS and BEV metrics
   let totalMU = 0;
   let weightedMCS = 0;
-  let weightedLSV = 0;
-  let weightedAAV = 0;
+  let sumLSV = 0;
+  let sumAAV = 0;
   let weightedMFA = 0;
   let weightedSAS5 = 0;
   let weightedSAS10 = 0;
   let weightedEM = 0;
   let weightedPI = 0;
-  // New accuracy metrics
+  // Accuracy metrics
   let weightedLG = 0;
   let weightedMAD = 0;
   let weightedEFS = 0;
   let weightedPsmall = 0;
-  // New deliverability metrics
+  // Deliverability metrics
   let weightedMUCA = 0;
   let weightedLTMU = 0;
   let weightedLTNLMU = 0;
@@ -810,8 +976,8 @@ export function calculatePlanMetrics(
     totalMU += mu;
     
     weightedMCS += bm.MCS * mu;
-    weightedLSV += bm.LSV * mu;
-    weightedAAV += bm.AAV * mu;
+    sumLSV += bm.LSV;  // Eq. (1): unweighted
+    sumAAV += bm.AAV;  // Eq. (1): unweighted
     weightedMFA += bm.MFA * mu;
     weightedSAS5 += (bm.SAS5 || 0) * mu;
     weightedSAS10 += (bm.SAS10 || 0) * mu;
@@ -867,9 +1033,10 @@ export function calculatePlanMetrics(
     totalJA += bm.JA || 0;
   }
   
+  const nBeams = beamMetrics.length || 1;
   const MCS = totalMU > 0 ? weightedMCS / totalMU : 0;
-  const LSV = totalMU > 0 ? weightedLSV / totalMU : 0;
-  const AAV = totalMU > 0 ? weightedAAV / totalMU : 0;
+  const LSV = sumLSV / nBeams;  // Eq. (1): simple average
+  const AAV = sumAAV / nBeams;  // Eq. (1): simple average
   const MFA = totalMU > 0 ? weightedMFA / totalMU : 0;
   const SAS5 = totalMU > 0 ? weightedSAS5 / totalMU : 0;
   const SAS10 = totalMU > 0 ? weightedSAS10 / totalMU : 0;
@@ -886,7 +1053,7 @@ export function calculatePlanMetrics(
   
   // Deliverability metrics
   const MUCA = totalMU > 0 ? weightedMUCA / totalMU : undefined;
-  const LTMU = totalMU > 0 ? weightedLTMU / totalMU : undefined;
+  const LTMU = totalMU > 0 ? LT / totalMU : undefined;  // total LT / total MU
   const LTNLMU = totalMU > 0 ? weightedLTNLMU / totalMU : undefined;
   const LNA = totalMU > 0 ? weightedLNA / totalMU : undefined;
   const LTAL = countLTAL > 0 ? weightedLTAL / countLTAL : undefined;
