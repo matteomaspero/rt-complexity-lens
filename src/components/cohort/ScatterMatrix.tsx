@@ -8,10 +8,12 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  ReferenceLine,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useCohort } from '@/contexts/CohortContext';
 import { METRIC_DEFINITIONS, METRIC_GROUPS, extractMetricValue, getMetricColor } from '@/lib/cohort';
 
@@ -38,9 +40,48 @@ const DEFAULT_PAIRS: MetricPair[] = [
   { x: 'MFA', y: 'totalMU' },
 ];
 
+/**
+ * Calculate linear regression and R-squared
+ */
+function calculateRegression(data: { x: number; y: number }[]): { 
+  slope: number; 
+  intercept: number; 
+  rSquared: number;
+  minX: number;
+  maxX: number;
+} | null {
+  if (data.length < 2) return null;
+
+  const n = data.length;
+  const sumX = data.reduce((sum, d) => sum + d.x, 0);
+  const sumY = data.reduce((sum, d) => sum + d.y, 0);
+  const sumXY = data.reduce((sum, d) => sum + d.x * d.y, 0);
+  const sumX2 = data.reduce((sum, d) => sum + d.x * d.x, 0);
+  const sumY2 = data.reduce((sum, d) => sum + d.y * d.y, 0);
+
+  const denominator = n * sumX2 - sumX * sumX;
+  if (denominator === 0) return null;
+
+  const slope = (n * sumXY - sumX * sumY) / denominator;
+  const intercept = (sumY - slope * sumX) / n;
+
+  // Calculate R-squared
+  const meanY = sumY / n;
+  const ssTotal = data.reduce((sum, d) => sum + Math.pow(d.y - meanY, 2), 0);
+  const ssResidual = data.reduce((sum, d) => sum + Math.pow(d.y - (slope * d.x + intercept), 2), 0);
+  const rSquared = ssTotal > 0 ? 1 - ssResidual / ssTotal : 0;
+
+  const xValues = data.map(d => d.x);
+  const minX = Math.min(...xValues);
+  const maxX = Math.max(...xValues);
+
+  return { slope, intercept, rSquared, minX, maxX };
+}
+
 export function ScatterMatrix({ className }: ScatterMatrixProps) {
   const { successfulPlans, clusters } = useCohort();
   const [pairs, setPairs] = useState<MetricPair[]>(DEFAULT_PAIRS);
+  const [showRegression, setShowRegression] = useState(true);
 
   const updatePair = (index: number, axis: 'x' | 'y', value: string) => {
     setPairs(prev => prev.map((pair, i) => 
@@ -81,6 +122,9 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
         };
       }).filter(d => d.x !== 0 || d.y !== 0);
 
+      // Calculate regression
+      const regression = calculateRegression(data);
+
       return {
         ...pair,
         xLabel: xInfo?.shortName || pair.x,
@@ -88,6 +132,7 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
         xUnit: xInfo?.unit,
         yUnit: yInfo?.unit,
         data,
+        regression,
       };
     });
   }, [successfulPlans, clusters, pairs]);
@@ -110,7 +155,19 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Metric Relationships</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Metric Relationships</CardTitle>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="show-regression" className="text-xs text-muted-foreground">
+              Regression
+            </Label>
+            <Switch
+              id="show-regression"
+              checked={showRegression}
+              onCheckedChange={setShowRegression}
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -204,10 +261,28 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
                             <p className="text-muted-foreground">Cluster: {d.cluster}</p>
                             <p>{pair.xLabel}: <span className="font-mono">{d.x.toFixed(3)}</span></p>
                             <p>{pair.yLabel}: <span className="font-mono">{d.y.toFixed(2)}</span></p>
+                            {showRegression && pair.regression && (
+                              <p className="text-muted-foreground mt-1">
+                                R² = {pair.regression.rSquared.toFixed(3)}
+                              </p>
+                            )}
                           </div>
                         );
                       }}
                     />
+                    {/* Regression line */}
+                    {showRegression && pair.regression && (
+                      <ReferenceLine
+                        ifOverflow="extendDomain"
+                        segment={[
+                          { x: pair.regression.minX, y: pair.regression.slope * pair.regression.minX + pair.regression.intercept },
+                          { x: pair.regression.maxX, y: pair.regression.slope * pair.regression.maxX + pair.regression.intercept },
+                        ]}
+                        stroke="hsl(var(--muted-foreground))"
+                        strokeWidth={2}
+                        strokeDasharray="4 4"
+                      />
+                    )}
                     <Scatter data={pair.data} shape="circle">
                       {pair.data.map((entry, index) => (
                         <Cell 
@@ -222,6 +297,12 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
                   </ScatterChart>
                 </ResponsiveContainer>
               </div>
+              {/* R-squared badge */}
+              {showRegression && pair.regression && (
+                <div className="text-center text-xs text-muted-foreground mt-1">
+                  R² = {pair.regression.rSquared.toFixed(3)}
+                </div>
+              )}
             </div>
           ))}
         </div>

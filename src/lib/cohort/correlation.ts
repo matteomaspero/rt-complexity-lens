@@ -106,27 +106,22 @@ export function calculateCorrelationMatrix(
   const values: number[][] = Array(n).fill(null).map(() => Array(n).fill(0));
   const results: CorrelationResult[] = [];
 
-  // Extract all metric values once
-  const metricValues: Map<MetricKey, number[]> = new Map();
-  for (const metric of metrics) {
-    metricValues.set(metric, extractMetricValues(metricsArray, metric));
-  }
-
-  // Calculate correlations
+  // Calculate correlations - extract paired values directly from source to avoid index mismatch
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       if (i === j) {
         values[i][j] = 1; // Perfect correlation with self
       } else {
-        const x = metricValues.get(metrics[i]) || [];
-        const y = metricValues.get(metrics[j]) || [];
-        
-        // Need paired values - only include where both metrics have valid values
+        // Extract paired values directly from metrics array to ensure proper alignment
         const pairs = metricsArray
-          .map((m, idx) => ({
-            x: x[idx],
-            y: y[idx],
-          }))
+          .map(m => {
+            const xVal = m[metrics[i] as keyof PlanMetrics];
+            const yVal = m[metrics[j] as keyof PlanMetrics];
+            return {
+              x: typeof xVal === 'number' ? xVal : NaN,
+              y: typeof yVal === 'number' ? yVal : NaN,
+            };
+          })
           .filter(p => !isNaN(p.x) && !isNaN(p.y));
         
         const pairedX = pairs.map(p => p.x);
