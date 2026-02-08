@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Beaker, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { DEMO_FILES, loadDemoFile } from '@/lib/demo-data';
+import { DEMO_FILES, DEMO_CATEGORIES, loadDemoFile } from '@/lib/demo-data';
 import type { SessionPlan } from '@/lib/dicom/types';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +38,15 @@ export function DemoLoader({ onPlanLoaded, className }: DemoLoaderProps) {
     handleLoadDemoFile(DEMO_FILES[0].name);
   }, [handleLoadDemoFile]);
 
+  /** Group plans by category for the expanded list */
+  const groupedPlans = useMemo(() => {
+    const groups = DEMO_CATEGORIES.filter(c => c.id !== 'all' && c.count > 0);
+    return groups.map(cat => ({
+      label: cat.label,
+      plans: DEMO_FILES.filter(f => f.category === cat.id),
+    }));
+  }, []);
+
   return (
     <div className={cn('space-y-3', className)}>
       {/* Main demo button */}
@@ -55,31 +64,37 @@ export function DemoLoader({ onPlanLoaded, className }: DemoLoaderProps) {
         {isLoading ? `Loading ${loadingFile}...` : 'Load Demo Plan'}
       </Button>
 
-      {/* Expandable list of all test files */}
+      {/* Expandable list of all test files grouped by category */}
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild>
           <button
             className="flex w-full items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <span>More test plans</span>
+            <span>{DEMO_FILES.length} demo plans available</span>
             <ChevronDown className={cn('h-3 w-3 transition-transform', isExpanded && 'rotate-180')} />
           </button>
         </CollapsibleTrigger>
-        <CollapsibleContent className="mt-2">
-          <div className="grid grid-cols-2 gap-2">
-            {DEMO_FILES.slice(1).map((demo) => (
-              <Button
-                key={demo.file}
-                variant="ghost"
-                size="sm"
-                onClick={() => handleLoadDemoFile(demo.name)}
-                disabled={isLoading}
-                className="h-8 text-xs"
-              >
-                {demo.name}
-              </Button>
-            ))}
-          </div>
+        <CollapsibleContent className="mt-2 space-y-3">
+          {groupedPlans.map(({ label, plans }) => (
+            <div key={label}>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">{label}</p>
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                {plans.map((demo) => (
+                  <Button
+                    key={demo.file}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleLoadDemoFile(demo.name)}
+                    disabled={isLoading}
+                    className="h-7 justify-start truncate text-xs"
+                    title={demo.description}
+                  >
+                    {demo.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ))}
         </CollapsibleContent>
       </Collapsible>
     </div>

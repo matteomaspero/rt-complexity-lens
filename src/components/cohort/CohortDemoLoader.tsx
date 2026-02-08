@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Beaker, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DEMO_FILES, DEMO_CATEGORIES, fetchDemoBuffer } from '@/lib/demo-data';
+import { DEMO_FILES, DEMO_CATEGORIES, fetchDemoBuffer, type DemoCategory } from '@/lib/demo-data';
 import { useCohort } from '@/contexts/CohortContext';
 import { cn } from '@/lib/utils';
 
@@ -14,7 +14,7 @@ export function CohortDemoLoader({ className }: CohortDemoLoaderProps) {
   const [loadingCategory, setLoadingCategory] = useState<string | null>(null);
   const { addPlans, isProcessing } = useCohort();
 
-  const loadDemoFiles = useCallback(async (category: 'all' | 'monaco' | 'tg119' | 'vmat') => {
+  const loadDemoFiles = useCallback(async (category: 'all' | DemoCategory) => {
     const filesToLoad = category === 'all' 
       ? DEMO_FILES 
       : DEMO_FILES.filter(f => f.category === category);
@@ -55,7 +55,7 @@ export function CohortDemoLoader({ className }: CohortDemoLoaderProps) {
             key={cat.id}
             variant="outline"
             size="sm"
-            onClick={() => loadDemoFiles(cat.id as 'all' | 'monaco' | 'tg119' | 'vmat')}
+            onClick={() => loadDemoFiles(cat.id as 'all' | DemoCategory)}
             disabled={isBusy}
             className="h-8 gap-1.5 text-xs"
           >

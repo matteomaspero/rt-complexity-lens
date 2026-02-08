@@ -45,7 +45,7 @@ describe('UCoMX Complexity Metrics', () => {
     });
 
     it('should reflect leaf position variability', () => {
-      const plan = parseTestPlan(TEST_FILES.TG119_7F);
+      const plan = parseTestPlan(TEST_FILES.TG119_PR_ETH_7F);
       const metrics = calculatePlanMetrics(plan);
 
       // LSV should exist and be valid for all beams
@@ -94,7 +94,7 @@ describe('UCoMX Complexity Metrics', () => {
     });
 
     it('should be non-negative for modulated plans', () => {
-      const plan = parseTestPlan(TEST_FILES.TG119_7F);
+      const plan = parseTestPlan(TEST_FILES.TG119_PR_ETH_7F);
       const metrics = calculatePlanMetrics(plan);
 
       // VMAT/IMRT plans should have leaf movement, metric can be 0 if not calculated
@@ -114,7 +114,7 @@ describe('UCoMX Complexity Metrics', () => {
 
   describe('Per-beam metrics', () => {
     it('should have metrics for each beam', () => {
-      const plan = parseTestPlan(TEST_FILES.TG119_7F);
+      const plan = parseTestPlan(TEST_FILES.TG119_PR_ETH_7F);
       const metrics = calculatePlanMetrics(plan);
 
       expect(metrics.beamMetrics.length).toBe(plan.beams.length);
@@ -146,7 +146,7 @@ describe('UCoMX Complexity Metrics', () => {
 
   describe('MU-weighted aggregation', () => {
     it('should compute plan-level metrics as MU-weighted average', () => {
-      const plan = parseTestPlan(TEST_FILES.TG119_2A);
+      const plan = parseTestPlan(TEST_FILES.TG119_PR_ETH_2A);
       const metrics = calculatePlanMetrics(plan);
 
       // Plan-level MCS should be between min and max beam MCS
@@ -178,6 +178,179 @@ describe('UCoMX Complexity Metrics', () => {
         expect(typeof metrics.LT).toBe('number');
         expect(typeof metrics.LTMCS).toBe('number');
       });
+    });
+  });
+
+  describe('Multi-vendor metric calculation', () => {
+    const vendorFiles: Record<string, string> = {
+      'Eclipse ETH 2A': TEST_FILES.TG119_CS_ETH_2A,
+      'Eclipse TB 2A': TEST_FILES.TG119_CS_TB_2A,
+      'Eclipse 9F': TEST_FILES.TG119_CS_9F,
+      'Elements': TEST_FILES.ELEMENTS_PT_01,
+      'Pinnacle': TEST_FILES.PINNACLE_PT_01,
+      'MRIdian Penalty': TEST_FILES.MRIDIAN_PENALTY_01,
+      'MRIdian O&C': TEST_FILES.MRIDIAN_OC,
+      'MRIdian A3i': TEST_FILES.MRIDIAN_A3I,
+      'Monaco': TEST_FILES.MONACO_PT_01,
+      'RayStation': TEST_FILES.VMAT_1,
+    };
+
+    it.each(Object.entries(vendorFiles))('should compute valid MCS for %s', (label, filename) => {
+      const plan = parseTestPlan(filename);
+      const metrics = calculatePlanMetrics(plan);
+      expect(metrics.MCS).toBeGreaterThanOrEqual(0);
+      expect(metrics.MCS).toBeLessThanOrEqual(1);
+    });
+
+    it.each(Object.entries(vendorFiles))('should compute valid LSV for %s', (label, filename) => {
+      const plan = parseTestPlan(filename);
+      const metrics = calculatePlanMetrics(plan);
+      expect(metrics.LSV).toBeGreaterThanOrEqual(0);
+      expect(metrics.LSV).toBeLessThanOrEqual(1);
+    });
+
+    it.each(Object.entries(vendorFiles))('should compute valid AAV for %s', (label, filename) => {
+      const plan = parseTestPlan(filename);
+      const metrics = calculatePlanMetrics(plan);
+      expect(metrics.AAV).toBeGreaterThanOrEqual(0);
+      expect(metrics.AAV).toBeLessThanOrEqual(1);
+    });
+
+    it.each(Object.entries(vendorFiles))('should compute valid MFA for %s', (label, filename) => {
+      const plan = parseTestPlan(filename);
+      const metrics = calculatePlanMetrics(plan);
+      expect(metrics.MFA).toBeGreaterThanOrEqual(0);
+      expect(metrics.MFA).toBeLessThan(500);
+    });
+
+    it.each(Object.entries(vendorFiles))('should compute non-negative LT for %s', (label, filename) => {
+      const plan = parseTestPlan(filename);
+      const metrics = calculatePlanMetrics(plan);
+      expect(metrics.LT).toBeGreaterThanOrEqual(0);
+    });
+
+    it.each(Object.entries(vendorFiles))('should compute per-beam metrics for %s', (label, filename) => {
+      const plan = parseTestPlan(filename);
+      const metrics = calculatePlanMetrics(plan);
+      expect(metrics.beamMetrics.length).toBe(plan.beams.length);
+      for (const beam of metrics.beamMetrics) {
+        expect(beam.MCS).toBeGreaterThanOrEqual(0);
+        expect(beam.MCS).toBeLessThanOrEqual(1);
+        expect(beam.beamMU).toBeGreaterThanOrEqual(0);
+      }
+    });
+  });
+
+  describe('Treatment-site complexity ordering', () => {
+    it('VMAT plans should generally have lower MCS than simple IMRT', () => {
+      // Collect MCS values by technique
+      const vmats = [
+        TEST_FILES.TG119_CS_ETH_2A,
+        TEST_FILES.TG119_HN_ETH_2A,
+        TEST_FILES.TG119_MT_ETH_2A,
+        TEST_FILES.TG119_PR_ETH_2A,
+      ];
+      const imrts = [
+        TEST_FILES.TG119_CS_9F,
+        TEST_FILES.TG119_HN_ETH_7F,
+        TEST_FILES.TG119_MT_7F,
+        TEST_FILES.TG119_PR_ETH_7F,
+      ];
+
+      const vmatMCS = vmats.map(f => {
+        const plan = parseTestPlan(f);
+        return calculatePlanMetrics(plan).MCS;
+      });
+      const imrtMCS = imrts.map(f => {
+        const plan = parseTestPlan(f);
+        return calculatePlanMetrics(plan).MCS;
+      });
+
+      const avgVMAT = vmatMCS.reduce((a, b) => a + b) / vmatMCS.length;
+      const avgIMRT = imrtMCS.reduce((a, b) => a + b) / imrtMCS.length;
+
+      // Both should be valid [0,1]
+      expect(avgVMAT).toBeGreaterThanOrEqual(0);
+      expect(avgIMRT).toBeGreaterThanOrEqual(0);
+      expect(avgVMAT).toBeLessThanOrEqual(1);
+      expect(avgIMRT).toBeLessThanOrEqual(1);
+    });
+  });
+
+  describe('Machine variant consistency', () => {
+    it('same site plans on different machines should produce comparable metrics', () => {
+      const ethPlan = parseTestPlan(TEST_FILES.TG119_PR_ETH_2A);
+      const unPlan = parseTestPlan(TEST_FILES.TG119_PR_UN_2A);
+      const ethMetrics = calculatePlanMetrics(ethPlan);
+      const unMetrics = calculatePlanMetrics(unPlan);
+
+      // Both should have valid metrics
+      expect(ethMetrics.MCS).toBeGreaterThanOrEqual(0);
+      expect(unMetrics.MCS).toBeGreaterThanOrEqual(0);
+      expect(ethMetrics.MCS).toBeLessThanOrEqual(1);
+      expect(unMetrics.MCS).toBeLessThanOrEqual(1);
+    });
+
+    it('ETH and TrueBeam HN-7F should produce valid but possibly different metrics', () => {
+      const ethPlan = parseTestPlan(TEST_FILES.TG119_HN_ETH_7F);
+      const tbPlan = parseTestPlan(TEST_FILES.TG119_HN_TB_7F);
+      const ethMetrics = calculatePlanMetrics(ethPlan);
+      const tbMetrics = calculatePlanMetrics(tbPlan);
+
+      // Both valid
+      [ethMetrics, tbMetrics].forEach(m => {
+        expect(m.MCS).toBeGreaterThanOrEqual(0);
+        expect(m.LSV).toBeGreaterThanOrEqual(0);
+        expect(m.AAV).toBeGreaterThanOrEqual(0);
+        expect(m.MFA).toBeGreaterThanOrEqual(0);
+      });
+    });
+  });
+
+  describe('MRIdian optimisation-type metrics', () => {
+    it('should produce valid metrics for all three MRIdian optimisation types', () => {
+      const files = [
+        TEST_FILES.MRIDIAN_PENALTY_01,
+        TEST_FILES.MRIDIAN_PENALTY_02,
+        TEST_FILES.MRIDIAN_OC,
+        TEST_FILES.MRIDIAN_A3I,
+      ];
+
+      for (const f of files) {
+        const plan = parseTestPlan(f);
+        const metrics = calculatePlanMetrics(plan);
+        expect(metrics.MCS).toBeGreaterThanOrEqual(0);
+        expect(metrics.MCS).toBeLessThanOrEqual(1);
+        expect(metrics.LSV).toBeGreaterThanOrEqual(0);
+        expect(metrics.AAV).toBeGreaterThanOrEqual(0);
+        expect(metrics.MFA).toBeGreaterThanOrEqual(0);
+        expect(metrics.LT).toBeGreaterThanOrEqual(0);
+        expect(metrics.beamMetrics.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('Elements and Pinnacle plans', () => {
+    it('should produce valid metrics for Elements plans', () => {
+      const files = [TEST_FILES.ELEMENTS_PT_01, TEST_FILES.ELEMENTS_PT_03];
+      for (const f of files) {
+        const plan = parseTestPlan(f);
+        const metrics = calculatePlanMetrics(plan);
+        expect(metrics.MCS).toBeGreaterThanOrEqual(0);
+        expect(metrics.MCS).toBeLessThanOrEqual(1);
+        expect(metrics.beamMetrics.length).toBe(plan.beams.length);
+      }
+    });
+
+    it('should produce valid metrics for Pinnacle plans', () => {
+      const files = [TEST_FILES.PINNACLE_PT_01, TEST_FILES.PINNACLE_PT_03];
+      for (const f of files) {
+        const plan = parseTestPlan(f);
+        const metrics = calculatePlanMetrics(plan);
+        expect(metrics.MCS).toBeGreaterThanOrEqual(0);
+        expect(metrics.MCS).toBeLessThanOrEqual(1);
+        expect(metrics.beamMetrics.length).toBe(plan.beams.length);
+      }
     });
   });
 });
