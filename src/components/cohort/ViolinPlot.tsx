@@ -146,6 +146,13 @@ export function ViolinPlot({ className }: ViolinPlotProps) {
                 const q1Y = plotHeight - ((metric.stats.q1 - min) / range) * plotHeight;
                 const medianY = plotHeight - ((metric.stats.median - min) / range) * plotHeight;
                 const q3Y = plotHeight - ((metric.stats.q3 - min) / range) * plotHeight;
+                
+                // Whisker positions (1.5x IQR rule)
+                const iqr = metric.stats.iqr;
+                const lowerFence = Math.max(metric.stats.min, metric.stats.q1 - 1.5 * iqr);
+                const upperFence = Math.min(metric.stats.max, metric.stats.q3 + 1.5 * iqr);
+                const whiskerLowY = plotHeight - ((lowerFence - min) / range) * plotHeight;
+                const whiskerHighY = plotHeight - ((upperFence - min) / range) * plotHeight;
 
                 return (
                   <div key={metric.key} className="flex flex-col items-center">
@@ -200,8 +207,46 @@ export function ViolinPlot({ className }: ViolinPlotProps) {
                           strokeWidth={1.5}
                         />
 
-                        {/* Box plot overlay */}
+                        {/* Box plot overlay with whiskers */}
                         <>
+                          {/* Lower whisker line */}
+                          <line
+                            x1={plotWidth / 2}
+                            y1={q1Y}
+                            x2={plotWidth / 2}
+                            y2={whiskerLowY}
+                            stroke={metric.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="2 2"
+                          />
+                          {/* Lower whisker cap */}
+                          <line
+                            x1={plotWidth / 2 - 6}
+                            y1={whiskerLowY}
+                            x2={plotWidth / 2 + 6}
+                            y2={whiskerLowY}
+                            stroke={metric.color}
+                            strokeWidth={1.5}
+                          />
+                          {/* Upper whisker line */}
+                          <line
+                            x1={plotWidth / 2}
+                            y1={q3Y}
+                            x2={plotWidth / 2}
+                            y2={whiskerHighY}
+                            stroke={metric.color}
+                            strokeWidth={1.5}
+                            strokeDasharray="2 2"
+                          />
+                          {/* Upper whisker cap */}
+                          <line
+                            x1={plotWidth / 2 - 6}
+                            y1={whiskerHighY}
+                            x2={plotWidth / 2 + 6}
+                            y2={whiskerHighY}
+                            stroke={metric.color}
+                            strokeWidth={1.5}
+                          />
                           {/* IQR box */}
                           <rect
                             x={plotWidth / 2 - 8}
@@ -235,7 +280,7 @@ export function ViolinPlot({ className }: ViolinPlotProps) {
             </div>
 
             <div className="text-center text-xs text-muted-foreground">
-              Violin plots show the distribution shape with embedded box plots (median and IQR)
+              Violin plots show the distribution shape with embedded box plots (median, IQR, and 1.5×IQR whiskers)
             </div>
           </>
         ) : (
