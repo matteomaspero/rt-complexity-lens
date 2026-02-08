@@ -1,163 +1,99 @@
-import { useState, Suspense, lazy } from 'react';
-import { ModeSelector, WorkflowGuide } from '@/components/home';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Card } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Suspense, lazy } from 'react';
+import { Link } from 'react-router-dom';
+import { BarChart3, Package, Scale, TrendingUp, BookOpen, Calculator, Wrench, Terminal, HelpCircle } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const InteractiveViewer = lazy(() => import('@/components/viewer').then(
   (mod) => ({ default: () => <mod.InteractiveViewer /> })
 ));
 
 const PageLoader = () => (
-  <div className="flex h-screen items-center justify-center">
+  <div className="flex items-center justify-center py-24">
     <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
   </div>
 );
 
+const MODES = [
+  { title: 'Single Plan', desc: 'Detailed metrics & visualizations', icon: BarChart3, path: '/' },
+  { title: 'Batch', desc: 'Screen multiple plans at once', icon: Package, path: '/batch' },
+  { title: 'Comparison', desc: 'Side-by-side plan differences', icon: Scale, path: '/compare' },
+  { title: 'Cohort', desc: 'Population statistics & clustering', icon: TrendingUp, path: '/cohort' },
+] as const;
+
+const NAV_LINKS = [
+  { label: 'Metrics Reference', icon: Calculator, path: '/metrics' },
+  { label: 'Help & FAQ', icon: HelpCircle, path: '/help' },
+  { label: 'Technical Docs', icon: Wrench, path: '/technical' },
+  { label: 'Python Toolkit', icon: Terminal, path: '/python-docs' },
+] as const;
+
 const Index = () => {
-  const [planLoaded, setPlanLoaded] = useState(false);
-
-  if (planLoaded) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <InteractiveViewer />
-      </Suspense>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Hero Section */}
-      <div className="border-b bg-background/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <BookOpen className="h-5 w-5 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold">RTplan Complexity Lens v1.0</h1>
-              <p className="text-sm text-muted-foreground">
-                Analyze DICOM RT treatment plans for delivery complexity
-              </p>
+              <h1 className="text-lg font-semibold leading-tight">RTplan Complexity Lens</h1>
+              <p className="text-xs text-muted-foreground">DICOM RT plan complexity analysis</p>
             </div>
           </div>
+          <div className="flex items-center gap-1">
+            <Link to="/help">
+              <button className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                <HelpCircle className="h-4 w-4" />
+              </button>
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 space-y-12">
-        {/* Quick Info Alert */}
-        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
-          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="ml-2 text-sm text-blue-600 dark:text-blue-400">
-            New in v1.0: Metrics reorganized by clinical priority, multi-rotation charts fixed with color-coding!
-          </AlertDescription>
-        </Alert>
+      {/* Main */}
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-8">
+        {/* Upload Area — the primary action */}
+        <Suspense fallback={<PageLoader />}>
+          <InteractiveViewer />
+        </Suspense>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="upload" className="flex items-center gap-2">
-              <span>⬆️ Upload Files</span>
-            </TabsTrigger>
-            <TabsTrigger value="modes" className="flex items-center gap-2">
-              <span>📋 Choose Mode</span>
-            </TabsTrigger>
-            <TabsTrigger value="workflow" className="flex items-center gap-2">
-              <span>🔄 Workflow Tips</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Tab 1: Upload */}
-          <TabsContent value="upload" className="space-y-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Upload DICOM RT Plans</h3>
-                <p className="text-sm text-muted-foreground">
-                  Upload DICOM RT Plan files (.dcm) to begin analysis. You can upload single or multiple files.
-                </p>
-              </div>
-
-              {/* File Upload Component */}
-              <Card className="p-6 min-h-[400px]">
-                <Suspense fallback={<PageLoader />}>
-                  <InteractiveViewer />
-                </Suspense>
-              </Card>
-
-              <div className="grid gap-4 md:grid-cols-3 text-sm">
-                <div className="space-y-2 rounded-lg border p-3">
-                  <h4 className="font-semibold">📁 Single Plan</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Upload one file for detailed analysis and visualization
-                  </p>
+        {/* Mode Navigation */}
+        <div className="space-y-3">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Or choose an analysis mode
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {MODES.map(({ title, desc, icon: Icon, path }) => (
+              <Link
+                key={path}
+                to={path}
+                className="group flex flex-col gap-2 rounded-lg border bg-card p-3 transition-colors hover:border-primary hover:bg-primary/5"
+              >
+                <Icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <div>
+                  <div className="text-sm font-medium">{title}</div>
+                  <div className="text-xs text-muted-foreground leading-snug">{desc}</div>
                 </div>
-                <div className="space-y-2 rounded-lg border p-3">
-                  <h4 className="font-semibold">📦 Multiple Plans</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Upload 5-100+ files for batch analysis and screening
-                  </p>
-                </div>
-                <div className="space-y-2 rounded-lg border p-3">
-                  <h4 className="font-semibold">✓ DICOM-RT Format</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Supports standard DICOM RT Plan files with MLC data
-                  </p>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Tab 2: Mode Selection */}
-          <TabsContent value="modes" className="space-y-4">
-            <ModeSelector />
-          </TabsContent>
-
-          {/* Tab 3: Workflow Guide */}
-          <TabsContent value="workflow" className="space-y-4">
-            <WorkflowGuide />
-          </TabsContent>
-        </Tabs>
-
-        {/* Bottom CTA - Reference & Help */}
-        <Separator />
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="p-4 space-y-2 hover:border-primary cursor-pointer transition-colors">
-            <h4 className="font-semibold">📊 Metrics Reference</h4>
-            <p className="text-xs text-muted-foreground">
-              Learn about all complexity metrics and their interpretation
-            </p>
-            <a
-              href="/metrics"
-              className="text-xs text-primary hover:underline font-semibold"
-            >
-              View Reference →
-            </a>
-          </Card>
-
-          <Card className="p-4 space-y-2 hover:border-primary cursor-pointer transition-colors">
-            <h4 className="font-semibold">❓ Help & FAQ</h4>
-            <p className="text-xs text-muted-foreground">
-              Detailed guides for each analysis mode and common questions
-            </p>
-            <a href="/help" className="text-xs text-primary hover:underline font-semibold">
-              Open Help →
-            </a>
-          </Card>
-
-          <Card className="p-4 space-y-2 hover:border-primary cursor-pointer transition-colors">
-            <h4 className="font-semibold">🔧 Technical Docs</h4>
-            <p className="text-xs text-muted-foreground">
-              Python API documentation and algorithm details
-            </p>
-            <a
-              href="/technical"
-              className="text-xs text-primary hover:underline font-semibold"
-            >
-              View Docs →
-            </a>
-          </Card>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+
+        {/* Footer Links */}
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t pt-4 text-xs text-muted-foreground">
+          {NAV_LINKS.map(({ label, icon: Icon, path }) => (
+            <Link
+              key={path}
+              to={path}
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </main>
     </div>
   );
 };

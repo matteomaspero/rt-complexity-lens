@@ -536,6 +536,105 @@ export default function Help() {
               </CardContent>
             </Card>
 
+            {/* Workflows & Tips */}
+            <Card id="workflows-tips">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-primary" />
+                  Workflows & Tips
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-muted-foreground leading-relaxed">
+                  Recommended workflows for getting the most out of RTp-lens, whether you're in clinic or doing research.
+                </p>
+
+                {/* Clinical Workflow */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-base">Clinical Workflow</h4>
+                  <div className="space-y-2 text-sm">
+                    {[
+                      { step: 1, label: 'Batch', desc: 'Screen clinic workload for complexity outliers (5-10 min)' },
+                      { step: 2, label: 'Single', desc: 'Deep dive on complex or concerning plans (10-15 min)' },
+                      { step: 3, label: 'Compare', desc: 'Test plan modifications or alternatives (5 min)' },
+                      { step: 4, label: 'Decision', desc: 'Approve or request re-optimization (2 min)' },
+                    ].map(({ step, label, desc }) => (
+                      <div key={step} className="flex items-start gap-3">
+                        <StepBadge step={step} />
+                        <div>
+                          <span className="font-medium">{label}:</span>{' '}
+                          <span className="text-muted-foreground">{desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Research Workflow */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-base">Research / Institutional Workflow</h4>
+                  <div className="space-y-2 text-sm">
+                    {[
+                      { step: 1, label: 'Batch', desc: 'Collect all plans, 50-100+ (30 min)' },
+                      { step: 2, label: 'Cohort', desc: 'Analyze population patterns & clusters (20 min)' },
+                      { step: 3, label: 'Single', desc: 'Validate outliers & edge cases (15 min)' },
+                      { step: 4, label: 'Export', desc: 'Generate report with findings (5 min)' },
+                    ].map(({ step, label, desc }) => (
+                      <div key={step} className="flex items-start gap-3">
+                        <StepBadge step={step} />
+                        <div>
+                          <span className="font-medium">{label}:</span>{' '}
+                          <span className="text-muted-foreground">{desc}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator className="my-4" />
+
+                {/* Pro Tips */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-base">Pro Tips</h4>
+                  <ul className="space-y-2">
+                    {[
+                      'Start with MCS — it\'s the primary complexity indicator',
+                      'Check MAD & LG — critical for QA accuracy',
+                      'Review avgDoseRate and LS for machine feasibility',
+                      'Multi-rotation VMAT plans show color-coded rotations in dose rate charts',
+                      'Use Batch first to identify plans needing attention',
+                      'Use Comparison mode to A/B-test plan variations',
+                    ].map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <Separator className="my-4" />
+
+                {/* FAQ */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-base">Common Questions</h4>
+                  <div className="space-y-4 text-sm">
+                    {[
+                      { q: 'What does MCS value of 0.5 mean?', a: 'MCS ranges from 0 (highly modulated) to 1 (simple). 0.5 indicates moderate complexity—likely requiring standard QA.' },
+                      { q: 'Why are metrics organized in 6 levels?', a: 'They\'re ordered by clinical priority: Plan Overview → Details → QA Concerns → Delivery Feasibility → Machine Parameters → Advanced.' },
+                      { q: 'How do I interpret the colored rotations?', a: 'Each 360° gantry rotation gets a different color (blue, orange, green…). This shows which rotation has dose delivery issues.' },
+                      { q: 'Batch vs. single analysis?', a: 'Use Batch to screen many plans (5-100+) quickly, then Single for plans needing deeper investigation.' },
+                    ].map(({ q, a }, idx) => (
+                      <div key={idx}>
+                        <div className="font-medium text-foreground">{q}</div>
+                        <div className="text-muted-foreground mt-1">{a}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Python Toolkit */}
             <Card id="python-toolkit" className="border-l-4 border-l-primary">
               <CardHeader>
