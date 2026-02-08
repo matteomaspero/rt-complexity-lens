@@ -99,6 +99,19 @@ class FractionGroup:
 
 
 @dataclass
+class DoseReference:
+    """DICOM Dose Reference from DoseReferenceSequence (300A,0010)."""
+    dose_reference_number: int
+    dose_reference_structure_type: str  # 'SITE', 'VOLUME', 'COORDINATES', 'POINT'
+    dose_reference_type: str  # 'TARGET' or 'ORGAN_AT_RISK'
+    dose_reference_description: Optional[str] = None
+    delivery_maximum_dose: Optional[float] = None  # Gy
+    target_minimum_dose: Optional[float] = None  # Gy
+    target_prescription_dose: Optional[float] = None  # Gy
+    target_maximum_dose: Optional[float] = None  # Gy
+
+
+@dataclass
 class RTPlan:
     """Complete RT Plan structure."""
     # Patient & Plan Identification
@@ -121,6 +134,12 @@ class RTPlan:
     # Beams & Fractions
     beams: List[Beam] = field(default_factory=list)
     fraction_groups: List[FractionGroup] = field(default_factory=list)
+    dose_references: List["DoseReference"] = field(default_factory=list)
+    
+    # Prescription
+    prescribed_dose: Optional[float] = None  # Total prescribed dose (Gy)
+    dose_per_fraction: Optional[float] = None  # Dose per fraction (Gy)
+    number_of_fractions: Optional[int] = None  # Number of fractions planned
     
     # Derived Metrics
     total_mu: float = 0.0
@@ -238,8 +257,10 @@ class PlanMetrics:
     
     # Plan-level metrics
     total_mu: float
-    prescribed_dose: Optional[float] = None
-    mu_per_gy: Optional[float] = None
+    prescribed_dose: Optional[float] = None  # Total prescribed dose (Gy)
+    dose_per_fraction: Optional[float] = None  # Dose per fraction (Gy)
+    number_of_fractions: Optional[int] = None
+    mu_per_gy: Optional[float] = None  # MU per Gy
     
     # UCoMX Accuracy Metrics
     LG: Optional[float] = None

@@ -56,6 +56,17 @@ export interface FractionGroup {
   }[];
 }
 
+export interface DoseReference {
+  doseReferenceNumber: number;
+  doseReferenceStructureType: string; // 'SITE' | 'VOLUME' | 'COORDINATES' | 'POINT'
+  doseReferenceDescription?: string;
+  doseReferenceType: string; // 'TARGET' | 'ORGAN_AT_RISK'
+  deliveryMaximumDose?: number; // Gy
+  targetMinimumDose?: number; // Gy
+  targetPrescriptionDose?: number; // Gy
+  targetMaximumDose?: number; // Gy
+}
+
 export interface RTPlan {
   // Patient & Plan Identification
   patientId: string;
@@ -77,6 +88,12 @@ export interface RTPlan {
   // Beams & Fractions
   beams: Beam[];
   fractionGroups: FractionGroup[];
+  doseReferences: DoseReference[];
+  
+  // Prescription
+  prescribedDose?: number; // Total prescribed dose (Gy)
+  dosePerFraction?: number; // Dose per fraction (Gy)
+  numberOfFractions?: number; // Number of fractions planned
   
   // Derived Metrics
   totalMU: number;
@@ -188,8 +205,10 @@ export interface PlanMetrics {
   
   // Plan-level metrics
   totalMU: number;
-  prescribedDose?: number;
-  MUperGy?: number;
+  prescribedDose?: number; // Total prescribed dose (Gy)
+  dosePerFraction?: number; // Dose per fraction (Gy)
+  numberOfFractions?: number;
+  MUperGy?: number; // MU per Gy
   
   // UCoMX Deliverability Metrics (aggregate)
   MUCA?: number; // MU per Control Arc

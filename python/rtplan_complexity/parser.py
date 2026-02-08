@@ -337,6 +337,35 @@ def _determine_technique(beams: List[Beam]) -> Technique:
     return Technique.UNKNOWN
 
 
+def _parse_dose_references(ds: Dataset) -> List["DoseReference"]:
+    """Parse DoseReferenceSequence (300A,0010) for prescription data."""
+    from .types import DoseReference
+    
+    refs: List[DoseReference] = []
+    seq = getattr(ds, "DoseReferenceSequence", None)
+    if not seq:
+        return refs
+    
+    for item in seq:
+        presc = _get_float(item, "TargetPrescriptionDose")
+        min_d = _get_float(item, "TargetMinimumDose")
+        max_d = _get_float(item, "TargetMaximumDose")
+        deliv_max = _get_float(item, "DeliveryMaximumDose")
+        
+        refs.append(DoseReference(
+            dose_reference_number=_get_int(item, "DoseReferenceNumber"),
+            dose_reference_structure_type=_get_string(item, "DoseReferenceStructureType"),
+            dose_reference_type=_get_string(item, "DoseReferenceType"),
+            dose_reference_description=_get_string(item, "DoseReferenceDescription") or None,
+            delivery_maximum_dose=deliv_max if deliv_max else None,
+            target_minimum_dose=min_d if min_d else None,
+            target_prescription_dose=presc if presc else None,
+            target_maximum_dose=max_d if max_d else None,
+        ))
+    
+    return refs
+
+
 def _anonymize_id(raw_id: str) -> str:
     """Anonymize patient ID."""
     if not raw_id:
@@ -396,6 +425,25 @@ def parse_rtplan(file_path: str) -> RTPlan:
     if fraction_groups:
         total_mu = sum(rb.beam_meterset for rb in fraction_groups[0].referenced_beams)
     
+    # Parse dose references
+    dose_references = _parse_dose_references(ds)
+    
+    # Extract prescription info
+    target_ref = next(
+        (dr for dr in dose_references
+         if dr.dose_reference_type == "TARGET" and dr.target_prescription_dose),
+        None
+    )
+    prescribed_dose = target_ref.target_prescription_dose if target_ref else None
+    number_of_fractions = (
+        fraction_groups[0].number_of_fractions_planned if fraction_groups else None
+    )
+    dose_per_fraction = (
+        prescribed_dose / number_of_fractions
+        if prescribed_dose and number_of_fractions
+        else None
+    )
+    
     # Assign beam doses from fraction groups
     for beam in beams:
         if fraction_groups:
@@ -429,6 +477,10 @@ def parse_rtplan(file_path: str) -> RTPlan:
         institution_name=_anonymize_institution(_get_string(ds, "InstitutionName")),
         beams=beams,
         fraction_groups=fraction_groups,
+        dose_references=dose_references,
+        prescribed_dose=prescribed_dose,
+        dose_per_fraction=dose_per_fraction,
+        number_of_fractions=number_of_fractions,
         total_mu=total_mu,
         technique=_determine_technique(beams),
         parse_date=datetime.now(),

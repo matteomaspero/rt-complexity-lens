@@ -962,6 +962,11 @@ def calculate_plan_metrics(
         LT=total_lt,
         LTMCS=LTMCS,
         total_mu=total_mu,
+        prescribed_dose=plan.prescribed_dose,
+        dose_per_fraction=plan.dose_per_fraction,
+        number_of_fractions=plan.number_of_fractions,
+        mu_per_gy=(total_mu / plan.prescribed_dose
+                   if plan.prescribed_dose and total_mu > 0 else None),
         LG=LG,
         MAD=MAD,
         EFS=EFS,

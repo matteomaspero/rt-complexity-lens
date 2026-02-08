@@ -1,5 +1,5 @@
 import * as dicomParser from 'dicom-parser';
-import type { RTPlan, Beam, ControlPoint, FractionGroup, MLCLeafPositions } from './types';
+import type { RTPlan, Beam, ControlPoint, FractionGroup, MLCLeafPositions, DoseReference } from './types';
 
 // DICOM Tags for RT Plan
 const TAGS = {
@@ -64,6 +64,17 @@ const TAGS = {
   NumberOfBeams: 'x300a0080',
   BeamMeterset: 'x300a0086',
   ReferencedBeamNumber: 'x300c0006',
+  
+  // Dose Reference Sequence
+  DoseReferenceSequence: 'x300a0010',
+  DoseReferenceNumber: 'x300a0012',
+  DoseReferenceStructureType: 'x300a0014',
+  DoseReferenceDescription: 'x300a0016',
+  DoseReferenceType: 'x300a0020',
+  DeliveryMaximumDose: 'x300a0023',
+  TargetMinimumDose: 'x300a0025',
+  TargetPrescriptionDose: 'x300a0026',
+  TargetMaximumDose: 'x300a0027',
 };
 
 function getString(dataSet: dicomParser.DataSet, tag: string): string {
@@ -380,6 +391,35 @@ function determineTechnique(beams: Beam[]): 'VMAT' | 'IMRT' | 'CONFORMAL' | 'UNK
   return 'UNKNOWN';
 }
 
+function parseDoseReferences(dataSet: dicomParser.DataSet): DoseReference[] {
+  const doseRefs: DoseReference[] = [];
+  const drSeq = dataSet.elements[TAGS.DoseReferenceSequence];
+  if (!drSeq || !drSeq.items) return doseRefs;
+  
+  for (const item of drSeq.items) {
+    if (!item.dataSet) continue;
+    const ds = item.dataSet;
+    
+    const prescDose = getFloat(ds, TAGS.TargetPrescriptionDose);
+    const minDose = getFloat(ds, TAGS.TargetMinimumDose);
+    const maxDose = getFloat(ds, TAGS.TargetMaximumDose);
+    const delivMaxDose = getFloat(ds, TAGS.DeliveryMaximumDose);
+    
+    doseRefs.push({
+      doseReferenceNumber: getInt(ds, TAGS.DoseReferenceNumber),
+      doseReferenceStructureType: getString(ds, TAGS.DoseReferenceStructureType),
+      doseReferenceDescription: getString(ds, TAGS.DoseReferenceDescription) || undefined,
+      doseReferenceType: getString(ds, TAGS.DoseReferenceType),
+      deliveryMaximumDose: delivMaxDose || undefined,
+      targetMinimumDose: minDose || undefined,
+      targetPrescriptionDose: prescDose || undefined,
+      targetMaximumDose: maxDose || undefined,
+    });
+  }
+  
+  return doseRefs;
+}
+
 export function parseRTPlan(arrayBuffer: ArrayBuffer, fileName: string): RTPlan {
   const byteArray = new Uint8Array(arrayBuffer);
   const dataSet = dicomParser.parseDicom(byteArray);
@@ -414,6 +454,19 @@ export function parseRTPlan(arrayBuffer: ArrayBuffer, fileName: string): RTPlan 
       0
     );
   }
+  
+  // Parse dose references
+  const doseReferences = parseDoseReferences(dataSet);
+  
+  // Extract prescription info
+  const targetRef = doseReferences.find(
+    dr => dr.doseReferenceType === 'TARGET' && dr.targetPrescriptionDose
+  );
+  const prescribedDose = targetRef?.targetPrescriptionDose;
+  const numberOfFractions = fractionGroups[0]?.numberOfFractionsPlanned || undefined;
+  const dosePerFraction = prescribedDose && numberOfFractions
+    ? prescribedDose / numberOfFractions
+    : undefined;
   
   // Assign beam doses from fraction groups
   for (const beam of beams) {
@@ -450,6 +503,10 @@ export function parseRTPlan(arrayBuffer: ArrayBuffer, fileName: string): RTPlan 
     institutionName: anonymizedInstitution,
     beams,
     fractionGroups,
+    doseReferences,
+    prescribedDose,
+    dosePerFraction,
+    numberOfFractions,
     totalMU,
     technique: determineTechnique(beams),
     parseDate: new Date(),

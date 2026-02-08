@@ -1107,6 +1107,12 @@ export function calculatePlanMetrics(
     MI,
     // Basic metrics
     totalMU: plan.totalMU,
+    prescribedDose: plan.prescribedDose,
+    dosePerFraction: plan.dosePerFraction,
+    numberOfFractions: plan.numberOfFractions,
+    MUperGy: plan.prescribedDose && plan.totalMU > 0
+      ? plan.totalMU / plan.prescribedDose
+      : undefined,
     totalDeliveryTime,
     SAS5,
     SAS10,
