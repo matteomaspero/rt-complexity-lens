@@ -1,4 +1,4 @@
-import type { PlanMetrics, BeamMetrics } from '@/lib/dicom/types';
+import type { PlanMetrics } from '@/lib/dicom/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Download, Info, AlertTriangle } from 'lucide-react';
@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { metricsToCSV } from '@/lib/dicom';
 import { useMetricsConfig } from '@/contexts/MetricsConfigContext';
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
-import { METRIC_DEFINITIONS } from '@/lib/metrics-definitions';
+import {
+  METRIC_DEFINITIONS,
+  METRIC_CATEGORIES,
+  getMetricsByCategory,
+  type MetricCategory,
+} from '@/lib/metrics-definitions';
 import { formatThresholdInfo } from '@/lib/threshold-definitions';
 import {
   Tooltip,
@@ -15,54 +20,89 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-interface MetricsPanelProps {
-  metrics: PlanMetrics;
-  currentBeamIndex?: number;
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Format delivery time as mm:ss */
+function formatTime(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-interface MetricItemProps {
-  metricKey: string;
-  value: string | number;
-  unitOverride?: string;
+/** Display-format a metric value */
+function formatValue(metricKey: string, value: number | string): string {
+  if (metricKey === 'estimatedDeliveryTime' || metricKey === 'totalDeliveryTime') {
+    return formatTime(typeof value === 'number' ? value : parseFloat(String(value)));
+  }
+  if (typeof value === 'number') {
+    return value.toFixed(value < 1 ? 4 : 2);
+  }
+  return String(value);
 }
 
-function MetricItem({ metricKey, value, unitOverride }: MetricItemProps) {
-  const { getThresholdStatus, enabled: thresholdsEnabled, getCurrentThresholds, getPresetName } = useThresholdConfig();
-  
+/** Resolve the raw value for a metric key from a source object.
+ *  Handles special mapping: collimatorAngle → collimatorAngleStart */
+function resolveValue(
+  metricKey: string,
+  source: Record<string, unknown>,
+): unknown {
+  if (metricKey === 'collimatorAngle') return source['collimatorAngleStart'];
+  return source[metricKey];
+}
+
+// ---------------------------------------------------------------------------
+// Category order
+// ---------------------------------------------------------------------------
+
+const CATEGORY_ORDER: MetricCategory[] = [
+  'primary',
+  'secondary',
+  'accuracy',
+  'deliverability',
+  'delivery',
+];
+
+// ---------------------------------------------------------------------------
+// MetricRow — one compact table row
+// ---------------------------------------------------------------------------
+
+function MetricRow({ metricKey, value }: { metricKey: string; value: number | string }) {
+  const {
+    getThresholdStatus,
+    enabled: thresholdsEnabled,
+    getCurrentThresholds,
+    getPresetName,
+  } = useThresholdConfig();
+
   const definition = METRIC_DEFINITIONS[metricKey];
-  const numericValue = typeof value === 'number' ? value : parseFloat(value);
-  const displayValue = typeof value === 'number' 
-    ? value.toFixed(value < 1 ? 4 : 2) 
-    : value;
-
+  const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
+  const displayValue = formatValue(metricKey, value);
   const label = definition?.key || metricKey;
-  const unit = unitOverride ?? definition?.unit;
-  
-  // Get threshold status for numeric values
+  const unit =
+    metricKey === 'estimatedDeliveryTime' || metricKey === 'totalDeliveryTime'
+      ? 'mm:ss'
+      : (definition?.unit ?? '');
+
   const status = !isNaN(numericValue) ? getThresholdStatus(metricKey, numericValue) : 'normal';
   const thresholds = getCurrentThresholds();
   const threshold = thresholds[metricKey];
-
-  const valueClassName = cn(
-    'metric-value',
-    status === 'warning' && 'metric-value-warning',
-    status === 'critical' && 'metric-value-critical'
-  );
-
-  // Build tooltip content
-  const thresholdInfo = thresholdsEnabled && threshold && status !== 'normal'
-    ? formatThresholdInfo(threshold, getPresetName())
-    : null;
+  const thresholdInfo =
+    thresholdsEnabled && threshold && status !== 'normal'
+      ? formatThresholdInfo(threshold, getPresetName())
+      : null;
 
   return (
-    <div className="metric-card">
-      <div className="flex items-baseline justify-between gap-2">
+    <tr className="border-b border-border/30 last:border-0">
+      {/* Metric key + info tooltip + warning icon */}
+      <td className="py-1 pr-2">
         <div className="flex items-center gap-1">
-          <span className="metric-label">{label}</span>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">{label}</span>
           {definition && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="h-3 w-3 cursor-help text-muted-foreground" />
+                <Info className="h-3 w-3 shrink-0 cursor-help text-muted-foreground/60" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs">
                 <div className="space-y-1">
@@ -83,19 +123,85 @@ function MetricItem({ metricKey, value, unitOverride }: MetricItemProps) {
             </Tooltip>
           )}
           {status !== 'normal' && (
-            <AlertTriangle className={cn(
-              'h-3 w-3',
-              status === 'warning' && 'text-[hsl(var(--status-warning))]',
-              status === 'critical' && 'text-[hsl(var(--status-error))]'
-            )} />
+            <AlertTriangle
+              className={cn(
+                'h-3 w-3 shrink-0',
+                status === 'warning' && 'text-[hsl(var(--status-warning))]',
+                status === 'critical' && 'text-[hsl(var(--status-error))]',
+              )}
+            />
           )}
         </div>
-        {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
-      </div>
-      <div className={valueClassName}>{displayValue}</div>
+      </td>
+
+      {/* Value */}
+      <td
+        className={cn(
+          'py-1 pr-1 text-right font-mono text-sm tabular-nums',
+          status === 'warning' &&
+            'rounded text-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning)/0.15)]',
+          status === 'critical' &&
+            'rounded text-[hsl(var(--status-error))] bg-[hsl(var(--status-error)/0.15)]',
+        )}
+      >
+        {displayValue}
+      </td>
+
+      {/* Unit */}
+      <td className="py-1 pl-1 text-right text-[11px] text-muted-foreground/70 w-16 whitespace-nowrap">
+        {unit}
+      </td>
+    </tr>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CategoryTable — one subtable per metric category
+// ---------------------------------------------------------------------------
+
+function CategoryTable({
+  category,
+  source,
+  isMetricEnabled,
+}: {
+  category: MetricCategory;
+  source: Record<string, unknown>;
+  isMetricEnabled: (key: string) => boolean;
+}) {
+  const defs = getMetricsByCategory(category);
+  const rows = defs.filter((m) => {
+    if (!isMetricEnabled(m.key)) return false;
+    const v = resolveValue(m.key, source);
+    return v !== undefined && v !== null;
+  });
+
+  if (rows.length === 0) return null;
+
+  const cat = METRIC_CATEGORIES[category];
+
+  return (
+    <div>
+      <h5 className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+        {cat.label}
+      </h5>
+      <table className="w-full">
+        <tbody>
+          {rows.map((m) => (
+            <MetricRow
+              key={m.key}
+              metricKey={m.key}
+              value={resolveValue(m.key, source) as number | string}
+            />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// BeamsSummary — compact beam list (no beam selected)
+// ---------------------------------------------------------------------------
 
 interface BeamsSummaryProps {
   beamMetrics: PlanMetrics['beamMetrics'];
@@ -107,15 +213,15 @@ function BeamsSummary({ beamMetrics, isMetricEnabled }: BeamsSummaryProps) {
 
   return (
     <div>
-      <h4 className="mb-3 text-sm font-medium">Beams ({beamMetrics.length})</h4>
-      <div className="space-y-2">
+      <h4 className="mb-2 text-sm font-medium">Beams ({beamMetrics.length})</h4>
+      <div className="space-y-1.5">
         {beamMetrics.map((beam) => {
           const mcsStatus = getThresholdStatus('MCS', beam.MCS);
-          
+
           return (
             <div
               key={beam.beamNumber}
-              className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-1.5 text-sm"
             >
               <span className="font-medium">{beam.beamName}</span>
               <div className="flex items-center gap-4 text-muted-foreground">
@@ -123,17 +229,23 @@ function BeamsSummary({ beamMetrics, isMetricEnabled }: BeamsSummaryProps) {
                   <span>{beam.beamMU.toFixed(0)} MU</span>
                 )}
                 {isMetricEnabled('MCS') && (
-                  <span className={cn(
-                    mcsStatus === 'warning' && 'rounded px-1 text-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning)/0.15)]',
-                    mcsStatus === 'critical' && 'rounded px-1 text-[hsl(var(--status-error))] bg-[hsl(var(--status-error)/0.15)]'
-                  )}>
+                  <span
+                    className={cn(
+                      mcsStatus === 'warning' &&
+                        'rounded px-1 text-[hsl(var(--status-warning))] bg-[hsl(var(--status-warning)/0.15)]',
+                      mcsStatus === 'critical' &&
+                        'rounded px-1 text-[hsl(var(--status-error))] bg-[hsl(var(--status-error)/0.15)]',
+                    )}
+                  >
                     MCS: {beam.MCS.toFixed(3)}
                     {thresholdsEnabled && mcsStatus !== 'normal' && (
-                      <AlertTriangle className={cn(
-                        'ml-1 inline h-3 w-3',
-                        mcsStatus === 'warning' && 'text-[hsl(var(--status-warning))]',
-                        mcsStatus === 'critical' && 'text-[hsl(var(--status-error))]'
-                      )} />
+                      <AlertTriangle
+                        className={cn(
+                          'ml-1 inline h-3 w-3',
+                          mcsStatus === 'warning' && 'text-[hsl(var(--status-warning))]',
+                          mcsStatus === 'critical' && 'text-[hsl(var(--status-error))]',
+                        )}
+                      />
                     )}
                   </span>
                 )}
@@ -146,342 +258,88 @@ function BeamsSummary({ beamMetrics, isMetricEnabled }: BeamsSummaryProps) {
   );
 }
 
-// Format delivery time as mm:ss
-function formatTime(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
+// ---------------------------------------------------------------------------
+// MetricsPanel — main export
+// ---------------------------------------------------------------------------
 
-// Render beam-level metrics
-function BeamMetricsSection({ beam, isMetricEnabled }: { beam: BeamMetrics; isMetricEnabled: (key: string) => boolean }) {
-  return (
-    <div className="grid gap-3">
-      {/* Primary metrics */}
-      {isMetricEnabled('MCS') && (
-        <MetricItem metricKey="MCS" value={beam.MCS} />
-      )}
-      {isMetricEnabled('LSV') && (
-        <MetricItem metricKey="LSV" value={beam.LSV} />
-      )}
-      {isMetricEnabled('AAV') && (
-        <MetricItem metricKey="AAV" value={beam.AAV} />
-      )}
-      {isMetricEnabled('MFA') && (
-        <MetricItem metricKey="MFA" value={beam.MFA} />
-      )}
-      
-      {/* Secondary metrics */}
-      {isMetricEnabled('LT') && beam.LT !== undefined && (
-        <MetricItem metricKey="LT" value={beam.LT} />
-      )}
-      {isMetricEnabled('LTMCS') && beam.LTMCS !== undefined && (
-        <MetricItem metricKey="LTMCS" value={beam.LTMCS} />
-      )}
-      {isMetricEnabled('SAS5') && beam.SAS5 !== undefined && (
-        <MetricItem metricKey="SAS5" value={beam.SAS5} />
-      )}
-      {isMetricEnabled('SAS10') && beam.SAS10 !== undefined && (
-        <MetricItem metricKey="SAS10" value={beam.SAS10} />
-      )}
-      
-      {/* Accuracy metrics */}
-      {isMetricEnabled('LG') && beam.LG !== undefined && (
-        <MetricItem metricKey="LG" value={beam.LG} />
-      )}
-      {isMetricEnabled('MAD') && beam.MAD !== undefined && (
-        <MetricItem metricKey="MAD" value={beam.MAD} />
-      )}
-      {isMetricEnabled('EFS') && beam.EFS !== undefined && (
-        <MetricItem metricKey="EFS" value={beam.EFS} />
-      )}
-      {isMetricEnabled('psmall') && beam.psmall !== undefined && (
-        <MetricItem metricKey="psmall" value={beam.psmall} />
-      )}
-      {isMetricEnabled('EM') && beam.EM !== undefined && (
-        <MetricItem metricKey="EM" value={beam.EM} />
-      )}
-      {isMetricEnabled('PI') && beam.PI !== undefined && (
-        <MetricItem metricKey="PI" value={beam.PI} />
-      )}
-      
-      {/* Deliverability metrics */}
-      {isMetricEnabled('MUCA') && beam.MUCA !== undefined && (
-        <MetricItem metricKey="MUCA" value={beam.MUCA} />
-      )}
-      {isMetricEnabled('LTMU') && beam.LTMU !== undefined && (
-        <MetricItem metricKey="LTMU" value={beam.LTMU} />
-      )}
-      {isMetricEnabled('LTNLMU') && beam.LTNLMU !== undefined && (
-        <MetricItem metricKey="LTNLMU" value={beam.LTNLMU} />
-      )}
-      {isMetricEnabled('LNA') && beam.LNA !== undefined && (
-        <MetricItem metricKey="LNA" value={beam.LNA} />
-      )}
-      {isMetricEnabled('LTAL') && beam.LTAL !== undefined && (
-        <MetricItem metricKey="LTAL" value={beam.LTAL} />
-      )}
-      {isMetricEnabled('GT') && beam.GT !== undefined && (
-        <MetricItem metricKey="GT" value={beam.GT} />
-      )}
-      {isMetricEnabled('GS') && beam.GS !== undefined && (
-        <MetricItem metricKey="GS" value={beam.GS} />
-      )}
-      {isMetricEnabled('mDRV') && beam.mDRV !== undefined && (
-        <MetricItem metricKey="mDRV" value={beam.mDRV} />
-      )}
-      {isMetricEnabled('mGSV') && beam.mGSV !== undefined && (
-        <MetricItem metricKey="mGSV" value={beam.mGSV} />
-      )}
-      {isMetricEnabled('LS') && beam.LS !== undefined && (
-        <MetricItem metricKey="LS" value={beam.LS} />
-      )}
-      {isMetricEnabled('PA') && beam.PA !== undefined && (
-        <MetricItem metricKey="PA" value={beam.PA} />
-      )}
-      {isMetricEnabled('JA') && beam.JA !== undefined && (
-        <MetricItem metricKey="JA" value={beam.JA} />
-      )}
-      {isMetricEnabled('PM') && beam.PM !== undefined && (
-        <MetricItem metricKey="PM" value={beam.PM} />
-      )}
-      {isMetricEnabled('TG') && beam.TG !== undefined && (
-        <MetricItem metricKey="TG" value={beam.TG} />
-      )}
-      {isMetricEnabled('MD') && beam.MD !== undefined && (
-        <MetricItem metricKey="MD" value={beam.MD} />
-      )}
-      {isMetricEnabled('MI') && beam.MI !== undefined && (
-        <MetricItem metricKey="MI" value={beam.MI} />
-      )}
-      
-      {/* Delivery metrics */}
-      {isMetricEnabled('beamMU') && (
-        <MetricItem metricKey="beamMU" value={beam.beamMU} />
-      )}
-      {beam.arcLength && isMetricEnabled('arcLength') && (
-        <MetricItem metricKey="arcLength" value={beam.arcLength} />
-      )}
-      {isMetricEnabled('numberOfControlPoints') && (
-        <MetricItem 
-          metricKey="numberOfControlPoints" 
-          value={beam.numberOfControlPoints} 
-        />
-      )}
-      {isMetricEnabled('estimatedDeliveryTime') && beam.estimatedDeliveryTime !== undefined && (
-        <div className="metric-card">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="metric-label">Est. Time</span>
-            <span className="text-xs text-muted-foreground">mm:ss</span>
-          </div>
-          <div className="metric-value">{formatTime(beam.estimatedDeliveryTime)}</div>
-        </div>
-      )}
-      {isMetricEnabled('MUperDegree') && beam.MUperDegree !== undefined && (
-        <MetricItem metricKey="MUperDegree" value={beam.MUperDegree} />
-      )}
-      {isMetricEnabled('avgDoseRate') && beam.avgDoseRate !== undefined && (
-        <MetricItem metricKey="avgDoseRate" value={beam.avgDoseRate} />
-      )}
-      {isMetricEnabled('avgMLCSpeed') && beam.avgMLCSpeed !== undefined && (
-        <MetricItem metricKey="avgMLCSpeed" value={beam.avgMLCSpeed} />
-      )}
-      {isMetricEnabled('collimatorAngle') && beam.collimatorAngleStart !== undefined && (
-        <MetricItem metricKey="collimatorAngle" value={beam.collimatorAngleStart} />
-      )}
-    </div>
-  );
+interface MetricsPanelProps {
+  metrics: PlanMetrics;
+  currentBeamIndex?: number;
 }
 
 export function MetricsPanel({ metrics, currentBeamIndex }: MetricsPanelProps) {
   const { isMetricEnabled, getEnabledMetricKeys } = useMetricsConfig();
-  
-  const currentBeam = currentBeamIndex !== undefined 
-    ? metrics.beamMetrics[currentBeamIndex] 
-    : null;
+
+  const currentBeam =
+    currentBeamIndex !== undefined ? metrics.beamMetrics[currentBeamIndex] : null;
 
   const handleExportCSV = () => {
     const enabledKeys = getEnabledMetricKeys();
     const csv = metricsToCSV(metrics, enabledKeys);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     const dateStr = new Date().toISOString().split('T')[0];
     link.download = `${metrics.planLabel.replace(/[^a-zA-Z0-9]/g, '_')}_metrics_${dateStr}.csv`;
     link.click();
-    
+
     URL.revokeObjectURL(url);
   };
 
-  // Check if any metrics in a category are enabled
-  const hasPrimaryMetrics = ['MCS', 'LSV', 'AAV', 'MFA'].some(isMetricEnabled);
-  const hasSecondaryMetrics = ['LT', 'LTMCS', 'SAS5', 'SAS10'].some(isMetricEnabled);
-  const hasAccuracyMetrics = ['LG', 'MAD', 'EFS', 'psmall', 'EM', 'PI'].some(isMetricEnabled);
-  const hasDeliverabilityMetrics = ['MUCA', 'LTMU', 'LTNLMU', 'LNA', 'LTAL', 'GT', 'GS', 'mDRV', 'mGSV', 'LS', 'PA', 'JA', 'PM', 'TG', 'MD', 'MI'].some(isMetricEnabled);
-  const hasDeliveryMetrics = ['totalMU', 'totalDeliveryTime'].some(isMetricEnabled);
-
   return (
     <Card className="h-full overflow-auto">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Complexity Metrics</CardTitle>
+          <CardTitle className="text-base">Complexity Metrics</CardTitle>
           <Button variant="ghost" size="sm" onClick={handleExportCSV}>
             <Download className="mr-1 h-4 w-4" />
             CSV
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground">
-          UCoMX v1.1 Nomenclature
-        </p>
+        <p className="text-xs text-muted-foreground">UCoMX v1.1</p>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
+
+      <CardContent className="space-y-3 pt-0">
         {/* Plan-Level Metrics */}
-        <div>
-          <h4 className="mb-3 text-sm font-medium">Plan Metrics</h4>
-          <div className="grid gap-3">
-            {hasPrimaryMetrics && (
-              <>
-                {isMetricEnabled('MCS') && (
-                  <MetricItem metricKey="MCS" value={metrics.MCS} />
-                )}
-                {isMetricEnabled('LSV') && (
-                  <MetricItem metricKey="LSV" value={metrics.LSV} />
-                )}
-                {isMetricEnabled('AAV') && (
-                  <MetricItem metricKey="AAV" value={metrics.AAV} />
-                )}
-                {isMetricEnabled('MFA') && (
-                  <MetricItem metricKey="MFA" value={metrics.MFA} />
-                )}
-              </>
-            )}
-            {hasSecondaryMetrics && (
-              <>
-                {isMetricEnabled('LT') && (
-                  <MetricItem metricKey="LT" value={metrics.LT} />
-                )}
-                {isMetricEnabled('LTMCS') && (
-                  <MetricItem metricKey="LTMCS" value={metrics.LTMCS} />
-                )}
-                {isMetricEnabled('SAS5') && metrics.SAS5 !== undefined && (
-                  <MetricItem metricKey="SAS5" value={metrics.SAS5} />
-                )}
-                {isMetricEnabled('SAS10') && metrics.SAS10 !== undefined && (
-                  <MetricItem metricKey="SAS10" value={metrics.SAS10} />
-                )}
-              </>
-            )}
-            {hasAccuracyMetrics && (
-              <>
-                {isMetricEnabled('LG') && metrics.LG !== undefined && (
-                  <MetricItem metricKey="LG" value={metrics.LG} />
-                )}
-                {isMetricEnabled('MAD') && metrics.MAD !== undefined && (
-                  <MetricItem metricKey="MAD" value={metrics.MAD} />
-                )}
-                {isMetricEnabled('EFS') && metrics.EFS !== undefined && (
-                  <MetricItem metricKey="EFS" value={metrics.EFS} />
-                )}
-                {isMetricEnabled('psmall') && metrics.psmall !== undefined && (
-                  <MetricItem metricKey="psmall" value={metrics.psmall} />
-                )}
-                {isMetricEnabled('EM') && metrics.EM !== undefined && (
-                  <MetricItem metricKey="EM" value={metrics.EM} />
-                )}
-                {isMetricEnabled('PI') && metrics.PI !== undefined && (
-                  <MetricItem metricKey="PI" value={metrics.PI} />
-                )}
-              </>
-            )}
-            {hasDeliverabilityMetrics && (
-              <>
-                {isMetricEnabled('MUCA') && metrics.MUCA !== undefined && (
-                  <MetricItem metricKey="MUCA" value={metrics.MUCA} />
-                )}
-                {isMetricEnabled('LTMU') && metrics.LTMU !== undefined && (
-                  <MetricItem metricKey="LTMU" value={metrics.LTMU} />
-                )}
-                {isMetricEnabled('LTNLMU') && metrics.LTNLMU !== undefined && (
-                  <MetricItem metricKey="LTNLMU" value={metrics.LTNLMU} />
-                )}
-                {isMetricEnabled('LNA') && metrics.LNA !== undefined && (
-                  <MetricItem metricKey="LNA" value={metrics.LNA} />
-                )}
-                {isMetricEnabled('LTAL') && metrics.LTAL !== undefined && (
-                  <MetricItem metricKey="LTAL" value={metrics.LTAL} />
-                )}
-                {isMetricEnabled('GT') && metrics.GT !== undefined && (
-                  <MetricItem metricKey="GT" value={metrics.GT} />
-                )}
-                {isMetricEnabled('GS') && metrics.GS !== undefined && (
-                  <MetricItem metricKey="GS" value={metrics.GS} />
-                )}
-                {isMetricEnabled('mDRV') && metrics.mDRV !== undefined && (
-                  <MetricItem metricKey="mDRV" value={metrics.mDRV} />
-                )}
-                {isMetricEnabled('mGSV') && metrics.mGSV !== undefined && (
-                  <MetricItem metricKey="mGSV" value={metrics.mGSV} />
-                )}
-                {isMetricEnabled('LS') && metrics.LS !== undefined && (
-                  <MetricItem metricKey="LS" value={metrics.LS} />
-                )}
-                {isMetricEnabled('PA') && metrics.PA !== undefined && (
-                  <MetricItem metricKey="PA" value={metrics.PA} />
-                )}
-                {isMetricEnabled('JA') && metrics.JA !== undefined && (
-                  <MetricItem metricKey="JA" value={metrics.JA} />
-                )}
-                {isMetricEnabled('PM') && metrics.PM !== undefined && (
-                  <MetricItem metricKey="PM" value={metrics.PM} />
-                )}
-                {isMetricEnabled('TG') && metrics.TG !== undefined && (
-                  <MetricItem metricKey="TG" value={metrics.TG} />
-                )}
-                {isMetricEnabled('MD') && metrics.MD !== undefined && (
-                  <MetricItem metricKey="MD" value={metrics.MD} />
-                )}
-                {isMetricEnabled('MI') && metrics.MI !== undefined && (
-                  <MetricItem metricKey="MI" value={metrics.MI} />
-                )}
-              </>
-            )}
-            {hasDeliveryMetrics && (
-              <>
-                {isMetricEnabled('totalMU') && (
-                  <MetricItem metricKey="totalMU" value={metrics.totalMU} />
-                )}
-                {isMetricEnabled('totalDeliveryTime') && metrics.totalDeliveryTime && (
-                  <div className="metric-card">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="metric-label">Est. Time</span>
-                      <span className="text-xs text-muted-foreground">mm:ss</span>
-                    </div>
-                    <div className="metric-value">{formatTime(metrics.totalDeliveryTime)}</div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">Plan Metrics</h4>
+          {CATEGORY_ORDER.map((cat) => (
+            <CategoryTable
+              key={cat}
+              category={cat}
+              source={metrics as unknown as Record<string, unknown>}
+              isMetricEnabled={isMetricEnabled}
+            />
+          ))}
         </div>
 
         <Separator />
 
         {/* Current Beam Metrics */}
         {currentBeam && (
-          <div>
-            <h4 className="mb-3 text-sm font-medium">
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">
               Beam: {currentBeam.beamName}
             </h4>
-            <BeamMetricsSection beam={currentBeam} isMetricEnabled={isMetricEnabled} />
+            {CATEGORY_ORDER.map((cat) => (
+              <CategoryTable
+                key={cat}
+                category={cat}
+                source={currentBeam as unknown as Record<string, unknown>}
+                isMetricEnabled={isMetricEnabled}
+              />
+            ))}
           </div>
         )}
 
         {/* All Beams Summary */}
         {!currentBeam && metrics.beamMetrics.length > 0 && (
-          <BeamsSummary beamMetrics={metrics.beamMetrics} isMetricEnabled={isMetricEnabled} />
+          <BeamsSummary
+            beamMetrics={metrics.beamMetrics}
+            isMetricEnabled={isMetricEnabled}
+          />
         )}
       </CardContent>
     </Card>
