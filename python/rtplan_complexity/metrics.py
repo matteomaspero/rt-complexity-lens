@@ -363,7 +363,8 @@ def calculate_lsv(mlc_positions: MLCLeafPositions, leaf_widths: List[float]) -> 
     lsv_a = calculate_lsv_bank(list(bank_a[:num_pairs]), open_mask)
     lsv_b = calculate_lsv_bank(list(bank_b[:num_pairs]), open_mask)
     
-    return (lsv_a + lsv_b) / 2.0
+    # Product of banks per UCoMx Eq. (31)
+    return lsv_a * lsv_b
 
 
 def calculate_leaf_travel(
@@ -665,10 +666,10 @@ def calculate_beam_metrics(
                     if contrib > per_leaf_max_contrib[k]:
                         per_leaf_max_contrib[k] = contrib
             
-            # LSV per bank (Masi formula)
+            # LSV per bank (Masi formula), combined as product per UCoMx Eq. (31)
             lsv_a = calculate_lsv_bank(mid_a, active)
             lsv_b = calculate_lsv_bank(mid_b, active)
-            ca_lsvs.append((lsv_a + lsv_b) / 2.0)
+            ca_lsvs.append(lsv_a * lsv_b)
             
             # Active leaf travel (between actual CPs)
             lt = 0.0
@@ -693,14 +694,15 @@ def calculate_beam_metrics(
     ca_aavs = [a / a_max_union if a_max_union > 0 else 0.0 for a in ca_areas]
     ca_mcss = [ca_lsvs[i] * ca_aavs[i] for i in range(len(ca_lsvs))]
     
-    # ===== Aggregate: Eq. (1) unweighted for LSV/AAV, Eq. (2) MU-weighted for MCS =====
-    LSV = sum(ca_lsvs) / n_ca if n_ca > 0 else 0.0
-    AAV = sum(ca_aavs) / n_ca if n_ca > 0 else 0.0
-    
+    # ===== Aggregate: Eq. (2) MU-weighted for LSV, AAV, MCS per UCoMx manual =====
     total_delta_mu = sum(ca_delta_mu)
     if total_delta_mu > 0:
+        LSV = sum(ca_lsvs[i] * ca_delta_mu[i] for i in range(len(ca_lsvs))) / total_delta_mu
+        AAV = sum(ca_aavs[i] * ca_delta_mu[i] for i in range(len(ca_aavs))) / total_delta_mu
         MCS = sum(ca_mcss[i] * ca_delta_mu[i] for i in range(len(ca_mcss))) / total_delta_mu
     else:
+        LSV = sum(ca_lsvs) / n_ca if n_ca > 0 else 0.0
+        AAV = sum(ca_aavs) / n_ca if n_ca > 0 else 0.0
         MCS = LSV * AAV
     
     # LT: total active leaf travel
@@ -716,7 +718,11 @@ def calculate_beam_metrics(
     EFS = weighted_efs / total_meterset_weight if total_meterset_weight > 0 else 0.0
     TG = weighted_tg / total_meterset_weight if total_meterset_weight > 0 else 0.0
     
-    PM = 1 - MCS
+    # PM (Plan Modulation) per UCoMx Eq. (38): 1 - Σ(MU_j × A_j) / (MU_beam × A^tot)
+    if a_max_union > 0 and total_delta_mu > 0:
+        PM = 1 - sum(ca_delta_mu[i] * ca_areas[i] for i in range(len(ca_areas))) / (total_delta_mu * a_max_union)
+    else:
+        PM = 1 - MCS
     MFA = (total_area / area_count) / 100.0 if area_count > 0 else 0.0
     EM = total_perimeter / total_area if total_area > 0 else 0.0
     PA = total_area / 100.0
@@ -754,7 +760,8 @@ def calculate_beam_metrics(
     num_cps = beam.number_of_control_points
     num_leaves = beam.number_of_leaves or 60
     
-    MUCA = beam_mu / num_cps if num_cps > 0 else 0
+    # MUCA - MU per Control Arc (NCA = NCP - 1)
+    MUCA = beam_mu / n_ca if n_ca > 0 else 0
     LTMU = LT / beam_mu if beam_mu > 0 else 0
     LTNLMU = LT / (num_leaves * beam_mu) if num_leaves > 0 and beam_mu > 0 else 0
     LNA = LT / (num_leaves * num_cps) if num_leaves > 0 and num_cps > 0 else 0
@@ -872,8 +879,7 @@ def calculate_plan_metrics(
     Calculate plan-level UCoMX metrics.
     
     Aggregation:
-    - UCoMx Eq. (1): unweighted average for LSV, AAV
-    - UCoMx Eq. (2): MU-weighted for MCS and BEV metrics
+    - UCoMx Eq. (2): MU-weighted for all metrics per UCoMx manual
     """
     beam_metrics = [
         calculate_beam_metrics(beam, machine_params)
@@ -881,18 +887,21 @@ def calculate_plan_metrics(
     ]
     
     n_beams = len(beam_metrics) or 1
-    total_mu = sum(bm.beam_mu for bm in beam_metrics)
+    total_mu = sum(bm.beam_mu for bm in beam_metrics)  # actual plan MU (for output)
+    weight_mu = sum((bm.beam_mu or 1) for bm in beam_metrics)  # weighting denominator (matches TS || 1)
     
-    # UCoMx Eq. (1): unweighted average for LSV, AAV
-    sum_lsv = sum(bm.LSV for bm in beam_metrics)
-    sum_aav = sum(bm.AAV for bm in beam_metrics)
-    LSV = sum_lsv / n_beams
-    AAV = sum_aav / n_beams
+    # UCoMx Eq. (2): MU-weighted for LSV, AAV
+    if weight_mu > 0:
+        LSV = sum(bm.LSV * (bm.beam_mu or 1) for bm in beam_metrics) / weight_mu
+        AAV = sum(bm.AAV * (bm.beam_mu or 1) for bm in beam_metrics) / weight_mu
+    else:
+        LSV = sum(bm.LSV for bm in beam_metrics) / n_beams
+        AAV = sum(bm.AAV for bm in beam_metrics) / n_beams
     
     # UCoMx Eq. (2): MU-weighted for MCS
-    if total_mu > 0:
-        MCS = sum(bm.MCS * (bm.beam_mu or 1) for bm in beam_metrics) / total_mu
-        MFA = sum(bm.MFA * (bm.beam_mu or 1) for bm in beam_metrics) / total_mu
+    if weight_mu > 0:
+        MCS = sum(bm.MCS * (bm.beam_mu or 1) for bm in beam_metrics) / weight_mu
+        MFA = sum(bm.MFA * (bm.beam_mu or 1) for bm in beam_metrics) / weight_mu
         
         # Weight optional metrics by MU
         def weighted_avg(attr: str) -> Optional[float]:

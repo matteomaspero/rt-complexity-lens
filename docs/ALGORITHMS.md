@@ -11,40 +11,53 @@ Shared reference for TypeScript and Python implementations.
 
 ### MCS (Modulation Complexity Score)
 
-Measures overall plan modulation complexity.
+Measures overall plan modulation complexity (UCoMx Eq. 33).
 
 ```
-MCS = LSV × (1 - AAV)
+MCS_ij = LSV_ij × AAV_ij
 ```
 
 - **Range**: 0–1 (higher = less complex/simpler plan)
+- **Aggregation**: MU-weighted (Eq. 2) at beam and plan level
 - **Reference**: McNiven AL, et al. Med Phys. 2010;37(2):505-515
 
 ### LSV (Leaf Sequence Variability)
 
-Quantifies positional variability between adjacent MLC leaves.
+Quantifies positional variability between adjacent MLC leaves (UCoMx Eq. 31–32).
 
+Per-bank:
 ```
-LSV = 1 - mean(sum(|pos[i+1] - pos[i]|) / (n × pos_max))
+LSV_bank = (1 / (N-1)) × Σ (y_max - |y_l - y_{l+1}|) / y_max
 ```
 
 Where:
-- `pos[i]` = position of leaf i
-- `n` = number of leaf pairs
-- `pos_max` = maximum leaf extension
+- `y_l` = position of leaf l in one bank
+- `y_max` = max |y_l - y_{l+1}| across adjacent pairs in the beam
+- N = number of active leaves
+
+Combined as **product** of both banks:
+```
+LSV_ij = LSV_bankA × LSV_bankB
+```
 
 - **Range**: 0–1 (higher = more uniform leaf positions)
+- **Aggregation**: MU-weighted (Eq. 2) at beam and plan level
 - **Reference**: Masi L, et al. Med Phys. 2013;40(7):071718
 
 ### AAV (Aperture Area Variability)
 
-Relative change in aperture area between consecutive control points.
+Ratio of each control-arc aperture area to the union (maximum) aperture area (UCoMx Eq. 29–30).
 
 ```
-AAV = |area_current - area_previous| / area_previous
+AAV_ij = A_ij / A_max_union
 ```
 
-- **Range**: 0–∞ (lower = more consistent aperture sizes)
+Where:
+- `A_ij` = aperture area at control arc j in beam i
+- `A_max_union` = union of all aperture boundaries across the beam
+
+- **Range**: 0–1 (lower = smaller apertures relative to max)
+- **Aggregation**: MU-weighted (Eq. 2) at beam and plan level
 - **Reference**: Masi L, et al. Med Phys. 2013;40(7):071718
 
 ### MFA (Mean Field Area)
@@ -171,13 +184,13 @@ psmall = count(EFS < threshold) / total_CPs
 
 ### MUCA (MU per Control Arc)
 
-MU density for VMAT arcs.
+MU density for VMAT arcs (NCA = NCP − 1).
 
 ```
-MUCA = beam_MU / arc_length_degrees
+MUCA = beam_MU / N_CA
 ```
 
-- **Unit**: MU/degree
+- **Unit**: MU/CA
 
 ### LTMU (Leaf Travel per MU)
 
@@ -290,23 +303,40 @@ Direction depends on metric semantics:
 
 ### Plan-Level Metrics
 
-Plan metrics are aggregated from beam metrics:
+Plan metrics are aggregated from beam metrics using **MU-weighted averaging** (UCoMx Eq. 2):
 
 ```
-plan_MCS = weighted_mean(beam_MCS, weights=beam_MU)
-plan_LT = sum(beam_LT)
-plan_MFA = weighted_mean(beam_MFA, weights=beam_CP_count)
+plan_metric = Σ(beam_metric × beam_MU) / Σ(beam_MU)
+plan_LT = sum(beam_LT)  # exception: additive
 ```
 
 ### Beam-Level Metrics
 
-Beam metrics are aggregated from control point metrics:
+Beam metrics are aggregated from control-arc (CA) metrics.
+CA midpoints are used: metrics are evaluated at the midpoint between consecutive control points.
+MU-weighted averaging (Eq. 2) is used for LSV, AAV, MCS:
 
 ```
-beam_LSV = mean(cp_LSV) for all CPs
-beam_AAV = mean(cp_AAV) for CPs 2..n (needs previous CP)
-beam_LT = sum(cp_LT) for all CPs
+beam_LSV = Σ(ca_LSV × ΔMU) / Σ(ΔMU)
+beam_AAV = Σ(ca_AAV × ΔMU) / Σ(ΔMU)
+beam_MCS = Σ(ca_MCS × ΔMU) / Σ(ΔMU)
+beam_LT = sum(ca_LT)
 ```
+
+### PM (Plan Modulation)
+
+Area- and MU-weighted modulation metric (UCoMx Eq. 38):
+
+```
+PM_i = 1 - Σ(MU_ij × A_ij) / (MU_i × A_max_union)
+```
+
+Where:
+- `MU_ij` = MU at control arc j
+- `A_ij` = aperture area at control arc j
+- `A_max_union` = union aperture area
+
+- **Range**: 0–1 (higher = more modulated)
 
 ---
 

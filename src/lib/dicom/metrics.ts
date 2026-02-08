@@ -350,7 +350,8 @@ function calculateLSV(mlcPositions: MLCLeafPositions, leafWidths: number[]): num
   const lsvA = calculateLSVBank(bankA, openMask);
   const lsvB = calculateLSVBank(bankB, openMask);
   
-  return (lsvA + lsvB) / 2;
+  // Product of banks per UCoMx Eq. (31)
+  return lsvA * lsvB;
 }
 
 /**
@@ -678,10 +679,10 @@ function calculateBeamMetrics(
         }
       }
       
-      // LSV per bank (Masi formula)
+      // LSV per bank (Masi formula), combined as product per UCoMx Eq. (31)
       const lsvA = calculateLSVBank(Array.from(midA), active);
       const lsvB = calculateLSVBank(Array.from(midB), active);
-      caLSVs.push((lsvA + lsvB) / 2);
+      caLSVs.push(lsvA * lsvB);
       
       // Active leaf travel (between actual CPs)
       let lt = 0;
@@ -713,11 +714,14 @@ function calculateBeamMetrics(
   const caAAVs = caAreas.map(a => aMaxUnion > 0 ? a / aMaxUnion : 0);
   const caMCSs = caLSVs.map((lsv, i) => lsv * caAAVs[i]);
   
-  // ===== Aggregate: Eq. (1) unweighted for LSV/AAV, Eq. (2) MU-weighted for MCS =====
-  const LSV = nCA > 0 ? caLSVs.reduce((s, v) => s + v, 0) / nCA : 0;
-  const AAV = nCA > 0 ? caAAVs.reduce((s, v) => s + v, 0) / nCA : 0;
-  
+  // ===== Aggregate: Eq. (2) MU-weighted for LSV, AAV, MCS per UCoMx manual =====
   const totalDeltaMU = caDeltaMU.reduce((s, v) => s + v, 0);
+  const LSV = totalDeltaMU > 0
+    ? caLSVs.reduce((s, v, i) => s + v * caDeltaMU[i], 0) / totalDeltaMU
+    : (nCA > 0 ? caLSVs.reduce((s, v) => s + v, 0) / nCA : 0);
+  const AAV = totalDeltaMU > 0
+    ? caAAVs.reduce((s, v, i) => s + v * caDeltaMU[i], 0) / totalDeltaMU
+    : (nCA > 0 ? caAAVs.reduce((s, v) => s + v, 0) / nCA : 0);
   const MCS = totalDeltaMU > 0
     ? caMCSs.reduce((s, v, i) => s + v * caDeltaMU[i], 0) / totalDeltaMU
     : LSV * AAV;
@@ -735,7 +739,10 @@ function calculateBeamMetrics(
   const EFS = totalMetersetWeight > 0 ? weightedEFS / totalMetersetWeight : 0;
   const TG = totalMetersetWeight > 0 ? weightedTG / totalMetersetWeight : 0;
   
-  const PM = 1 - MCS;
+  // PM (Plan Modulation) per UCoMx Eq. (38): 1 - Σ(MU_j × A_j) / (MU_beam × A^tot)
+  const PM = aMaxUnion > 0 && totalDeltaMU > 0
+    ? 1 - caAreas.reduce((s, a, i) => s + caDeltaMU[i] * a, 0) / (totalDeltaMU * aMaxUnion)
+    : 1 - MCS;
   const MFA = areaCount > 0 ? (totalArea / areaCount) / 100 : 0;
   const EM = totalArea > 0 ? totalPerimeter / totalArea : 0;
   const PA = totalArea / 100;
@@ -778,8 +785,8 @@ function calculateBeamMetrics(
   const numCPs = beam.numberOfControlPoints;
   const numLeaves = beam.numberOfLeaves || 60;
   
-  // MUCA - MU per Control Arc
-  const MUCA = numCPs > 0 ? beamMU / numCPs : 0;
+  // MUCA - MU per Control Arc (NCA = NCP - 1)
+  const MUCA = nCA > 0 ? beamMU / nCA : 0;
   
   // LTMU - Leaf Travel per MU
   const LTMU = beamMU > 0 ? LT / beamMU : 0;
@@ -929,12 +936,11 @@ export function calculatePlanMetrics(
   );
   
   // Aggregate across beams
-  // UCoMx Eq. (1): unweighted average for LSV, AAV, LT, NL
-  // UCoMx Eq. (2): MU-weighted for MCS and BEV metrics
+  // UCoMx Eq. (2): MU-weighted for all metrics per UCoMx manual
   let totalMU = 0;
   let weightedMCS = 0;
-  let sumLSV = 0;
-  let sumAAV = 0;
+  let weightedLSV = 0;
+  let weightedAAV = 0;
   let weightedMFA = 0;
   let weightedSAS5 = 0;
   let weightedSAS10 = 0;
@@ -976,8 +982,8 @@ export function calculatePlanMetrics(
     totalMU += mu;
     
     weightedMCS += bm.MCS * mu;
-    sumLSV += bm.LSV;  // Eq. (1): unweighted
-    sumAAV += bm.AAV;  // Eq. (1): unweighted
+    weightedLSV += bm.LSV * mu;  // Eq. (2): MU-weighted
+    weightedAAV += bm.AAV * mu;  // Eq. (2): MU-weighted
     weightedMFA += bm.MFA * mu;
     weightedSAS5 += (bm.SAS5 || 0) * mu;
     weightedSAS10 += (bm.SAS10 || 0) * mu;
@@ -1035,8 +1041,8 @@ export function calculatePlanMetrics(
   
   const nBeams = beamMetrics.length || 1;
   const MCS = totalMU > 0 ? weightedMCS / totalMU : 0;
-  const LSV = sumLSV / nBeams;  // Eq. (1): simple average
-  const AAV = sumAAV / nBeams;  // Eq. (1): simple average
+  const LSV = totalMU > 0 ? weightedLSV / totalMU : 0;  // Eq. (2): MU-weighted
+  const AAV = totalMU > 0 ? weightedAAV / totalMU : 0;  // Eq. (2): MU-weighted
   const MFA = totalMU > 0 ? weightedMFA / totalMU : 0;
   const SAS5 = totalMU > 0 ? weightedSAS5 / totalMU : 0;
   const SAS10 = totalMU > 0 ? weightedSAS10 / totalMU : 0;
