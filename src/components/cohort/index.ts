@@ -10,3 +10,4 @@ export { ExtendedStatsTable } from './ExtendedStatsTable';
 export { CohortExportPanel } from './CohortExportPanel';
 export { CohortDemoLoader } from './CohortDemoLoader';
 export { MetricSelector } from './MetricSelector';
+export { ClusteringSuggestions } from './ClusteringSuggestions';

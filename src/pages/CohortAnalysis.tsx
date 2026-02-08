@@ -16,9 +16,18 @@ import {
   ExtendedStatsTable,
   CohortExportPanel,
 } from '@/components/cohort';
+import { ClusteringSuggestions } from '@/components/cohort/ClusteringSuggestions';
+import { suggestClusteringDimensions } from '@/lib/outlier-detection';
+import { useMemo } from 'react';
 
 function CohortAnalysisContent() {
   const { successfulPlans, clearAll, isProcessing } = useCohort();
+
+  // Calculate clustering suggestions
+  const clusteringSuggestions = useMemo(() => {
+    if (successfulPlans.length < 5) return [];
+    return suggestClusteringDimensions(successfulPlans, 3);
+  }, [successfulPlans]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -68,6 +77,17 @@ function CohortAnalysisContent() {
         {/* Analysis Section - Only show when plans are loaded */}
         {successfulPlans.length > 0 && (
           <>
+            {/* Clustering Suggestions */}
+            {clusteringSuggestions.length > 0 && (
+              <ClusteringSuggestions 
+                suggestions={clusteringSuggestions}
+                onApplySuggestion={(metricKey) => {
+                  // TODO: Auto-apply clustering dimension
+                  console.log('Apply clustering dimension:', metricKey);
+                }}
+              />
+            )}
+
             {/* Configuration and Summary Grid */}
             <div className="grid gap-6 lg:grid-cols-4">
               <div className="lg:col-span-1 space-y-4">

@@ -21,6 +21,9 @@ import {
   BatchDistributionChart,
   BatchExportPanel,
 } from '@/components/batch';
+import { OutlierReport } from '@/components/batch/OutlierReport';
+import { detectOutliers } from '@/lib/outlier-detection';
+import { useMemo } from 'react';
 
 export default function BatchDashboard() {
   const { plans, clearAll, isProcessing } = useBatch();
@@ -28,6 +31,15 @@ export default function BatchDashboard() {
   const hasPlans = plans.length > 0;
 
   const builtInOptions = Object.values(BUILTIN_PRESETS);
+
+  // Detect outliers in the batch
+  const outliers = useMemo(() => {
+    if (plans.length < 5) return [];
+    return detectOutliers(plans, {
+      zScoreThreshold: 2.0,
+      criticalZScoreThreshold: 3.0,
+    });
+  }, [plans]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -123,6 +135,18 @@ export default function BatchDashboard() {
               <BatchDistributionChart />
             </div>
           </div>
+        )}
+
+        {/* Outlier Detection Report */}
+        {hasPlans && plans.length >= 5 && (
+          <OutlierReport 
+            outliers={outliers} 
+            totalPlans={plans.length}
+            onExport={() => {
+              // TODO: Implement CSV export of outliers
+              console.log('Export outliers:', outliers);
+            }}
+          />
         )}
 
         {/* Results Table */}
