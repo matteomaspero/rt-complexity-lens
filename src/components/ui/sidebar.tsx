@@ -65,7 +65,9 @@ const SidebarProvider = React.forwardRef<
       }
 
       // This sets the cookie to keep the sidebar state with security flags.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}; SameSite=Strict; Secure`;
+      // Secure flag is only added in production (HTTPS) to allow localhost development (HTTP)
+      const secureFlag = import.meta.env.PROD ? '; Secure' : '';
+      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}; SameSite=Strict${secureFlag}`;
     },
     [setOpenProp, open],
   );
