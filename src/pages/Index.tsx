@@ -105,16 +105,6 @@ const Index = () => {
               </div>
             </div>
           </TabsContent>
-        </Tabs>
-
-        {/* Bottom CTA - Reference & Help */}
-        <Separator />
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="p-4 space-y-2 hover:border-primary cursor-pointer transition-colors">
-            <h4 className="font-semibold">📊 Metrics Reference</h4>
-            <p className="text-xs text-muted-foreground">
-              Learn about all complexity metrics and their interpretation
 
           {/* Tab 2: Mode Selection */}
           <TabsContent value="modes" className="space-y-4">
@@ -125,6 +115,16 @@ const Index = () => {
           <TabsContent value="workflow" className="space-y-4">
             <WorkflowGuide />
           </TabsContent>
+        </Tabs>
+
+        {/* Bottom CTA - Reference & Help */}
+        <Separator />
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="p-4 space-y-2 hover:border-primary cursor-pointer transition-colors">
+            <h4 className="font-semibold">📊 Metrics Reference</h4>
+            <p className="text-xs text-muted-foreground">
+              Learn about all complexity metrics and their interpretation
             </p>
             <a
               href="/metrics"
