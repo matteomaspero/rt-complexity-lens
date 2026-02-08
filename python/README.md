@@ -4,30 +4,39 @@ Offline Python implementation of RTp-lens metrics, producing results identical t
 
 ## Installation
 
-### Using pip
+### Option 1: Install from PyPI (Recommended)
+
+The package is now live on PyPI! Install with:
 
 ```bash
-pip install rtplan-complexity
+pip install rtplan-complexity        # Core package
+pip install rtplan-complexity[viz]   # With visualization support
+pip install rtplan-complexity[all]   # Everything (including dev tools)
 ```
 
-### With Visualization Support
+**PyPI Package:** https://pypi.org/project/rtplan-complexity/
+
+### Option 2: Install from Source (Development)
+
+For development or contributing:
 
 ```bash
-pip install rtplan-complexity[viz]
-```
+# Clone the repository
+git clone https://github.com/matteomaspero/rt-complexity-lens.git
+cd rt-complexity-lens/python
 
-### From Source (Development)
-
-```bash
-cd python
+# Install in editable mode
 pip install -e .
+
+# Or with visualization support
+pip install -e ".[viz]"
 ```
 
 ### Requirements
 
 | Package | Version |
 |---------|---------|
-| Python | ≥ 3.9 |
+| Python | ≥ 3.9, ≤ 3.14 |
 | pydicom | ≥ 2.4.0 |
 | numpy | ≥ 1.24.0 |
 | scipy | ≥ 1.11.0 |
