@@ -508,3 +508,25 @@ This implementation is inspired by published complexity metrics research includi
 - Leaf Sequence Variability (LSV) by Masi et al.
 
 See `docs/ALGORITHMS.md` for detailed algorithm descriptions and full references.
+
+---
+
+## Changelog
+
+### v1.0.1 (2026-02-09)
+
+**Formula corrections aligned with UCoMx v1.1 user manual:**
+
+- **LSV**: Bank combination changed from average `(A+B)/2` to product `A×B` (Eq. 31)
+- **LSV/AAV**: Beam and plan aggregation changed from Eq.(1) unweighted to Eq.(2) MU-weighted
+- **PM**: Changed from `1−MCS` to proper area-based formula (Eq. 38): `1 − Σ(MU_j×A_j)/(MU×A_max)`
+- **MUCA**: Denominator changed from N_CP to N_CA (N_CP−1)
+- Cross-validated against TypeScript implementation: 25/25 plans zero delta
+
+### v1.0.0 (2026-02-08)
+
+- Initial PyPI release
+- Full UCoMx VMAT complexity metrics (30+ metrics)
+- DICOM RT-Plan parser
+- CLI tool (`rtplan-analyze`)
+- Statistical analysis utilities
