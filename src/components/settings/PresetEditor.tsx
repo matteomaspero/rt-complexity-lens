@@ -72,7 +72,7 @@ export function PresetEditor({ preset, open, onOpenChange, onSave }: PresetEdito
 
   const handleDeliveryChange = (
     field: keyof MachineDeliveryParams,
-    value: number | string
+    value: number | string | undefined
   ) => {
     setDeliveryParams((prev) => ({
       ...prev,
@@ -203,7 +203,7 @@ export function PresetEditor({ preset, open, onOpenChange, onSave }: PresetEdito
                   onChange={(e) =>
                     handleDeliveryChange(
                       'maxDoseRateFFF',
-                      e.target.value ? parseFloat(e.target.value) : undefined as unknown as number
+                      e.target.value ? parseFloat(e.target.value) : undefined
                     )
                   }
                   placeholder="Optional"
