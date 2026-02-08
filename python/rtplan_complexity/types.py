@@ -76,6 +76,7 @@ class Beam:
     gantry_angle_end: float = 0.0
     is_arc: bool = False
     mlc_leaf_widths: List[float] = field(default_factory=list)  # mm
+    mlc_leaf_boundaries: List[float] = field(default_factory=list)  # N+1 boundary positions in mm
     number_of_leaves: int = 60
     beam_description: Optional[str] = None
     source_skin_distance: Optional[float] = None

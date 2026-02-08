@@ -157,6 +157,7 @@ def _parse_control_point(
         mlc_positions = previous_cp.mlc_positions
     
     # Parse jaw positions (may inherit from previous CP)
+    # Matches TS logic: inherit ALL jaws when x1==0 && x2==0
     jaw_positions = _parse_jaw_positions(cp_ds)
     if jaw_positions.x1 == 0 and jaw_positions.x2 == 0 and previous_cp:
         jaw_positions = previous_cp.jaw_positions
@@ -209,12 +210,21 @@ def _parse_control_point(
     )
 
 
-def _get_leaf_widths(beam_ds: Dataset) -> Tuple[List[float], int]:
-    """Get MLC leaf widths from beam limiting device sequence."""
+def _get_leaf_widths(beam_ds: Dataset) -> Tuple[List[float], List[float], int]:
+    """Get MLC leaf widths and boundaries from beam limiting device sequence.
+    
+    Returns: (widths, boundaries, num_pairs)
+        widths: list of N leaf widths in mm
+        boundaries: list of N+1 leaf boundary positions in mm
+        num_pairs: number of leaf pairs
+    """
     try:
         bld_seq = getattr(beam_ds, "BeamLimitingDeviceSequence", None)
         if bld_seq is None:
-            return ([5.0] * 60, 60)  # Default Millennium 120
+            # Default Millennium 120: 60 pairs × 5mm centered at 0
+            widths = [5.0] * 60
+            boundaries = [i * 5.0 - 150.0 for i in range(61)]
+            return (widths, boundaries, 60)
         
         for item in bld_seq:
             device_type = _get_string(item, "RTBeamLimitingDeviceType")
@@ -227,12 +237,14 @@ def _get_leaf_widths(beam_ds: Dataset) -> Tuple[List[float], int]:
                 for i in range(1, len(boundaries)):
                     widths.append(abs(boundaries[i] - boundaries[i - 1]))
                 
-                return (widths, num_pairs or len(widths))
+                return (widths, boundaries, num_pairs or len(widths))
     except Exception:
         pass
     
     # Default: Varian Millennium 120 leaf configuration
-    return ([5.0] * 60, 60)
+    widths = [5.0] * 60
+    boundaries = [i * 5.0 - 150.0 for i in range(61)]
+    return (widths, boundaries, 60)
 
 
 def _parse_beam(beam_ds: Dataset) -> Beam:
@@ -243,7 +255,7 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
     num_cps = _get_int(beam_ds, "NumberOfControlPoints")
     final_mw = _get_float(beam_ds, "FinalCumulativeMetersetWeight", 1.0)
     
-    leaf_widths, num_leaves = _get_leaf_widths(beam_ds)
+    leaf_widths, leaf_boundaries, num_leaves = _get_leaf_widths(beam_ds)
     
     # Parse control points
     control_points: List[ControlPoint] = []
@@ -278,6 +290,7 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
         gantry_angle_end=gantry_end,
         is_arc=is_arc,
         mlc_leaf_widths=leaf_widths,
+        mlc_leaf_boundaries=leaf_boundaries,
         number_of_leaves=num_leaves,
     )
 

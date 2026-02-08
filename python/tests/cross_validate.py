@@ -2,6 +2,15 @@
 """
 Cross-validate TypeScript vs Python UCoMX metric implementations.
 
+Both implementations now use the UCoMx v1.1 CA midpoint approach:
+- CA midpoint interpolation (average adjacent CP MLC/jaw positions)
+- Active leaf filtering (gap > plan_min_gap AND within Y-jaw)
+- Union aperture A_max = Σ(per-leaf max (gap × eff_width))
+- Masi per-bank LSV: mean(1 - |diff|/max_diff) for active adjacent leaves
+- AAV = area_ca / A_max_union
+- MCS = LSV × AAV, MU-weighted (Eq. 2)
+- Plan LSV/AAV: unweighted average (Eq. 1)
+
 Reads the TS-generated reference_metrics_ts.json, computes the same metrics
 from the DICOM files using the Python implementation, and reports deltas.
 
@@ -14,7 +23,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from dataclasses import asdict
 
 # Add parent to path so we can import rtplan_complexity
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -24,21 +32,24 @@ from rtplan_complexity.metrics import calculate_plan_metrics
 
 
 # Metrics to compare and their acceptable absolute tolerance
-# Primary metrics: tight tolerance;  derived/delivery: looser
+# Core UCoMx metrics should match very tightly; secondary metrics looser
 METRIC_TOLERANCES = {
-    # --- Primary complexity ---
-    "MCS":   0.005,
-    "LSV":   0.005,
-    "AAV":   0.005,
-    "MFA":   0.5,       # cm², small field ≈ a few cm²
-    "LT":    5.0,       # mm total leaf travel – large numbers
-    "LTMCS": 0.01,
-    "totalMU": 0.5,     # MU
+    # --- Core UCoMx (CA midpoint) ---
+    "MCS":   0.0001,     # Should match exactly (same algorithm)
+    "LSV":   0.0001,
+    "AAV":   0.0001,
+    "LT":    0.1,        # mm total leaf travel
+    "totalMU": 0.5,      # MU (from DICOM, should be identical)
 
-    # --- QA / accuracy ---
-    "MAD":   0.5,       # mm
-    "LG":    0.5,       # mm
-    "EFS":   0.5,       # mm
+    # --- Derived from core ---
+    "LTMCS": 0.001,
+    "MFA":   0.5,        # cm² — uses per-CP area, secondary
+    "PM":    0.0001,      # 1 - MCS
+
+    # --- QA / accuracy (per-CP based, secondary) ---
+    "MAD":   0.5,        # mm
+    "LG":    0.5,        # mm
+    "EFS":   0.5,        # mm
     "psmall": 0.02,
     "SAS5":  0.02,
     "SAS10": 0.02,
@@ -48,15 +59,14 @@ METRIC_TOLERANCES = {
 
     # --- Deliverability ---
     "MUCA":  0.5,
-    "LTMU":  0.5,
-    "LS":    0.5,       # mm/s
-    "PM":    0.01,
-    "PA":    1.0,       # cm²
-    "JA":    1.0,       # cm²
+    "LTMU":  0.1,        # mm/MU
+    "LS":    0.5,         # mm/s
+    "PA":    1.0,         # cm²
+    "JA":    1.0,         # cm²
 }
 
 # Beam-level metrics to compare
-BEAM_METRIC_KEYS = ["MCS", "LSV", "AAV", "MFA", "LT", "LTMCS"]
+BEAM_METRIC_KEYS = ["MCS", "LSV", "AAV", "LT", "LTMCS"]
 
 
 def load_ts_reference(ref_path: Path) -> dict:

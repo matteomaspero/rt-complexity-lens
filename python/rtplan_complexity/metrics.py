@@ -2,6 +2,11 @@
 UCoMX Complexity Metrics Implementation
 
 Direct translation of the TypeScript implementation in src/lib/dicom/metrics.ts
+Based on UCoMX v1.1 MATLAB implementation (Cavinato et al., Med Phys 2024)
+Uses Control Arc (CA) midpoint interpolation, active leaf filtering,
+and union aperture A_max per the UCoMx paper.
+Extended with SAS, EM, PI metrics and delivery time estimation.
+
 See docs/ALGORITHMS.md for detailed algorithm descriptions.
 """
 
@@ -33,6 +38,102 @@ DEFAULT_MACHINE_PARAMS = MachineDeliveryParams(
 )
 
 
+# ===================================================================
+# CA-based UCoMx helper functions
+# ===================================================================
+
+def compute_leaf_boundaries(leaf_widths: List[float], num_pairs: int) -> List[float]:
+    """
+    Compute leaf boundaries from widths if not directly available.
+    Returns N+1 boundary positions centered at 0.
+    """
+    n = min(len(leaf_widths), num_pairs)
+    boundaries = [0.0]
+    for i in range(n):
+        boundaries.append(boundaries[i] + (leaf_widths[i] if i < len(leaf_widths) else 5.0))
+    total_width = boundaries[-1]
+    offset = total_width / 2.0
+    return [b - offset for b in boundaries]
+
+
+def get_effective_leaf_boundaries(beam: Beam) -> List[float]:
+    """
+    Get effective leaf boundaries for a beam.
+    Uses stored DICOM boundaries if available, otherwise computes from widths.
+    """
+    if beam.mlc_leaf_boundaries and len(beam.mlc_leaf_boundaries) > 0:
+        return beam.mlc_leaf_boundaries
+    return compute_leaf_boundaries(
+        beam.mlc_leaf_widths, beam.number_of_leaves or len(beam.mlc_leaf_widths)
+    )
+
+
+def determine_active_leaves(
+    gaps: List[float],
+    leaf_bounds: List[float],
+    jaw_y1: float,
+    jaw_y2: float,
+    min_gap: float
+) -> List[bool]:
+    """
+    Determine active leaf pairs for a control arc midpoint.
+    Active = gap > minGap AND leaf pair overlaps with Y-jaw opening.
+    Per UCoMx: minGap is the minimum gap found anywhere in the entire plan.
+    """
+    n_pairs = len(gaps)
+    active = [False] * n_pairs
+    for k in range(n_pairs):
+        within_jaw = leaf_bounds[k + 1] > jaw_y1 and leaf_bounds[k] < jaw_y2
+        active[k] = within_jaw and gaps[k] > min_gap
+    return active
+
+
+def calculate_area_ca(
+    bank_a: List[float],
+    bank_b: List[float],
+    leaf_bounds: List[float],
+    jaw_y1: float,
+    jaw_y2: float,
+    active_mask: List[bool]
+) -> float:
+    """
+    Calculate aperture area at a CA midpoint with Y-jaw clipping for active leaves.
+    Area = Σ (gap_k × effective_width_k) for active leaves only.
+    """
+    area = 0.0
+    for k in range(len(bank_a)):
+        if not active_mask[k]:
+            continue
+        gap = bank_b[k] - bank_a[k]
+        if gap <= 0:
+            continue
+        eff_width = max(0.0, min(leaf_bounds[k + 1], jaw_y2) - max(leaf_bounds[k], jaw_y1))
+        area += gap * eff_width
+    return area
+
+
+def calculate_lsv_bank(positions: List[float], active_mask: List[bool]) -> float:
+    """
+    LSV per bank using Masi (2008) position-based formula.
+    For adjacent active leaves: mean(1 - |diff(pos)| / max|diff(pos)|)
+    Returns 1.0 for uniform positions, 0.0 for maximum variability.
+    """
+    active_idx = [i for i in range(len(positions)) if active_mask[i]]
+    if len(active_idx) < 2:
+        return 1.0
+
+    diffs = []
+    for i in range(1, len(active_idx)):
+        diffs.append(abs(positions[active_idx[i]] - positions[active_idx[i - 1]]))
+
+    max_diff = max(diffs)
+    if max_diff == 0:
+        return 1.0
+
+    total = sum(1.0 - d / max_diff for d in diffs)
+    return total / len(diffs)
+
+
 def calculate_aperture_area(
     mlc_positions: MLCLeafPositions,
     leaf_widths: List[float],
@@ -42,6 +143,7 @@ def calculate_aperture_area(
     Calculate the aperture area for a given control point.
     Area is calculated as the sum of individual leaf pair openings
     weighted by their respective leaf widths.
+    If jaw X limits are both 0 (e.g., Monaco with no ASYMX), no X clipping is applied.
     
     Returns area in mm².
     """
@@ -55,6 +157,7 @@ def calculate_aperture_area(
     num_pairs = min(len(bank_a), len(bank_b), len(leaf_widths) if leaf_widths else len(bank_a))
     
     default_width = 5.0  # mm
+    has_x_jaw = jaw_positions.x1 != 0 or jaw_positions.x2 != 0
     
     for i in range(num_pairs):
         leaf_width = leaf_widths[i] if i < len(leaf_widths) else default_width
@@ -63,8 +166,11 @@ def calculate_aperture_area(
         opening = bank_b[i] - bank_a[i]
         
         if opening > 0:
-            # Clip to jaw positions
-            effective_opening = max(0, min(opening, jaw_positions.x2 - jaw_positions.x1))
+            # Clip to X-jaw if present, otherwise use full opening
+            if has_x_jaw:
+                effective_opening = max(0, min(opening, jaw_positions.x2 - jaw_positions.x1))
+            else:
+                effective_opening = opening
             total_area += effective_opening * leaf_width
     
     return total_area
@@ -238,40 +344,26 @@ def calculate_aperture_irregularity(
 
 def calculate_lsv(mlc_positions: MLCLeafPositions, leaf_widths: List[float]) -> float:
     """
-    Calculate Leaf Sequence Variability (LSV) for a control point.
-    LSV measures the variability in leaf positions within an aperture.
-    Higher LSV = more irregular aperture shape.
+    Calculate Leaf Sequence Variability (LSV) for a control point (legacy per-CP version).
+    Used for per-CP display; beam-level LSV uses the CA-based Masi formula.
     
     Returns value from 0 to 1, where 1 = perfectly uniform.
     """
-    bank_a = np.array(mlc_positions.bank_a)
-    bank_b = np.array(mlc_positions.bank_b)
+    bank_a = mlc_positions.bank_a
+    bank_b = mlc_positions.bank_b
     
     if len(bank_a) < 2 or len(bank_b) < 2:
         return 0.0
     
     num_pairs = min(len(bank_a), len(bank_b))
     
-    # Calculate position differences between adjacent leaves
-    diff_a = np.abs(np.diff(bank_a[:num_pairs]))
-    diff_b = np.abs(np.diff(bank_b[:num_pairs]))
+    # Per-CP LSV: use simplified Masi formula on all open leaves
+    open_mask = [bank_b[i] - bank_a[i] > 0 for i in range(num_pairs)]
     
-    sum_pos_max_a = np.sum(diff_a)
-    sum_pos_max_b = np.sum(diff_b)
+    lsv_a = calculate_lsv_bank(list(bank_a[:num_pairs]), open_mask)
+    lsv_b = calculate_lsv_bank(list(bank_b[:num_pairs]), open_mask)
     
-    # Normalize by number of leaf pairs
-    pos_max = max(
-        np.max(bank_a[:num_pairs]) - np.min(bank_a[:num_pairs]),
-        np.max(bank_b[:num_pairs]) - np.min(bank_b[:num_pairs]),
-        1.0  # Avoid division by zero
-    )
-    
-    n = num_pairs - 1
-    lsv_a = sum_pos_max_a / (n * pos_max)
-    lsv_b = sum_pos_max_b / (n * pos_max)
-    
-    # LSV is 1 - normalized variability
-    return 1.0 - min((lsv_a + lsv_b) / 2, 1.0)
+    return (lsv_a + lsv_b) / 2.0
 
 
 def calculate_leaf_travel(
@@ -437,11 +529,27 @@ def calculate_beam_metrics(
     beam: Beam,
     machine_params: Optional[MachineDeliveryParams] = None
 ) -> BeamMetrics:
-    """Calculate all UCoMX metrics for a single beam."""
+    """
+    Calculate beam-level UCoMX metrics using CA midpoint interpolation.
+    
+    Core UCoMx metrics (LSV, AAV, MCS, LT) use Control Arc (CA) midpoint
+    interpolation with active leaf filtering per Cavinato et al. (Med Phys, 2024):
+    - CA midpoint: MLC/jaw positions averaged between adjacent CPs
+    - Active leaves: gap > plan_min_gap AND within Y-jaw
+    - A_max: union/envelope aperture (per-leaf max gap summed)
+    - LSV: Masi (2008) per-bank position-based formula
+    - AAV: A_ca / A_max_union (McNiven 2010)
+    - MCS: LSV × AAV, aggregated with Eq. 2 (MU-weighted)
+    """
     if machine_params is None:
         machine_params = DEFAULT_MACHINE_PARAMS
     
-    # Calculate per-control-point metrics
+    n_pairs = beam.number_of_leaves or len(beam.mlc_leaf_widths) or 60
+    leaf_bounds = get_effective_leaf_boundaries(beam)
+    n_cps = len(beam.control_points)
+    n_ca = n_cps - 1
+    
+    # ===== Per-CP metrics (for UI display and delivery time estimation) =====
     control_point_metrics: List[ControlPointMetrics] = []
     for i, cp in enumerate(beam.control_points):
         prev_cp = beam.control_points[i - 1] if i > 0 else None
@@ -449,30 +557,49 @@ def calculate_beam_metrics(
             calculate_control_point_metrics(cp, prev_cp, beam.mlc_leaf_widths)
         )
     
-    # Aggregate metrics (MU-weighted where applicable)
-    total_meterset_weight = 0.0
-    weighted_lsv = 0.0
-    weighted_aav = 0.0
-    weighted_pi = 0.0
-    weighted_lg = 0.0
-    weighted_mad = 0.0
-    weighted_efs = 0.0
-    weighted_tg = 0.0
+    # ===== CA-based UCoMx metrics =====
+    # Pass 1: Find min_gap across ALL CPs
+    plan_min_gap = float('inf')
+    for i in range(n_cps):
+        bank_a = beam.control_points[i].mlc_positions.bank_a
+        bank_b = beam.control_points[i].mlc_positions.bank_b
+        n = min(len(bank_a), len(bank_b), n_pairs)
+        for k in range(n):
+            gap = bank_b[k] - bank_a[k]
+            if gap < plan_min_gap:
+                plan_min_gap = gap
+    if not math.isfinite(plan_min_gap) or plan_min_gap < 0:
+        plan_min_gap = 0.0
+    
+    # Pass 2: Compute per-CA metrics with midpoint interpolation
+    ca_areas: List[float] = []
+    ca_lsvs: List[float] = []
+    ca_lts: List[float] = []
+    ca_delta_mu: List[float] = []
+    per_leaf_max_contrib = [0.0] * n_pairs  # for union A_max
+    total_active_leaf_travel = 0.0
+    ca_active_leaf_count = 0  # for NL computation
+    
+    # Also accumulate per-CP-like metrics for secondary computations
     total_area = 0.0
     total_perimeter = 0.0
-    total_leaf_travel = 0.0
     area_count = 0
     sas5_count = 0
     sas10_count = 0
     small_field_count = 0
     total_jaw_area = 0.0
+    weighted_pi = 0.0
+    weighted_lg = 0.0
+    weighted_mad = 0.0
+    weighted_efs = 0.0
+    weighted_tg = 0.0
+    total_meterset_weight = 0.0
     
     for i, cpm in enumerate(control_point_metrics):
         cp = beam.control_points[i]
         weight = cpm.meterset_weight
         total_meterset_weight += weight
         
-        # Calculate per-CP accuracy metrics
         lg = calculate_leaf_gap(cp.mlc_positions)
         mad = calculate_mad(cp.mlc_positions)
         perimeter = cpm.aperture_perimeter or 0
@@ -481,18 +608,12 @@ def calculate_beam_metrics(
         jaw_area = calculate_jaw_area(cp.jaw_positions)
         
         if weight > 0:
-            weighted_lsv += cpm.aperture_lsv * weight
-            weighted_aav += cpm.aperture_aav * weight
             weighted_lg += lg * weight
             weighted_mad += mad * weight
             weighted_efs += efs * weight
             weighted_tg += tg * weight
-            
-            # Calculate PI contribution
             ai = calculate_aperture_irregularity(
-                cp.mlc_positions,
-                beam.mlc_leaf_widths,
-                cp.jaw_positions
+                cp.mlc_positions, beam.mlc_leaf_widths, cp.jaw_positions
             )
             weighted_pi += ai * weight
         
@@ -500,8 +621,7 @@ def calculate_beam_metrics(
             total_area += cpm.aperture_area
             total_perimeter += perimeter
             area_count += 1
-            
-            if cpm.aperture_area < 400:  # < 4 cm²
+            if cpm.aperture_area < 400:
                 small_field_count += 1
         
         total_jaw_area += jaw_area
@@ -511,46 +631,102 @@ def calculate_beam_metrics(
                 sas5_count += 1
             if cpm.small_aperture_flags.below_10mm:
                 sas10_count += 1
-        
-        total_leaf_travel += cpm.leaf_travel
     
-    # Normalize weighted averages
-    LSV = weighted_lsv / total_meterset_weight if total_meterset_weight > 0 else 0
-    AAV = weighted_aav / total_meterset_weight if total_meterset_weight > 0 else 0
-    PI = weighted_pi / total_meterset_weight if total_meterset_weight > 0 else 1
-    LG = weighted_lg / total_meterset_weight if total_meterset_weight > 0 else 0
-    MAD = weighted_mad / total_meterset_weight if total_meterset_weight > 0 else 0
-    EFS = weighted_efs / total_meterset_weight if total_meterset_weight > 0 else 0
-    TG = weighted_tg / total_meterset_weight if total_meterset_weight > 0 else 0
+    if n_ca > 0:
+        for j in range(n_ca):
+            cp1 = beam.control_points[j]
+            cp2 = beam.control_points[j + 1]
+            a1 = cp1.mlc_positions.bank_a
+            b1 = cp1.mlc_positions.bank_b
+            a2 = cp2.mlc_positions.bank_a
+            b2 = cp2.mlc_positions.bank_b
+            n = min(len(a1), len(b1), len(a2), len(b2), n_pairs)
+            
+            # CA midpoint interpolation
+            mid_a = [(a1[k] + a2[k]) / 2.0 for k in range(n)]
+            mid_b = [(b1[k] + b2[k]) / 2.0 for k in range(n)]
+            gaps = [mid_b[k] - mid_a[k] for k in range(n)]
+            
+            mid_jaw_y1 = (cp1.jaw_positions.y1 + cp2.jaw_positions.y1) / 2.0
+            mid_jaw_y2 = (cp1.jaw_positions.y2 + cp2.jaw_positions.y2) / 2.0
+            
+            # Active leaves
+            active = determine_active_leaves(gaps, leaf_bounds, mid_jaw_y1, mid_jaw_y2, plan_min_gap)
+            
+            # Area with Y-jaw clipping
+            area = calculate_area_ca(mid_a, mid_b, leaf_bounds, mid_jaw_y1, mid_jaw_y2, active)
+            ca_areas.append(area)
+            
+            # Track per-leaf max contribution for union A_max
+            for k in range(n):
+                if active[k]:
+                    eff_w = max(0.0, min(leaf_bounds[k + 1], mid_jaw_y2) - max(leaf_bounds[k], mid_jaw_y1))
+                    contrib = gaps[k] * eff_w
+                    if contrib > per_leaf_max_contrib[k]:
+                        per_leaf_max_contrib[k] = contrib
+            
+            # LSV per bank (Masi formula)
+            lsv_a = calculate_lsv_bank(mid_a, active)
+            lsv_b = calculate_lsv_bank(mid_b, active)
+            ca_lsvs.append((lsv_a + lsv_b) / 2.0)
+            
+            # Active leaf travel (between actual CPs)
+            lt = 0.0
+            active_count = 0
+            for k in range(n):
+                if active[k]:
+                    lt += abs(a2[k] - a1[k])
+                    lt += abs(b2[k] - b1[k])
+                    active_count += 1
+            ca_lts.append(lt)
+            total_active_leaf_travel += lt
+            ca_active_leaf_count += active_count
+            
+            # Delta MU
+            delta_mu = cp2.cumulative_meterset_weight - cp1.cumulative_meterset_weight
+            ca_delta_mu.append(max(0.0, delta_mu))
     
-    # MCS = LSV × (1 - AAV)
-    MCS = LSV * (1 - AAV)
+    # ===== Union aperture A_max =====
+    a_max_union = sum(per_leaf_max_contrib)
     
-    # PM = 1 - MCS
+    # ===== Compute AAV and MCS per CA =====
+    ca_aavs = [a / a_max_union if a_max_union > 0 else 0.0 for a in ca_areas]
+    ca_mcss = [ca_lsvs[i] * ca_aavs[i] for i in range(len(ca_lsvs))]
+    
+    # ===== Aggregate: Eq. (1) unweighted for LSV/AAV, Eq. (2) MU-weighted for MCS =====
+    LSV = sum(ca_lsvs) / n_ca if n_ca > 0 else 0.0
+    AAV = sum(ca_aavs) / n_ca if n_ca > 0 else 0.0
+    
+    total_delta_mu = sum(ca_delta_mu)
+    if total_delta_mu > 0:
+        MCS = sum(ca_mcss[i] * ca_delta_mu[i] for i in range(len(ca_mcss))) / total_delta_mu
+    else:
+        MCS = LSV * AAV
+    
+    # LT: total active leaf travel
+    LT = total_active_leaf_travel
+    
+    # NL: 2 × mean active leaf pairs per CA (both banks)
+    NL = (2.0 * ca_active_leaf_count) / n_ca if n_ca > 0 else 0.0
+    
+    # Secondary metrics from per-CP data
+    PI = weighted_pi / total_meterset_weight if total_meterset_weight > 0 else 1.0
+    LG = weighted_lg / total_meterset_weight if total_meterset_weight > 0 else 0.0
+    MAD_val = weighted_mad / total_meterset_weight if total_meterset_weight > 0 else 0.0
+    EFS = weighted_efs / total_meterset_weight if total_meterset_weight > 0 else 0.0
+    TG = weighted_tg / total_meterset_weight if total_meterset_weight > 0 else 0.0
+    
     PM = 1 - MCS
+    MFA = (total_area / area_count) / 100.0 if area_count > 0 else 0.0
+    EM = total_perimeter / total_area if total_area > 0 else 0.0
+    PA = total_area / 100.0
+    JA = total_jaw_area / area_count if area_count > 0 else 0.0
     
-    # Mean Field Area in cm²
-    MFA = (total_area / area_count) / 100 if area_count > 0 else 0
-    
-    # Edge Metric
-    EM = total_perimeter / total_area if total_area > 0 else 0
-    
-    # Plan Area in cm²
-    PA = total_area / 100
-    
-    # Jaw Area in cm²
-    JA = total_jaw_area / area_count if area_count > 0 else 0
-    
-    # Small Aperture Scores
     total_cps = len(control_point_metrics)
-    SAS5 = sas5_count / total_cps if total_cps > 0 else 0
-    SAS10 = sas10_count / total_cps if total_cps > 0 else 0
-    psmall = small_field_count / total_cps if total_cps > 0 else 0
+    SAS5 = sas5_count / total_cps if total_cps > 0 else 0.0
+    SAS10 = sas10_count / total_cps if total_cps > 0 else 0.0
+    psmall = small_field_count / total_cps if total_cps > 0 else 0.0
     
-    # Leaf Travel
-    LT = total_leaf_travel
-    
-    # LTMCS: Combined metric
     LTMCS = MCS / (1 + math.log10(1 + LT / 1000)) if LT > 0 else MCS
     
     # Arc length and collimator angles
@@ -636,10 +812,9 @@ def calculate_beam_metrics(
     
     # MI - Modulation Index
     MI: Optional[float] = None
-    if len(control_point_metrics) > 1 and total_leaf_travel > 0:
+    if len(control_point_metrics) > 1 and LT > 0:
         normalized_lt = LT / (num_leaves * num_cps)
-        avg_area_change = sum(cpm.aperture_aav for cpm in control_point_metrics) / len(control_point_metrics)
-        MI = normalized_lt * (1 + avg_area_change)
+        MI = normalized_lt
     
     return BeamMetrics(
         beam_number=beam.beam_number,
@@ -651,7 +826,7 @@ def calculate_beam_metrics(
         LT=LT,
         LTMCS=LTMCS,
         LG=LG,
-        MAD=MAD,
+        MAD=MAD_val,
         EFS=EFS,
         psmall=psmall,
         MUCA=MUCA,
@@ -693,24 +868,35 @@ def calculate_plan_metrics(
     plan: RTPlan,
     machine_params: Optional[MachineDeliveryParams] = None
 ) -> PlanMetrics:
-    """Calculate MU-weighted plan-level UCoMX metrics."""
+    """
+    Calculate plan-level UCoMX metrics.
+    
+    Aggregation:
+    - UCoMx Eq. (1): unweighted average for LSV, AAV
+    - UCoMx Eq. (2): MU-weighted for MCS and BEV metrics
+    """
     beam_metrics = [
         calculate_beam_metrics(beam, machine_params)
         for beam in plan.beams
     ]
     
-    # Aggregate across beams (MU-weighted)
+    n_beams = len(beam_metrics) or 1
     total_mu = sum(bm.beam_mu for bm in beam_metrics)
     
+    # UCoMx Eq. (1): unweighted average for LSV, AAV
+    sum_lsv = sum(bm.LSV for bm in beam_metrics)
+    sum_aav = sum(bm.AAV for bm in beam_metrics)
+    LSV = sum_lsv / n_beams
+    AAV = sum_aav / n_beams
+    
+    # UCoMx Eq. (2): MU-weighted for MCS
     if total_mu > 0:
-        MCS = sum(bm.MCS * bm.beam_mu for bm in beam_metrics) / total_mu
-        LSV = sum(bm.LSV * bm.beam_mu for bm in beam_metrics) / total_mu
-        AAV = sum(bm.AAV * bm.beam_mu for bm in beam_metrics) / total_mu
-        MFA = sum(bm.MFA * bm.beam_mu for bm in beam_metrics) / total_mu
+        MCS = sum(bm.MCS * (bm.beam_mu or 1) for bm in beam_metrics) / total_mu
+        MFA = sum(bm.MFA * (bm.beam_mu or 1) for bm in beam_metrics) / total_mu
         
-        # Weight optional metrics
+        # Weight optional metrics by MU
         def weighted_avg(attr: str) -> Optional[float]:
-            values = [(getattr(bm, attr), bm.beam_mu) for bm in beam_metrics]
+            values = [(getattr(bm, attr), bm.beam_mu or 1) for bm in beam_metrics]
             valid = [(v, mu) for v, mu in values if v is not None]
             if not valid:
                 return None
@@ -721,7 +907,7 @@ def calculate_plan_metrics(
         EFS = weighted_avg("EFS")
         psmall = weighted_avg("psmall")
         MUCA = weighted_avg("MUCA")
-        LTMU = weighted_avg("LTMU")
+        LTMU_plan = None  # computed as total LT / total MU below
         LTNLMU = weighted_avg("LTNLMU")
         LNA = weighted_avg("LNA")
         LTAL = weighted_avg("LTAL")
@@ -738,18 +924,22 @@ def calculate_plan_metrics(
         EM = weighted_avg("EM")
         PI = weighted_avg("PI")
     else:
-        MCS = LSV = AAV = MFA = 0.0
+        MCS = MFA = 0.0
         LG = MAD = EFS = psmall = None
-        MUCA = LTMU = LTNLMU = LNA = LTAL = mDRV = None
+        MUCA = LTNLMU = LNA = LTAL = mDRV = None
         GS = mGSV = LS = PM = TG = MD = MI = None
         SAS5 = SAS10 = EM = PI = None
+        LTMU_plan = None
     
     # Total metrics (sum, not weighted average)
     total_lt = sum(bm.LT for bm in beam_metrics)
     total_delivery_time = sum(bm.estimated_delivery_time or 0 for bm in beam_metrics)
     total_gt = sum(bm.GT or 0 for bm in beam_metrics)
     total_pa = sum(bm.PA or 0 for bm in beam_metrics)
-    total_ja = sum(bm.JA or 0 for bm in beam_metrics) / len(beam_metrics) if beam_metrics else 0
+    total_ja = sum(bm.JA or 0 for bm in beam_metrics) / n_beams if beam_metrics else 0
+    
+    # Plan-level LTMU = total LT / total MU
+    LTMU_plan = total_lt / total_mu if total_mu > 0 else None
     
     # LTMCS for plan
     LTMCS = MCS / (1 + math.log10(1 + total_lt / 1000)) if total_lt > 0 else MCS
@@ -768,7 +958,7 @@ def calculate_plan_metrics(
         EFS=EFS,
         psmall=psmall,
         MUCA=MUCA,
-        LTMU=LTMU,
+        LTMU=LTMU_plan,
         LTNLMU=LTNLMU,
         LNA=LNA,
         LTAL=LTAL,
