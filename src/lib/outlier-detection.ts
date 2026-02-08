@@ -1,4 +1,13 @@
-import type { PlanMetricsResult } from './dicom/types';
+import type { PlanMetrics } from './dicom/types';
+
+// Type for plan with computed metrics (used by batch/cohort processing)
+// Compatible with both BatchPlan and CohortPlan types
+export interface PlanMetricsResult {
+  id: string;
+  fileName: string;
+  metrics: PlanMetrics;
+  planLabel?: string;
+}
 import { METRIC_DEFINITIONS } from './metrics-definitions';
 
 export interface OutlierDetectionResult {
@@ -110,7 +119,7 @@ export function detectOutliers(
   
   for (const metricKey of keyMetrics) {
     const values = plans
-      .map(p => p.planMetrics?.[metricKey])
+      .map(p => (p.metrics as unknown as Record<string, unknown>)?.[metricKey])
       .filter((v): v is number => typeof v === 'number' && !isNaN(v));
 
     if (values.length < minPlans) continue;
@@ -128,7 +137,7 @@ export function detectOutliers(
     let complexityCount = 0;
 
     for (const [metricKey, stats] of metricStats.entries()) {
-      const value = plan.planMetrics?.[metricKey];
+      const value = (plan.metrics as unknown as Record<string, unknown>)?.[metricKey];
       if (typeof value !== 'number' || isNaN(value)) continue;
 
       const zScore = calculateZScore(value, stats.mean, stats.std);
@@ -137,7 +146,7 @@ export function detectOutliers(
       // Check if this is an outlier
       if (absZScore >= zScoreThreshold) {
         const sortedValues = plans
-          .map(p => p.planMetrics?.[metricKey])
+          .map(p => (p.metrics as unknown as Record<string, unknown>)?.[metricKey])
           .filter((v): v is number => typeof v === 'number' && !isNaN(v))
           .sort((a, b) => a - b);
 
@@ -181,7 +190,7 @@ export function detectOutliers(
       }
 
       results.push({
-        planId: plan.planLabel || plan.fileName,
+        planId: plan.planLabel || plan.metrics?.planLabel || plan.fileName,
         fileName: plan.fileName,
         outlierMetrics: outlierMetrics.sort((a, b) => Math.abs(b.zScore) - Math.abs(a.zScore)),
         overallComplexityScore,
@@ -225,7 +234,7 @@ export function suggestClusteringDimensions(
 
   for (const metricKey of keyMetrics) {
     const values = plans
-      .map(p => p.planMetrics?.[metricKey])
+      .map(p => (p.metrics as unknown as Record<string, unknown>)?.[metricKey])
       .filter((v): v is number => typeof v === 'number' && !isNaN(v));
 
     if (values.length < 5) continue;

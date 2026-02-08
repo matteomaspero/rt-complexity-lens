@@ -228,7 +228,7 @@ export function AngularDistributionChart({
                 strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 4 }}
-                strokeDasharray={ROTATION_DASH_PATTERNS[rotNum % ROTATION_DASH_PATTERNS.length]}
+                strokeDasharray={ROTATION_DASH_PATTERNS[rotNum % ROTATION_DASH_PATTERNS.length].join(' ')}
                 name={`Rotation ${rotNum + 1}`}
                 connectNulls={false}
                 type="monotone"
@@ -250,11 +250,9 @@ export function AngularDistributionChart({
             {uniqueRotations.map((rotNum) => (
               <div key={`legend-${rotNum}`} className="flex items-center gap-2 text-xs">
                 <div
-                  className="h-2 w-4"
+                  className="h-2 w-4 rounded-sm"
                   style={{
                     backgroundColor: ROTATION_COLORS[rotNum % ROTATION_COLORS.length],
-                    borderDasharray: ROTATION_DASH_PATTERNS[rotNum % ROTATION_DASH_PATTERNS.length]
-                      .join(','),
                   }}
                 />
                 <span className="text-muted-foreground">
