@@ -30,6 +30,10 @@ export interface ControlPointSegment {
   LSV: number;
   AAV: number;
   apertureArea: number;
+  rotationNumber: number;  // Which rotation (0-based): 0 = 0-360°, 1 = 360-720°, etc.
+  normalizedAngle: number; // 0-360° within current rotation
+  cumulativeAngle: number; // Total angle traveled from start
+  gantryDirection: 'CW' | 'CCW'; // Rotation direction
 }
 
 /**
@@ -53,6 +57,60 @@ function getMaxLeafTravel(
 }
 
 /**
+ * Detect rotation periods in gantry angles
+ * Returns array of segments enriched with rotation information
+ */
+function enrichSegmentsWithRotations(
+  segments: ControlPointSegment[]
+): ControlPointSegment[] {
+  let currentRotation = 0;
+  let prevAngle = segments.length > 0 ? segments[0].gantryAngle : 0;
+  let cumulativeAngle = segments.length > 0 ? segments[0].gantryAngle : 0;
+
+  return segments.map((seg, idx) => {
+    const angle = seg.gantryAngle;
+    
+    // Detect wrap-around transition
+    // CW rotation: angle increases normally or wraps from 359° → 0°
+    // CCW rotation: angle decreases normally or wraps from 0° → 359°
+    if (idx > 0) {
+      const angleDiff = angle - prevAngle;
+      
+      // Large positive jump: likely CCW with wrap-around (e.g., 10° - 350° = -340°)
+      if (angleDiff < -180) {
+        currentRotation += 1; // Next rotation in CW
+        cumulativeAngle += (360 + angleDiff);
+      }
+      // Large negative jump: likely CW with wrap-around (e.g., 350° - 10° = 340°)
+      else if (angleDiff > 180) {
+        currentRotation += 1; // Next rotation in CCW
+        cumulativeAngle += (360 - angleDiff);
+      }
+      // Normal change: no wrap
+      else {
+        cumulativeAngle += angleDiff;
+      }
+    }
+    
+    prevAngle = angle;
+    
+    // Determine direction based on change
+    const gantryDirection: 'CW' | 'CCW' = 
+      idx === 0 
+        ? (seg.gantryAngleEnd > seg.gantryAngle ? 'CW' : 'CCW')
+        : (prevAngle < angle ? 'CW' : 'CCW');
+    
+    return {
+      ...seg,
+      rotationNumber: currentRotation,
+      normalizedAngle: angle,
+      cumulativeAngle,
+      gantryDirection,
+    };
+  });
+}
+
+/**
  * Calculate per-segment data for a beam
  */
 export function calculateControlPointSegments(
@@ -60,7 +118,7 @@ export function calculateControlPointSegments(
   controlPointMetrics: ControlPointMetrics[],
   machineParams: MachineDeliveryParams
 ): ControlPointSegment[] {
-  const segments: ControlPointSegment[] = [];
+  const baseSegments: ControlPointSegment[] = [];
   const beamMU = beam.beamDose || 100;
   
   for (let i = 1; i < beam.controlPoints.length; i++) {
@@ -95,7 +153,7 @@ export function calculateControlPointSegments(
     const gantrySpeed = segmentTime > 0 && beam.isArc ? gantryAngleDiff / segmentTime : 0;
     const mlcSpeed = segmentTime > 0 ? maxLeafTravel / segmentTime : 0;
     
-    segments.push({
+    baseSegments.push({
       index: i,
       gantryAngle: prevCP.gantryAngle,
       gantryAngleEnd: cp.gantryAngle,
@@ -108,10 +166,15 @@ export function calculateControlPointSegments(
       LSV: (cpm.apertureLSV + prevCPM.apertureLSV) / 2,
       AAV: cpm.apertureAAV,
       apertureArea: (cpm.apertureArea + prevCPM.apertureArea) / 2,
+      // Placeholder values - will be enriched below
+      rotationNumber: 0,
+      normalizedAngle: prevCP.gantryAngle,
+      cumulativeAngle: prevCP.gantryAngle,
+      gantryDirection: 'CW',
     });
   }
   
-  return segments;
+  return enrichSegmentsWithRotations(baseSegments);
 }
 
 /**
@@ -197,18 +260,26 @@ export function getPolarChartData(bins: AngularBin[]): Array<{
 }
 
 /**
- * Get dose rate vs angle chart data
+ * Get dose rate vs angle chart data with rotation information
  */
 export function getDoseRateByAngleData(segments: ControlPointSegment[]): Array<{
   angle: number;
+  normalizedAngle: number;
   doseRate: number;
   MU: number;
   index: number;
+  rotationNumber: number;
+  gantryDirection: 'CW' | 'CCW';
+  rotationLabel: string;
 }> {
   return segments.map((seg, idx) => ({
     angle: (seg.gantryAngle + seg.gantryAngleEnd) / 2,
+    normalizedAngle: seg.normalizedAngle,
     doseRate: seg.doseRate,
     MU: seg.MU,
     index: idx + 1,
+    rotationNumber: seg.rotationNumber,
+    gantryDirection: seg.gantryDirection,
+    rotationLabel: `Rotation ${seg.rotationNumber + 1} (${seg.gantryDirection})`,
   }));
 }

@@ -15,6 +15,8 @@ import NotFound from "./pages/NotFound";
 
 // Lazy load secondary pages to reduce initial bundle size
 const Help = lazy(() => import("./pages/Help"));
+const MetricsReference = lazy(() => import("./pages/MetricsReference"));
+const TechnicalReference = lazy(() => import("./pages/TechnicalReference"));
 const BatchDashboard = lazy(() => import("./pages/BatchDashboard"));
 const ComparePlans = lazy(() => import("./pages/ComparePlans"));
 const CohortAnalysis = lazy(() => import("./pages/CohortAnalysis"));
@@ -42,6 +44,8 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/help" element={<Suspense fallback={<PageLoader />}><Help /></Suspense>} />
+                  <Route path="/metrics" element={<Suspense fallback={<PageLoader />}><MetricsReference /></Suspense>} />
+                  <Route path="/technical" element={<Suspense fallback={<PageLoader />}><TechnicalReference /></Suspense>} />
                   <Route path="/batch" element={<Suspense fallback={<PageLoader />}><BatchDashboard /></Suspense>} />
                   <Route path="/compare" element={<Suspense fallback={<PageLoader />}><ComparePlans /></Suspense>} />
                   <Route path="/cohort" element={<Suspense fallback={<PageLoader />}><CohortAnalysis /></Suspense>} />

@@ -13,6 +13,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Legend,
+  ComposedChart,
 } from 'recharts';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
@@ -29,6 +31,18 @@ interface AngularDistributionChartProps {
   currentIndex: number;
   machineParams?: MachineDeliveryParams;
 }
+
+// Color scheme for rotations (tailwind colors)
+const ROTATION_COLORS = [
+  'hsl(var(--chart-primary))',      // Blue
+  'hsl(var(--chart-secondary))',    // Orange
+  'hsl(var(--chart-tertiary))',     // Green
+  'hsl(var(--chart-quaternary))',   // Purple/Red
+  'hsl(208, 100%, 50%)',            // Cyan
+  'hsl(142, 76%, 36%)',             // Emerald
+];
+
+const ROTATION_DASH_PATTERNS = [[], [4, 2], [2, 2], [8, 2], [4, 4]];
 
 export function AngularDistributionChart({
   beam,
@@ -60,14 +74,26 @@ export function AngularDistributionChart({
     }));
   }, [angularBins]);
 
-  // Dose rate line chart data
+  // Dose rate line chart data with rotation info
   const doseRateData = useMemo(() => 
     getDoseRateByAngleData(segments),
     [segments]
   );
 
+  // Get unique rotations
+  const uniqueRotations = useMemo(() => {
+    const rotations = [...new Set(doseRateData.map(d => d.rotationNumber))];
+    return rotations.sort((a, b) => a - b);
+  }, [doseRateData]);
+
   // Current gantry angle for reference line
   const currentAngle = beam.controlPoints[currentIndex]?.gantryAngle ?? 0;
+  
+  // Find current rotation state
+  const currentRotation = useMemo(() => {
+    const currentSeg = segments[Math.min(currentIndex, segments.length - 1)];
+    return currentSeg?.rotationNumber ?? 0;
+  }, [currentIndex, segments]);
 
   return (
     <div className="space-y-4">
@@ -110,35 +136,58 @@ export function AngularDistributionChart({
         </p>
       </div>
 
-      {/* Dose Rate vs Gantry Angle */}
+      {/* Dose Rate vs Gantry Angle - Multi-Rotation */}
       <div ref={doseRateRef} className="rounded-lg border bg-card p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-medium">Dose Rate vs Gantry Angle</h4>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm">
-              {doseRateData[Math.min(currentIndex, doseRateData.length - 1)]?.doseRate.toFixed(0) ?? 0} MU/min
-            </span>
-            <ChartExportButton chartRef={doseRateRef} filename="dose_rate_vs_angle" />
+        <div className="mb-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium">Dose Rate vs Gantry Angle</h4>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-sm">
+                {doseRateData[Math.min(currentIndex, doseRateData.length - 1)]?.doseRate.toFixed(0) ?? 0} MU/min
+              </span>
+              <ChartExportButton chartRef={doseRateRef} filename="dose_rate_vs_angle" />
+            </div>
           </div>
+          
+          {/* Rotation Info */}
+          {uniqueRotations.length > 1 && (
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="font-semibold">Rotations:</span>
+              {uniqueRotations.map(rot => (
+                <span
+                  key={rot}
+                  className={`px-2 py-1 rounded ${
+                    rot === currentRotation
+                      ? 'bg-primary/10 text-foreground font-semibold'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {rot + 1} ({doseRateData.find(d => d.rotationNumber === rot)?.gantryDirection})
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        <ResponsiveContainer width="100%" height={160}>
-          <LineChart data={doseRateData} margin={{ top: 5, right: 5, bottom: 20, left: 5 }}>
+
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={doseRateData} margin={{ top: 5, right: 5, bottom: 30, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="hsl(var(--chart-grid))"
               vertical={false}
             />
             <XAxis
-              dataKey="angle"
+              dataKey="normalizedAngle"
               type="number"
               domain={[0, 360]}
               tick={{ fontSize: 10, fill: 'hsl(var(--foreground))' }}
               tickLine={false}
               axisLine={{ stroke: 'hsl(var(--border))' }}
+              tickFormatter={(value: number) => `${value.toFixed(0)}°`}
               label={{
-                value: 'Gantry Angle (°)',
+                value: 'Gantry Angle per Rotation (°)',
                 position: 'insideBottom',
-                offset: -10,
+                offset: -15,
                 fontSize: 10,
                 fill: 'hsl(var(--muted-foreground))',
               }}
@@ -148,6 +197,12 @@ export function AngularDistributionChart({
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v.toFixed(0)}`}
+              label={{
+                value: 'Dose Rate (MU/min)',
+                angle: -90,
+                position: 'insideLeft',
+                fontSize: 10,
+              }}
             />
             <Tooltip
               contentStyle={{
@@ -156,17 +211,30 @@ export function AngularDistributionChart({
                 borderRadius: '6px',
                 fontSize: '12px',
               }}
-              formatter={(value: number) => [`${value.toFixed(1)} MU/min`, 'Dose Rate']}
+              formatter={(value: number, name: string) => {
+                if (name === 'doseRate') return [`${value.toFixed(1)} MU/min`, 'Dose Rate'];
+                return [value, name];
+              }}
               labelFormatter={(label) => `${Number(label).toFixed(1)}°`}
             />
-            <Line
-              type="monotone"
-              dataKey="doseRate"
-              stroke="hsl(var(--chart-primary))"
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: 'hsl(var(--chart-primary))' }}
-            />
+
+            {/* Render separate lines for each rotation */}
+            {uniqueRotations.map((rotNum) => (
+              <Line
+                key={`rotation-${rotNum}`}
+                data={doseRateData.filter(d => d.rotationNumber === rotNum)}
+                dataKey="doseRate"
+                stroke={ROTATION_COLORS[rotNum % ROTATION_COLORS.length]}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+                strokeDasharray={ROTATION_DASH_PATTERNS[rotNum % ROTATION_DASH_PATTERNS.length]}
+                name={`Rotation ${rotNum + 1}`}
+                connectNulls={false}
+                type="monotone"
+              />
+            ))}
+
             <ReferenceLine
               x={currentAngle}
               stroke="hsl(var(--chart-secondary))"
@@ -175,6 +243,27 @@ export function AngularDistributionChart({
             />
           </LineChart>
         </ResponsiveContainer>
+
+        {/* Legend for rotations */}
+        {uniqueRotations.length > 1 && (
+          <div className="mt-3 flex flex-wrap gap-3 border-t pt-2">
+            {uniqueRotations.map((rotNum) => (
+              <div key={`legend-${rotNum}`} className="flex items-center gap-2 text-xs">
+                <div
+                  className="h-2 w-4"
+                  style={{
+                    backgroundColor: ROTATION_COLORS[rotNum % ROTATION_COLORS.length],
+                    borderDasharray: ROTATION_DASH_PATTERNS[rotNum % ROTATION_DASH_PATTERNS.length]
+                      .join(','),
+                  }}
+                />
+                <span className="text-muted-foreground">
+                  Rotation {rotNum + 1}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

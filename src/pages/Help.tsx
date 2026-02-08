@@ -13,10 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { METRIC_DEFINITIONS, METRIC_CATEGORIES, type MetricCategory } from '@/lib/metrics-definitions';
-import { TableOfContents, IEC61217Diagram, PatientAxesDiagram } from '@/components/help';
-import 'katex/dist/katex.min.css';
-import { BlockMath } from 'react-katex';
+import { TableOfContents } from '@/components/help';
 
 function ExternalLinkIcon() {
   return <ExternalLink className="ml-1 inline h-3 w-3" />;
@@ -37,14 +34,6 @@ function NoteBox({ children }: { children: React.ReactNode }) {
         <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
         <div>{children}</div>
       </div>
-    </div>
-  );
-}
-
-function MathFormula({ formula }: { formula: string }) {
-  return (
-    <div className="my-2 p-3 bg-muted/30 rounded-lg overflow-x-auto">
-      <BlockMath math={formula} />
     </div>
   );
 }
@@ -81,8 +70,6 @@ function ModeCard({ icon: Icon, title, description, features, linkTo }: {
 }
 
 export default function Help() {
-  const categories: MetricCategory[] = ['primary', 'secondary', 'accuracy', 'deliverability', 'delivery'];
-
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-6 py-12">
@@ -388,328 +375,57 @@ export default function Help() {
             </Card>
 
             {/* Metrics Reference */}
-            <Card id="metrics-reference">
+            {/* Metrics Reference - Link to dedicated page */}
+            <Card id="metrics-reference" className="border-l-4 border-l-amber-500 bg-amber-500/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5 text-primary" />
-                  Metrics Reference
+                  <Calculator className="h-5 w-5 text-amber-600" />
+                  Complexity Metrics
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="mb-6 text-sm text-muted-foreground">
-                  The following metrics are inspired by complexity metrics from the literature
-                  and associated publications.
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground leading-relaxed">
+                  RTp-lens calculates over 30 complexity metrics organized by category: 
+                  <strong> Primary</strong> (MCS, LSV, AAV, MFA, LT, LTMCS), 
+                  <strong> Accuracy</strong> (LG, MAD, EFS, etc.), and 
+                  <strong> Deliverability</strong> (MUCA, GT, GS, etc.).
                 </p>
-
-                {categories.map((category) => {
-                  const categoryInfo = METRIC_CATEGORIES[category];
-                  const metrics = Object.values(METRIC_DEFINITIONS).filter(
-                    (m) => m.category === category
-                  );
-
-                  if (metrics.length === 0) return null;
-
-                  return (
-                    <div key={category} className="mb-8">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="font-semibold text-base">{categoryInfo.label}</h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {metrics.length} metrics
-                        </Badge>
-                      </div>
-                      <p className="mb-4 text-sm text-muted-foreground">
-                        {categoryInfo.description}
-                      </p>
-                      <div className="overflow-x-auto rounded-lg border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50">
-                              <TableHead className="w-24 font-semibold">Metric</TableHead>
-                              <TableHead className="font-semibold">Description</TableHead>
-                              <TableHead className="w-20 font-semibold">Unit</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {metrics.map((metric) => (
-                              <TableRow key={metric.key}>
-                                <TableCell className="font-mono font-medium text-primary">
-                                  {metric.key}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="font-medium">{metric.name}</div>
-                                  <div className="text-sm text-muted-foreground mt-1">
-                                    {metric.fullDescription}
-                                  </div>
-                                  {metric.formula && (
-                                    <MathFormula formula={metric.formula} />
-                                  )}
-                                  {metric.reference && (
-                                    <div className="mt-2 text-xs text-muted-foreground">
-                                      <span className="font-medium">Ref:</span> {metric.reference}
-                                      {metric.doi && (
-                                        <>
-                                          {' '}
-                                          <a
-                                            href={`https://doi.org/${metric.doi}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-primary hover:underline"
-                                          >
-                                            DOI<ExternalLinkIcon />
-                                          </a>
-                                        </>
-                                      )}
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground font-mono text-sm">
-                                  {metric.unit || '—'}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  );
-                })}
+                <p className="text-sm text-muted-foreground">
+                  Each metric includes mathematical definition, units, and references to published research.
+                </p>
+                <Button asChild variant="outline">
+                  <Link to="/metrics" className="flex items-center gap-2">
+                    View Complete Metrics Reference
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
 
-            {/* Coordinate System */}
-            <Card id="coordinate-system">
+            {/* Coordinate System - Link to dedicated page */}
+            <Card id="coordinate-system" className="border-l-4 border-l-blue-500 bg-blue-500/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Compass className="h-5 w-5 text-primary" />
+                  <Compass className="h-5 w-5 text-blue-600" />
                   IEC 61217 Coordinate System
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-8">
+              <CardContent className="space-y-4">
                 <p className="text-muted-foreground leading-relaxed">
-                  The <strong className="text-foreground">IEC 61217</strong> standard defines coordinate systems and angle conventions 
-                  used universally in radiotherapy equipment. DICOM-RT files encode all geometric 
-                  information using these conventions. Understanding this system is essential for 
-                  correctly interpreting gantry angles, collimator rotations, and patient positioning 
-                  in treatment plans.
+                  RTv-lens uses the <strong>IEC 61217</strong> standard for coordinate systems. 
+                  This defines gantry angles, collimator rotations, couch positioning, and patient axes 
+                  used in all DICOM-RT files.
                 </p>
-
-                {/* Gantry Angle Section */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-base flex items-center gap-2">
-                    <span className="w-1 h-5 bg-primary rounded-full" />
-                    Gantry Angle
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Gantry angle describes the rotation of the treatment head around the patient. 
-                    The angle is measured from the viewer's perspective facing the gantry. At <code className="font-mono bg-muted px-1 py-0.5 rounded text-xs">0°</code>, 
-                    the radiation source is directly above the patient (superior), with the beam 
-                    directed downward. Rotation proceeds <strong>clockwise</strong> from this position.
-                  </p>
-                  
-                  <div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
-                    <div className="shrink-0 rounded-xl border bg-gradient-to-br from-muted/20 to-muted/40 p-4">
-                      <IEC61217Diagram />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="overflow-x-auto rounded-lg border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50">
-                              <TableHead className="w-20 font-semibold">Angle</TableHead>
-                              <TableHead className="font-semibold">Beam Direction</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell className="font-mono font-medium text-primary">0°</TableCell>
-                              <TableCell>From ceiling — AP beam (enters anterior surface)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-mono font-medium text-primary">90°</TableCell>
-                              <TableCell>From patient's left — left lateral beam</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-mono font-medium text-primary">180°</TableCell>
-                              <TableCell>From floor — PA beam (enters posterior, through couch)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-mono font-medium text-primary">270°</TableCell>
-                              <TableCell>From patient's right — right lateral beam</TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Collimator Angle Section */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-base flex items-center gap-2">
-                    <span className="w-1 h-5 bg-primary rounded-full" />
-                    Collimator Angle
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    The collimator (beam-limiting device) can rotate independently within the gantry head. 
-                    At <code className="font-mono bg-muted px-1 py-0.5 rounded text-xs">0°</code>, the MLC leaves are perpendicular to the gantry rotation axis. Rotation is 
-                    <strong> counter-clockwise</strong> when viewed from the radiation source (beam's-eye view).
-                  </p>
-                  <div className="bg-muted/30 rounded-lg p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <code className="font-mono bg-background px-2 py-0.5 rounded border text-primary font-medium">0°</code>
-                      <span className="text-muted-foreground">— MLC leaves perpendicular to gantry rotation axis</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <code className="font-mono bg-background px-2 py-0.5 rounded border text-primary font-medium">+</code>
-                      <span className="text-muted-foreground">— <strong>Counter-clockwise</strong> when viewed from the radiation source (BEV)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Couch Angle Section */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-base flex items-center gap-2">
-                    <span className="w-1 h-5 bg-primary rounded-full" />
-                    Couch (Table) Angle
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Couch rotation allows non-coplanar beam arrangements. The angle is measured 
-                    as viewed from above the patient.
-                  </p>
-                  <div className="overflow-x-auto rounded-lg border">
-                    <Table>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell className="font-mono font-medium w-20 text-primary">0°</TableCell>
-                          <TableCell className="text-muted-foreground">Couch parallel to gantry rotation axis (standard position)</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-mono font-medium text-primary">90°</TableCell>
-                          <TableCell className="text-muted-foreground">Counter-clockwise rotation (patient's head toward 90° gantry position)</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-mono font-medium text-primary">270°</TableCell>
-                          <TableCell className="text-muted-foreground">Clockwise rotation (patient's head toward 270° gantry position)</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Patient Coordinate Section */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-base flex items-center gap-2">
-                    <span className="w-1 h-5 bg-primary rounded-full" />
-                    Patient Coordinate System
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    The patient coordinate system assumes a supine (face-up) patient position with 
-                    head toward the gantry (head-first supine, HFS). The origin is at the machine 
-                    isocenter. This is a <strong>right-handed</strong> coordinate system.
-                  </p>
-                  
-                  <div className="my-6 flex flex-col lg:flex-row gap-6 items-start">
-                    <div className="shrink-0 rounded-xl border bg-gradient-to-br from-muted/20 to-muted/40 p-4">
-                      <PatientAxesDiagram />
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-4">
-                      <div className="overflow-x-auto rounded-lg border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50">
-                              <TableHead className="w-16 font-semibold">Axis</TableHead>
-                              <TableHead className="font-semibold">Positive (+)</TableHead>
-                              <TableHead className="font-semibold">Negative (−)</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell className="font-mono font-bold text-[hsl(0,84%,60%)]">X</TableCell>
-                              <TableCell>Patient's Left</TableCell>
-                              <TableCell className="text-muted-foreground">Patient's Right</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-mono font-bold text-[hsl(142,71%,45%)]">Y</TableCell>
-                              <TableCell>Posterior (back)</TableCell>
-                              <TableCell className="text-muted-foreground">Anterior (front)</TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-mono font-bold text-[hsl(217,91%,60%)]">Z</TableCell>
-                              <TableCell>Superior (head)</TableCell>
-                              <TableCell className="text-muted-foreground">Inferior (feet)</TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </div>
-                      <NoteBox>
-                        This differs from medical imaging conventions (LPS/RAS). 
-                        DICOM-RT patient coordinates follow IEC 61217 for consistency with machine geometry.
-                      </NoteBox>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Machine Variations Section */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-base flex items-center gap-2">
-                    <span className="w-1 h-5 bg-primary rounded-full" />
-                    Machine-Specific Variations
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    While IEC 61217 defines the coordinate system, different linac manufacturers 
-                    use varying MLC and jaw configurations:
-                  </p>
-                  <div className="overflow-x-auto rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="font-semibold">Machine</TableHead>
-                          <TableHead className="font-semibold">MLC Type</TableHead>
-                          <TableHead className="font-semibold">Jaw Configuration</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <TableRow>
-                          <TableCell className="font-medium">Varian C-arm (TrueBeam, Clinac)</TableCell>
-                          <TableCell className="text-muted-foreground">MLCX (leaves move in X-direction)</TableCell>
-                          <TableCell className="text-muted-foreground">ASYMX, ASYMY jaws</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">Varian Halcyon/Ethos</TableCell>
-                          <TableCell className="text-muted-foreground">Dual-layer stacked MLC</TableCell>
-                          <TableCell className="text-muted-foreground">No physical jaws</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">Elekta Agility/Versa HD</TableCell>
-                          <TableCell className="text-muted-foreground">MLCY (leaves move in Y-direction)</TableCell>
-                          <TableCell className="text-muted-foreground">X, Y jaw pairs</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                <div className="mt-6 p-4 rounded-lg bg-muted/50 border text-sm">
-                  <strong className="text-foreground">References:</strong>{' '}
-                  <span className="text-muted-foreground">For complete technical specifications, see the{' '}</span>
-                  <a
-                    href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.8.25.6.html"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    DICOM PS3.3 Coordinate Systems<ExternalLinkIcon />
-                  </a>{' '}
-                  <span className="text-muted-foreground">and the IEC 61217:2011 standard for radiotherapy equipment coordinates.</span>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  If you need to understand angle conventions, machine-specific variations, or technical details 
+                  about coordinate transformations, see the dedicated reference.
+                </p>
+                <Button asChild variant="outline">
+                  <Link to="/technical" className="flex items-center gap-2">
+                    View Technical Reference
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
 

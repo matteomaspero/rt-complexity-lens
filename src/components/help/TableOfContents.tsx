@@ -13,11 +13,11 @@ export interface Section {
 export const HELP_SECTIONS: Section[] = [
   { id: 'introduction', label: 'Introduction', icon: BookOpen },
   { id: 'analysis-modes', label: 'Analysis Modes', icon: Layers },
-  { id: 'metrics-reference', label: 'Metrics Reference', icon: Calculator },
   { id: 'machine-presets', label: 'Machine Presets', icon: Settings2 },
-  { id: 'coordinate-system', label: 'Coordinate System', icon: Compass },
   { id: 'how-to-use', label: 'How to Use', icon: Upload },
   { id: 'export-format', label: 'Export Format', icon: Download },
+  { id: 'metrics-reference', label: 'Metrics Reference', icon: Calculator },
+  { id: 'coordinate-system', label: 'Coordinate System', icon: Compass },
   { id: 'python-toolkit', label: 'Python Toolkit', icon: Terminal },
   { id: 'references', label: 'References', icon: FileText },
   { id: 'about', label: 'About', icon: Info },
