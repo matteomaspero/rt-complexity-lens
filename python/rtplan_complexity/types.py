@@ -80,6 +80,9 @@ class Beam:
     number_of_leaves: int = 60
     beam_description: Optional[str] = None
     source_skin_distance: Optional[float] = None
+    # Energy fields (DICOM 300A,0114)
+    nominal_beam_energy: Optional[float] = None  # Energy in MeV
+    energy_label: Optional[str] = None  # Clinical label (e.g., '6X', '10FFF', '9E')
 
 
 @dataclass
@@ -194,6 +197,11 @@ class BeamMetrics:
     # Basic metrics
     beam_mu: float
     number_of_control_points: int
+    
+    # Radiation type and energy (DICOM standard nomenclature)
+    radiation_type: Optional[str] = None  # 'PHOTON', 'ELECTRON', 'PROTON', 'NEUTRON', 'ION'
+    nominal_beam_energy: Optional[float] = None  # Energy in MeV
+    energy_label: Optional[str] = None  # Clinical label (e.g., '6X', '10FFF', '9E')
     
     # UCoMX Accuracy Metrics
     LG: Optional[float] = None  # Leaf Gap (mm)

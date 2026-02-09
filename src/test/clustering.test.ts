@@ -38,6 +38,7 @@ function createMockPlan(overrides: {
     controlPoints: [],
     mlcLeafPositions: [],
     mlcLeafWidths: [],
+    mlcLeafBoundaries: [],
     numberOfLeaves: 60,
     isArc: true,
     beamMetersetUnits: 'MU',
@@ -92,6 +93,7 @@ describe('Clustering Logic', () => {
       expect(dimensionIds).toContain('complexity');
       expect(dimensionIds).toContain('totalMU');
       expect(dimensionIds).toContain('machine');
+      expect(dimensionIds).toContain('energy');
     });
 
     it('should have name and description for each dimension', () => {

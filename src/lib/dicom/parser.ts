@@ -35,6 +35,7 @@ const TAGS = {
   RadiationType: 'x300a00c6',
   TreatmentDeliveryType: 'x300a00ce',
   NumberOfControlPoints: 'x300a0110',
+  NominalBeamEnergy: 'x300a0114',
   TreatmentMachineName: 'x300a00b2',
   FinalCumulativeMetersetWeight: 'x300a010e',
   
@@ -301,12 +302,43 @@ function getLeafWidths(beamDataSet: dicomParser.DataSet): { widths: number[]; bo
   return { widths: defaultWidths, boundaries: defaultBoundaries, numLeaves: 60 };
 }
 
+/**
+ * Generate clinical energy label from radiation type and energy value
+ * Per DICOM standard nomenclature:
+ * - Photons: 6X, 10X, 15X, 6FFF, 10FFF (X = MV, FFF = Flattening Filter Free)
+ * - Electrons: 6E, 9E, 12E, 15E, 18E (E = MeV)
+ * - Protons/Ions: Numeric MeV value
+ */
+function generateEnergyLabel(radiationType: string, energy: number | undefined, beamName: string): string | undefined {
+  if (energy === undefined || energy === 0) return undefined;
+  
+  const upperRadType = radiationType.toUpperCase();
+  
+  if (upperRadType === 'PHOTON') {
+    // Check for FFF (Flattening Filter Free) - detected from beam name
+    const isFFF = /FFF|SRS|SBRT/i.test(beamName);
+    return isFFF ? `${Math.round(energy)}FFF` : `${Math.round(energy)}X`;
+  }
+  
+  if (upperRadType === 'ELECTRON') {
+    return `${Math.round(energy)}E`;
+  }
+  
+  if (upperRadType === 'PROTON' || upperRadType === 'ION' || upperRadType === 'NEUTRON') {
+    return `${Math.round(energy)} MeV`;
+  }
+  
+  // Default: just show energy with unit
+  return `${Math.round(energy)} MeV`;
+}
+
 function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
   const beamNumber = getInt(beamDataSet, TAGS.BeamNumber);
   const beamName = getString(beamDataSet, TAGS.BeamName) || `Beam ${beamNumber}`;
   const beamType = getString(beamDataSet, TAGS.BeamType) as 'STATIC' | 'DYNAMIC';
   const numCPs = getInt(beamDataSet, TAGS.NumberOfControlPoints);
   const finalMW = getFloat(beamDataSet, TAGS.FinalCumulativeMetersetWeight);
+  const radiationType = getString(beamDataSet, TAGS.RadiationType) || 'PHOTON';
   
   const { widths, boundaries, numLeaves } = getLeafWidths(beamDataSet);
   
@@ -314,16 +346,30 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
   const controlPoints: ControlPoint[] = [];
   const cpSeq = beamDataSet.elements[TAGS.ControlPointSequence];
   
+  // Extract nominal beam energy from first control point (per DICOM standard)
+  let nominalBeamEnergy: number | undefined;
+  
   if (cpSeq && cpSeq.items) {
     for (let i = 0; i < cpSeq.items.length; i++) {
       const cpItem = cpSeq.items[i];
       if (cpItem.dataSet) {
+        // Get energy from first control point
+        if (i === 0) {
+          const energy = getFloat(cpItem.dataSet, TAGS.NominalBeamEnergy);
+          if (energy > 0) {
+            nominalBeamEnergy = energy;
+          }
+        }
+        
         const previousCP = i > 0 ? controlPoints[i - 1] : undefined;
         const cp = parseControlPoint(cpItem.dataSet, beamDataSet, i, previousCP);
         controlPoints.push(cp);
       }
     }
   }
+  
+  // Generate clinical energy label
+  const energyLabel = generateEnergyLabel(radiationType, nominalBeamEnergy, beamName);
   
   // Determine if arc based on control point gantry angles
   const gantryAngles = controlPoints.map(cp => cp.gantryAngle);
@@ -336,7 +382,7 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     beamName,
     beamDescription: getString(beamDataSet, TAGS.BeamDescription),
     beamType,
-    radiationType: getString(beamDataSet, TAGS.RadiationType) || 'PHOTON',
+    radiationType,
     treatmentDeliveryType: 'TREATMENT',
     numberOfControlPoints: numCPs || controlPoints.length,
     controlPoints,
@@ -348,6 +394,8 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     mlcLeafWidths: widths,
     mlcLeafBoundaries: boundaries,
     numberOfLeaves: numLeaves,
+    nominalBeamEnergy,
+    energyLabel,
   };
 }
 

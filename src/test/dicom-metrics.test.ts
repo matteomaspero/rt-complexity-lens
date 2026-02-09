@@ -182,54 +182,54 @@ describe('UCoMX Complexity Metrics', () => {
   });
 
   describe('Multi-vendor metric calculation', () => {
-    const vendorFiles: Record<string, string> = {
-      'Eclipse ETH 2A': TEST_FILES.TG119_CS_ETH_2A,
-      'Eclipse TB 2A': TEST_FILES.TG119_CS_TB_2A,
-      'Eclipse 9F': TEST_FILES.TG119_CS_9F,
-      'Elements': TEST_FILES.ELEMENTS_PT_01,
-      'Pinnacle': TEST_FILES.PINNACLE_PT_01,
-      'MRIdian Penalty': TEST_FILES.MRIDIAN_PENALTY_01,
-      'MRIdian O&C': TEST_FILES.MRIDIAN_OC,
-      'MRIdian A3i': TEST_FILES.MRIDIAN_A3I,
-      'Monaco': TEST_FILES.MONACO_PT_01,
-      'RayStation': TEST_FILES.VMAT_1,
-    };
+    const vendorFiles = [
+      { label: 'Eclipse ETH 2A', filename: TEST_FILES.TG119_CS_ETH_2A },
+      { label: 'Eclipse TB 2A', filename: TEST_FILES.TG119_CS_TB_2A },
+      { label: 'Eclipse 9F', filename: TEST_FILES.TG119_CS_9F },
+      { label: 'Elements', filename: TEST_FILES.ELEMENTS_PT_01 },
+      { label: 'Pinnacle', filename: TEST_FILES.PINNACLE_PT_01 },
+      { label: 'MRIdian Penalty', filename: TEST_FILES.MRIDIAN_PENALTY_01 },
+      { label: 'MRIdian O&C', filename: TEST_FILES.MRIDIAN_OC },
+      { label: 'MRIdian A3i', filename: TEST_FILES.MRIDIAN_A3I },
+      { label: 'Monaco', filename: TEST_FILES.MONACO_PT_01 },
+      { label: 'RayStation', filename: TEST_FILES.VMAT_1 },
+    ];
 
-    it.each(Object.entries(vendorFiles))('should compute valid MCS for %s', (label, filename) => {
+    it.each(vendorFiles)('should compute valid MCS for $label', ({ filename }) => {
       const plan = parseTestPlan(filename);
       const metrics = calculatePlanMetrics(plan);
       expect(metrics.MCS).toBeGreaterThanOrEqual(0);
       expect(metrics.MCS).toBeLessThanOrEqual(1);
     });
 
-    it.each(Object.entries(vendorFiles))('should compute valid LSV for %s', (label, filename) => {
+    it.each(vendorFiles)('should compute valid LSV for $label', ({ filename }) => {
       const plan = parseTestPlan(filename);
       const metrics = calculatePlanMetrics(plan);
       expect(metrics.LSV).toBeGreaterThanOrEqual(0);
       expect(metrics.LSV).toBeLessThanOrEqual(1);
     });
 
-    it.each(Object.entries(vendorFiles))('should compute valid AAV for %s', (label, filename) => {
+    it.each(vendorFiles)('should compute valid AAV for $label', ({ filename }) => {
       const plan = parseTestPlan(filename);
       const metrics = calculatePlanMetrics(plan);
       expect(metrics.AAV).toBeGreaterThanOrEqual(0);
       expect(metrics.AAV).toBeLessThanOrEqual(1);
     });
 
-    it.each(Object.entries(vendorFiles))('should compute valid MFA for %s', (label, filename) => {
+    it.each(vendorFiles)('should compute valid MFA for $label', ({ filename }) => {
       const plan = parseTestPlan(filename);
       const metrics = calculatePlanMetrics(plan);
       expect(metrics.MFA).toBeGreaterThanOrEqual(0);
       expect(metrics.MFA).toBeLessThan(500);
     });
 
-    it.each(Object.entries(vendorFiles))('should compute non-negative LT for %s', (label, filename) => {
+    it.each(vendorFiles)('should compute non-negative LT for $label', ({ filename }) => {
       const plan = parseTestPlan(filename);
       const metrics = calculatePlanMetrics(plan);
       expect(metrics.LT).toBeGreaterThanOrEqual(0);
     });
 
-    it.each(Object.entries(vendorFiles))('should compute per-beam metrics for %s', (label, filename) => {
+    it.each(vendorFiles)('should compute per-beam metrics for $label', ({ filename }) => {
       const plan = parseTestPlan(filename);
       const metrics = calculatePlanMetrics(plan);
       expect(metrics.beamMetrics.length).toBe(plan.beams.length);

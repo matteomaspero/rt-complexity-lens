@@ -231,6 +231,9 @@ export function exportToJSON(plans: BatchPlan[], options: ExportOptions): string
         planData.beamMetrics = p.metrics.beamMetrics.map(bm => ({
           beamNumber: bm.beamNumber,
           beamName: bm.beamName,
+          radiationType: bm.radiationType,
+          nominalBeamEnergy: bm.nominalBeamEnergy,
+          energyLabel: bm.energyLabel,
           beamMU: bm.beamMU,
           MCS: bm.MCS,
           LSV: bm.LSV,

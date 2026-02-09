@@ -106,7 +106,18 @@ export function BeamSummaryCard({
       </div>
 
       {/* Info grid - Row 1: Delivery parameters */}
-      <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4 lg:grid-cols-6">
+      <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4 lg:grid-cols-7">
+        <div>
+          <span className="text-xs text-muted-foreground">Energy</span>
+          <p className="font-mono font-semibold">
+            {beam.energyLabel || beam.radiationType || '—'}
+            {beam.nominalBeamEnergy && !beam.energyLabel && (
+              <span className="ml-1 text-muted-foreground">
+                ({beam.nominalBeamEnergy} MeV)
+              </span>
+            )}
+          </p>
+        </div>
         <div>
           <span className="text-xs text-muted-foreground">Control Points</span>
           <p className="font-mono font-semibold">{beam.numberOfControlPoints}</p>

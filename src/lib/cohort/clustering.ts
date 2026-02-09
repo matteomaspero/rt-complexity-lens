@@ -12,7 +12,8 @@ export type ClusterDimension =
   | 'deliveryTime' 
   | 'complexity' 
   | 'totalMU' 
-  | 'machine';
+  | 'machine'
+  | 'energy';
 
 export type ClusterMode = 'single' | 'combined';
 
@@ -30,6 +31,7 @@ export const CLUSTER_DIMENSIONS: ClusterDimensionInfo[] = [
   { id: 'complexity', name: 'Complexity (MCS)', description: 'Low (>0.4), Medium (0.2-0.4), High (<0.2)' },
   { id: 'totalMU', name: 'Total MU', description: 'Low (<500), Medium (500-1000), High (>1000)' },
   { id: 'machine', name: 'Treatment Machine', description: 'Group by machine name' },
+  { id: 'energy', name: 'Beam Energy', description: 'Group by radiation energy (6X, 10FFF, etc.)' },
 ];
 
 export interface ClusterGroup {
@@ -111,6 +113,17 @@ export function assignCluster(plan: BatchPlan, dimension: ClusterDimension): str
       // Get machine name from plan metadata
       const machineName = plan.plan.treatmentMachineName || 'Unknown Machine';
       return machineName;
+    }
+
+    case 'energy': {
+      // Get energy labels from all beams
+      const energyLabels = plan.plan.beams
+        ?.map(b => b.energyLabel || b.radiationType)
+        .filter(Boolean) ?? [];
+      const unique = [...new Set(energyLabels)];
+      if (unique.length === 0) return 'Unknown';
+      if (unique.length === 1) return unique[0]!;
+      return 'Mixed';
     }
 
     default:

@@ -247,6 +247,35 @@ def _get_leaf_widths(beam_ds: Dataset) -> Tuple[List[float], List[float], int]:
     return (widths, boundaries, 60)
 
 
+def _generate_energy_label(radiation_type: str, energy: Optional[float], beam_name: str) -> Optional[str]:
+    """
+    Generate clinical energy label from radiation type and energy value.
+    Per DICOM standard nomenclature:
+    - Photons: 6X, 10X, 15X, 6FFF, 10FFF (X = MV, FFF = Flattening Filter Free)
+    - Electrons: 6E, 9E, 12E, 15E, 18E (E = MeV)
+    - Protons/Ions: Numeric MeV value
+    """
+    if energy is None or energy == 0:
+        return None
+    
+    upper_rad_type = radiation_type.upper()
+    
+    if upper_rad_type == "PHOTON":
+        # Check for FFF (Flattening Filter Free) - detected from beam name
+        import re
+        is_fff = bool(re.search(r'FFF|SRS|SBRT', beam_name, re.IGNORECASE))
+        return f"{round(energy)}FFF" if is_fff else f"{round(energy)}X"
+    
+    if upper_rad_type == "ELECTRON":
+        return f"{round(energy)}E"
+    
+    if upper_rad_type in ("PROTON", "ION", "NEUTRON"):
+        return f"{round(energy)} MeV"
+    
+    # Default: just show energy with unit
+    return f"{round(energy)} MeV"
+
+
 def _parse_beam(beam_ds: Dataset) -> Beam:
     """Parse a single beam from BeamSequence."""
     beam_number = _get_int(beam_ds, "BeamNumber")
@@ -254,6 +283,7 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
     beam_type = _get_string(beam_ds, "BeamType", "DYNAMIC")
     num_cps = _get_int(beam_ds, "NumberOfControlPoints")
     final_mw = _get_float(beam_ds, "FinalCumulativeMetersetWeight", 1.0)
+    radiation_type = _get_string(beam_ds, "RadiationType", "PHOTON")
     
     leaf_widths, leaf_boundaries, num_leaves = _get_leaf_widths(beam_ds)
     
@@ -261,11 +291,23 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
     control_points: List[ControlPoint] = []
     cp_seq = getattr(beam_ds, "ControlPointSequence", None)
     
+    # Extract nominal beam energy from first control point (per DICOM standard)
+    nominal_beam_energy: Optional[float] = None
+    
     if cp_seq:
         for i, cp_item in enumerate(cp_seq):
+            # Get energy from first control point
+            if i == 0:
+                energy = _get_float(cp_item, "NominalBeamEnergy")
+                if energy > 0:
+                    nominal_beam_energy = energy
+            
             previous_cp = control_points[i - 1] if i > 0 else None
             cp = _parse_control_point(cp_item, beam_ds, i, previous_cp)
             control_points.append(cp)
+    
+    # Generate clinical energy label
+    energy_label = _generate_energy_label(radiation_type, nominal_beam_energy, beam_name)
     
     # Determine gantry angles
     gantry_angles = [cp.gantry_angle for cp in control_points]
@@ -280,7 +322,7 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
         beam_name=beam_name,
         beam_description=_get_string(beam_ds, "BeamDescription") or None,
         beam_type=beam_type,
-        radiation_type=_get_string(beam_ds, "RadiationType", "PHOTON"),
+        radiation_type=radiation_type,
         treatment_delivery_type="TREATMENT",
         number_of_control_points=num_cps or len(control_points),
         control_points=control_points,
@@ -292,6 +334,8 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
         mlc_leaf_widths=leaf_widths,
         mlc_leaf_boundaries=leaf_boundaries,
         number_of_leaves=num_leaves,
+        nominal_beam_energy=nominal_beam_energy,
+        energy_label=energy_label,
     )
 
 

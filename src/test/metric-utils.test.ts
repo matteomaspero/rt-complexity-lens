@@ -32,6 +32,7 @@ function createMockCohortPlan(metrics: Partial<PlanMetrics>, beamCount = 2): Coh
     controlPoints: [],
     mlcLeafPositions: [],
     mlcLeafWidths: [],
+    mlcLeafBoundaries: [],
     numberOfLeaves: 60,
     isArc: true,
     beamMetersetUnits: 'MU',

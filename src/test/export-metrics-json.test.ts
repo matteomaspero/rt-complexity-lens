@@ -48,16 +48,19 @@ describe('Export TS metrics to JSON', () => {
       ] as const;
 
       for (const key of optionalKeys) {
-        const val = (metrics as Record<string, unknown>)[key];
+        const val = (metrics as unknown as Record<string, unknown>)[key];
         if (val !== undefined && val !== null) {
           flat[key] = val;
         }
       }
 
-      // Per-beam top-level metrics
+      // Per-beam top-level metrics including energy info
       flat.beamMetrics = metrics.beamMetrics.map((b) => ({
         beamName: b.beamName,
         beamNumber: b.beamNumber,
+        radiationType: b.radiationType,
+        nominalBeamEnergy: b.nominalBeamEnergy,
+        energyLabel: b.energyLabel,
         MCS: b.MCS,
         LSV: b.LSV,
         AAV: b.AAV,
