@@ -252,6 +252,45 @@ TG = sum(|adjacent_leaf_gaps|) × weight_factor
 
 ---
 
+## Dose & Prescription Metrics
+
+These metrics are extracted from the DICOM RT Plan headers rather than computed from MLC sequences.
+
+### Prescribed Dose (D_Rx)
+
+Total prescribed dose from the DICOM `DoseReferenceSequence` → `TargetPrescriptionDose` (300A,0026), for `DoseReferenceType == TARGET`.
+
+- **Unit**: Gy
+
+### Dose per Fraction (dpf)
+
+```
+dpf = D_Rx / N_fx
+```
+
+Derived from the prescribed dose and the number of fractions planned (`NumberOfFractionsPlanned`, 300A,0078).
+
+- **Unit**: Gy/fx
+
+### Number of Fractions (N_fx)
+
+The number of fractions planned, from `FractionGroupSequence` → `NumberOfFractionsPlanned` (300A,0078).
+
+- **Unit**: fx
+
+### MU per Gy
+
+```
+MU/Gy = MU_total / D_Rx
+```
+
+Ratio of total monitor units to prescribed dose. Higher values may indicate more modulated plans.
+
+- **Unit**: MU/Gy
+- **Note**: Only available when the prescribed dose is present in the DICOM file
+
+---
+
 ## Delivery Time Estimation
 
 Estimated delivery time considers multiple limiting factors:

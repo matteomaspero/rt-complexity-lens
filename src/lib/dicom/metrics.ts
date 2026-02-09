@@ -1194,6 +1194,18 @@ export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): s
   if (isEnabled('totalMU')) {
     lines.push(`Total MU,Total Monitor Units,${metrics.totalMU.toFixed(1)},MU`);
   }
+  if (isEnabled('prescribedDose') && metrics.prescribedDose !== undefined) {
+    lines.push(`Prescribed Dose,Prescribed Dose,${metrics.prescribedDose.toFixed(2)},Gy`);
+  }
+  if (isEnabled('dosePerFraction') && metrics.dosePerFraction !== undefined) {
+    lines.push(`Dose per Fraction,Dose per Fraction,${metrics.dosePerFraction.toFixed(2)},Gy/fx`);
+  }
+  if (isEnabled('numberOfFractions') && metrics.numberOfFractions !== undefined) {
+    lines.push(`Number of Fractions,Number of Fractions,${metrics.numberOfFractions},fx`);
+  }
+  if (isEnabled('MUperGy') && metrics.MUperGy !== undefined) {
+    lines.push(`MU per Gy,MU per Gy,${metrics.MUperGy.toFixed(1)},MU/Gy`);
+  }
   if (isEnabled('totalDeliveryTime') && metrics.totalDeliveryTime) {
     lines.push(`Total Delivery Time,Estimated Beam-On Time,${metrics.totalDeliveryTime.toFixed(1)},s`);
   }

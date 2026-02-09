@@ -283,6 +283,44 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     category: 'delivery',
   },
   
+  prescribedDose: {
+    key: 'prescribedDose',
+    name: 'Prescribed Dose',
+    shortDescription: 'Total prescribed dose',
+    fullDescription: 'The total prescribed dose from the DICOM DoseReferenceSequence (TargetPrescriptionDose). This is the total dose across all fractions.',
+    unit: 'Gy',
+    category: 'delivery',
+  },
+  
+  dosePerFraction: {
+    key: 'dosePerFraction',
+    name: 'Dose per Fraction',
+    shortDescription: 'Prescribed dose per fraction',
+    fullDescription: 'The prescribed dose per fraction, derived as PrescribedDose / NumberOfFractions. Only available when both the DoseReferenceSequence and NumberOfFractionsPlanned are present in the DICOM file.',
+    formula: 'dpf = \\frac{D_{Rx}}{N_{fx}}',
+    unit: 'Gy/fx',
+    category: 'delivery',
+  },
+  
+  numberOfFractions: {
+    key: 'numberOfFractions',
+    name: 'Number of Fractions',
+    shortDescription: 'Planned fractions',
+    fullDescription: 'The number of fractions planned from the DICOM FractionGroupSequence (NumberOfFractionsPlanned).',
+    unit: 'fx',
+    category: 'delivery',
+  },
+  
+  MUperGy: {
+    key: 'MUperGy',
+    name: 'MU per Gy',
+    shortDescription: 'Monitor units per Gray',
+    fullDescription: 'The ratio of total monitor units to prescribed dose. Higher values may indicate more complex or modulated plans. Only available when prescribed dose is present.',
+    formula: 'MU/Gy = \\frac{MU_{total}}{D_{Rx}}',
+    unit: 'MU/Gy',
+    category: 'delivery',
+  },
+  
   estimatedDeliveryTime: {
     key: 'estimatedDeliveryTime',
     name: 'Est. Delivery Time',

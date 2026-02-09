@@ -251,6 +251,16 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 <span>{sessionPlan.plan.beams.length} beam{sessionPlan.plan.beams.length !== 1 ? 's' : ''}</span>
                 <Separator orientation="vertical" className="h-4" />
                 <span>{sessionPlan.plan.totalMU.toFixed(0)} MU total</span>
+                {sessionPlan.plan.prescribedDose != null && (
+                  <>
+                    <Separator orientation="vertical" className="h-4" />
+                    <span>
+                      {sessionPlan.plan.dosePerFraction != null && sessionPlan.plan.numberOfFractions != null
+                        ? `${sessionPlan.plan.dosePerFraction.toFixed(2)} Gy × ${sessionPlan.plan.numberOfFractions} fx = ${sessionPlan.plan.prescribedDose.toFixed(2)} Gy`
+                        : `${sessionPlan.plan.prescribedDose.toFixed(2)} Gy prescribed`}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
