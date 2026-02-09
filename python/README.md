@@ -69,6 +69,47 @@ print(f"LT: {metrics.LT:.1f} mm")
 print(f"Total MU: {metrics.total_mu:.1f}")
 ```
 
+### Target-Based Analysis (PAM/BAM)
+
+Calculate Plan Aperture Modulation and Beam Aperture Modulation metrics using anatomical structures:
+
+```python
+from rtplan_complexity import parse_rtplan, calculate_plan_metrics
+from rtplan_complexity.parser import parse_rtstruct, get_structure_by_name
+
+# Parse the plan and structures
+plan = parse_rtplan("RTPLAN.dcm")
+structures = parse_rtstruct("RTSTRUCT.dcm")
+
+# Get the target structure (e.g., "GTV", "PTV", "TG119-CShape")
+target = get_structure_by_name(structures, "GTV")
+
+if target:
+    # Calculate metrics with target
+    metrics = calculate_plan_metrics(plan, structure=target)
+    
+    # Access PAM and per-beam BAM
+    print(f"Target: {target.name}")
+    print(f"Plan Aperture Modulation (PAM): {metrics.PAM:.4f}")
+    print(f"  → Target blocked {metrics.PAM * 100:.1f}% of time on average")
+    
+    # Per-beam breakdown
+    for beam_idx, beam_metrics in enumerate(metrics.beam_metrics):
+        if beam_metrics.BAM is not None:
+            print(f"Beam {beam_idx + 1}: BAM = {beam_metrics.BAM:.4f}")
+else:
+    print("Target structure not found in RTSTRUCT")
+```
+
+**Interpretation Guide:**
+| PAM Range | Meaning |
+|-----------|---------|
+| 0.0–0.1 | Minimal blocking (simple plan, excellent conformality) |
+| 0.1–0.3 | Low blocking (simple to moderate complexity) |
+| 0.3–0.5 | Moderate blocking (mixed pattern) |
+| 0.5–0.7 | High blocking (complex plan) |
+| 0.7–1.0 | Very high blocking (very complex plan) |
+
 ### Batch Analysis
 
 ```python
@@ -138,6 +179,7 @@ Analyze individual DICOM RT Plan files with full metric output:
 
 - **Primary Metrics**: MCS, LSV, AAV, MFA
 - **Secondary Metrics**: LT, LTMCS, SAS5, SAS10, EM, PI
+- **Target-Based Metrics** (optional): PAM, BAM (requires RTSTRUCT)
 - **Accuracy Metrics**: LG, MAD, EFS, psmall
 - **Deliverability Metrics**: MUCA, LTMU, GT, GS, LS, LSV_del, TG
 - Delivery time estimation
@@ -403,7 +445,9 @@ batch_to_json(all_metrics, "batch_metrics.json", include_stats=True)
 | Function | Description |
 |----------|-------------|
 | `parse_rtplan(file_path: str) -> RTPlan` | Parse a DICOM RT Plan file |
-| `calculate_plan_metrics(plan, machine_params?) -> PlanMetrics` | Calculate all metrics for a plan |
+| `parse_rtstruct(file_path: str) -> Dict[str, Structure]` | Parse a DICOM RTSTRUCT file and return all structures |
+| `get_structure_by_name(structures, label) -> Optional[Structure]` | Retrieve structure by name (exact, case-insensitive, or partial) |
+| `calculate_plan_metrics(plan, machine_params?, structure?) -> PlanMetrics` | Calculate all metrics for a plan (optional structure for PAM/BAM) |
 | `calculate_beam_metrics(beam, machine_params?) -> BeamMetrics` | Calculate metrics for a single beam |
 
 ### Statistics Functions

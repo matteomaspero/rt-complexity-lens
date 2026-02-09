@@ -94,6 +94,13 @@ Population-level statistical analysis with clustering:
 - **Chart PNG Export**: Save any visualization as an image (click 📷 icon)
 - **JSON Export**: Machine-readable format for automation
 
+### Target-Based Analysis (PAM/BAM)
+
+- **RTSTRUCT Loading**: Upload anatomical structures after loading a plan
+- **Target Selection**: Choose which structure to analyze (e.g., GTV, PTV, target)
+- **Real-time Recalculation**: Metrics automatically update when structure is loaded
+- **Per-Beam BAM**: View beam-level aperture modulation in beam summary cards
+
 ---
 
 ## Complexity Metrics
@@ -111,14 +118,30 @@ Metrics are inspired by published research including the UCoMX framework.
 
 ### Secondary Metrics
 
-| Metric | Name | Description |
-|--------|------|-------------|
-| **LT** | Leaf Travel | Total MLC movement (mm) |
-| **LTMCS** | Leaf Travel-weighted MCS | LT normalized by MCS |
-| **SAS5** | Small Aperture Score (5mm) | Fraction of aperture with gaps <5mm |
-| **SAS10** | Small Aperture Score (10mm) | Fraction of aperture with gaps <10mm |
-| **EM** | Edge Metric | Aperture edge irregularity |
-| **PI** | Plan Irregularity | Deviation from circular apertures |
+| Metric | Name | Description | Notes |
+|--------|------|-------------|-------|
+| **LT** | Leaf Travel | Total MLC movement (mm) | — |
+| **LTMCS** | Leaf Travel-weighted MCS | LT normalized by MCS | — |
+| **SAS5** | Small Aperture Score (5mm) | Fraction of aperture with gaps <5mm | — |
+| **SAS10** | Small Aperture Score (10mm) | Fraction of aperture with gaps <10mm | — |
+| **EM** | Edge Metric | Aperture edge irregularity | — |
+| **PI** | Plan Irregularity | Deviation from circular apertures | — |
+
+### Target-Based Metrics (Requires RTSTRUCT)
+
+| Metric | Name | Description | Range | Requires |
+|--------|------|-------------|-------|----------|
+| **PAM** | Plan Aperture Modulation | Avg fraction of target blocked across entire plan | 0–1 | RTSTRUCT |
+| **BAM** | Beam Aperture Modulation | Average fraction of target blocked per beam | 0–1 | RTSTRUCT |
+
+> **PAM/BAM Quick Reference:**
+> - **0.0–0.1** = Minimal blocking (excellent conformality)
+> - **0.1–0.3** = Low blocking (simple plans)
+> - **0.3–0.5** = Moderate blocking
+> - **0.5–0.7** = High blocking (complex plans)
+> - **0.7–1.0** = Very high blocking (very complex plans)
+>
+> To calculate PAM/BAM: Load an RTPLAN file, then upload the corresponding RTSTRUCT file with target structure(s). Metrics recalculate automatically.
 
 ### Accuracy Metrics
 
@@ -200,13 +223,24 @@ pip install rtplan-complexity
 
 ```python
 from rtplan_complexity import parse_rtplan, calculate_plan_metrics
+from rtplan_complexity.parser import parse_rtstruct, get_structure_by_name
 
+# Load plan
 plan = parse_rtplan("RTPLAN.dcm")
 metrics = calculate_plan_metrics(plan)
 
 print(f"MCS: {metrics.MCS:.4f}")
 print(f"LSV: {metrics.LSV:.4f}")
 print(f"Total MU: {metrics.total_mu:.1f}")
+
+# Optional: Calculate PAM with target structure
+structures = parse_rtstruct("RTSTRUCT.dcm")
+target = get_structure_by_name(structures, "GTV")
+if target:
+    metrics = calculate_plan_metrics(plan, structure=target)
+    print(f"PAM: {metrics.PAM:.4f}")
+    for beam_metrics in metrics.beam_metrics:
+        print(f"  Beam {beam_metrics.beam_number} BAM: {beam_metrics.BAM:.4f}")
 ```
 
 ### Features
@@ -302,10 +336,11 @@ Metrics are inspired by published research, including the UCoMX framework:
 | Metric | Reference |
 |--------|-----------|
 | **MCS** | McNiven AL, et al. *Med Phys.* 2010;37(2):505-515. [DOI](https://doi.org/10.1118/1.3276775) |
-| **LSV/AAV** | Masi L, et al. *Med Phys.* 2013;40(7):071718. [DOI](https://doi.org/10.1118/1.4810969) |
+| **LSV/AAV** | Masi L, et al. *Med Phys.* 2013;40(7):071718. [DOI](https://doi.org/10.1118/1.3810969) |
 | **SAS** | Crowe SB, et al. *Australas Phys Eng Sci Med.* 2014;37:475-482. [DOI](https://doi.org/10.1007/s13246-014-0274-9) |
 | **Edge Metric** | Younge KC, et al. *J Appl Clin Med Phys.* 2016;17(4):124-131. [DOI](https://doi.org/10.1120/jacmp.v17i4.6241) |
 | **Plan Irregularity** | Du W, et al. *Med Phys.* 2014;41(2):021716. [DOI](https://doi.org/10.1118/1.4861821) |
+| **PAM/BAM** | Muralidhar W, et al. *Med Phys.* 2024. [DOI](https://doi.org/10.1002/mp.70144) |
 
 ---
 

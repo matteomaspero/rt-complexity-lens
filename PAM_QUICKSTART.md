@@ -7,6 +7,38 @@ Get started with Plan Aperture Modulation metrics in 5 minutes.
 - DICOM RTPLAN file (radiation therapy plan)
 - DICOM RTSTRUCT file (anatomical structures/targets)
 
+---
+
+## Web UI: 2-Minute Quickstart
+
+The fastest way to calculate PAM metrics without coding:
+
+### 1. Open RTplan Complexity Lens
+👉 Visit **[https://rt-complexity-lens.lovable.app](https://rt-complexity-lens.lovable.app)**
+
+### 2. Upload RTPLAN
+- Click "Single Plan" or drag-and-drop your RTPLAN file
+- Metrics calculate automatically
+- Browse control points and visualizations
+
+### 3. Upload RTSTRUCT (to get PAM)
+- In the viewer header, click "Load RTSTRUCT"
+- Select your corresponding RTSTRUCT file
+- **Metrics automatically recalculate with PAM/BAM**
+
+### 4. View Results
+- **Plan-level PAM** appears in the metrics panel
+- **Per-beam BAM** shown in each beam's summary card
+- Interpretation guide in the Help page
+
+### Key Features
+- ✨ No login required
+- 🔒 100% client-side (your data never leaves your browser)
+- 💾 Export metrics as CSV for further analysis
+- 📊 Interactive visualizations
+
+---
+
 ## Python: Complete Example
 
 ### 1. Load files
