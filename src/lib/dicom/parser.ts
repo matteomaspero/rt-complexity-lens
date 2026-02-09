@@ -713,7 +713,7 @@ export function getStructureByName(structures: Map<string, any>, label: string):
 /**
  * Helper to get float array from DICOM element
  */
-function getFloatArray(element: any, tag: string): number[] {
+function getFloatArrayFromElement(element: any, tag: string): number[] {
   const el = element.elements?.[tag];
   if (!el) return [];
   

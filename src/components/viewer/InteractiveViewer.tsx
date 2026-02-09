@@ -131,7 +131,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
         prev ? { ...prev, metrics: updatedMetrics } : null
       );
     }
-  }, [selectedStructureIndex, loadedStructures, sessionPlan?.plan]);
+  }, [selectedStructureIndex, loadedStructures]);
 
   // No plan loaded - show upload zone
   if (!sessionPlan) {
