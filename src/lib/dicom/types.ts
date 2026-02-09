@@ -44,6 +44,9 @@ export interface Beam {
   mlcLeafBoundaries: number[]; // N+1 boundary positions defining leaf pair edges (mm, centered at 0)
   numberOfLeaves: number;
   sourceSkinDistance?: number;
+  // Energy fields (DICOM 300A,0114)
+  nominalBeamEnergy?: number; // Energy in MeV (e.g., 6, 10, 15 for photons)
+  energyLabel?: string; // Clinical label (e.g., '6X', '10FFF', '9E')
 }
 
 export interface FractionGroup {
@@ -146,6 +149,11 @@ export interface BeamMetrics {
   arcLength?: number; // degrees, for VMAT
   numberOfControlPoints: number;
   averageGantrySpeed?: number; // deg/s
+  
+  // Radiation type and energy (DICOM standard nomenclature)
+  radiationType?: string; // 'PHOTON', 'ELECTRON', 'PROTON', 'NEUTRON', 'ION'
+  nominalBeamEnergy?: number; // Energy in MeV
+  energyLabel?: string; // Clinical label (e.g., '6X', '10FFF', '9E')
   
   // UCoMX Deliverability Metrics
   MUCA?: number; // MU per Control Arc (MU/CP)

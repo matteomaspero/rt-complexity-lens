@@ -887,6 +887,10 @@ function calculateBeamMetrics(
     MAD: MAD_val,
     EFS,
     psmall,
+    // Radiation type and energy
+    radiationType: beam.radiationType,
+    nominalBeamEnergy: beam.nominalBeamEnergy,
+    energyLabel: beam.energyLabel,
     // Deliverability metrics
     MUCA,
     LTMU,

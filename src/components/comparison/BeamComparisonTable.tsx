@@ -62,6 +62,7 @@ export function BeamComparisonTable({
                 <TableHead>Beam A</TableHead>
                 <TableHead>Beam B</TableHead>
                 <TableHead className="text-center">Match</TableHead>
+                <TableHead className="text-center">Energy</TableHead>
                 <TableHead className="text-right">CPs</TableHead>
                 <TableHead className="text-right">MU Diff</TableHead>
                 <TableHead className="text-right">MCS Diff</TableHead>
@@ -111,6 +112,9 @@ export function BeamComparisonTable({
                         {matchTypeLabels[match.matchType]}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-center text-xs font-mono">
+                      {beamA.energyLabel || beamA.radiationType || '—'}
+                    </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {beamA.numberOfControlPoints} / {beamB.numberOfControlPoints}
                     </TableCell>
@@ -144,6 +148,9 @@ export function BeamComparisonTable({
                     <TableCell className="text-center">
                       <Badge variant="destructive" className="text-xs">Removed</Badge>
                     </TableCell>
+                    <TableCell className="text-center text-xs font-mono">
+                      {beam.energyLabel || beam.radiationType || '—'}
+                    </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {beam.numberOfControlPoints} / —
                     </TableCell>
@@ -164,6 +171,9 @@ export function BeamComparisonTable({
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="default" className="text-xs bg-[hsl(var(--status-success))]">Added</Badge>
+                    </TableCell>
+                    <TableCell className="text-center text-xs font-mono">
+                      {beam.energyLabel || beam.radiationType || '—'}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       — / {beam.numberOfControlPoints}
