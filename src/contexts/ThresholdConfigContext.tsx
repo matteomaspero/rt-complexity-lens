@@ -48,6 +48,7 @@ const MachineDeliveryParamsSchema = z.object({
   maxGantrySpeed: z.number(),
   maxMLCSpeed: z.number(),
   mlcType: z.enum(['MLCX', 'MLCY', 'DUAL']),
+  mlcModel: z.string().optional(),
 });
 
 const ThresholdConfigStateSchema = z.object({

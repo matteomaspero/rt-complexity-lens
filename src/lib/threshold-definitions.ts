@@ -31,6 +31,7 @@ export interface MachineDeliveryParams {
   maxGantrySpeed: number; // deg/s
   maxMLCSpeed: number; // mm/s
   mlcType: 'MLCX' | 'MLCY' | 'DUAL';
+  mlcModel?: string; // Human-readable MLC model name (e.g., 'Agility', 'HD120', 'Millennium 120')
 }
 
 export interface MachinePresetConfig {
@@ -133,7 +134,7 @@ export const DEFAULT_MACHINE_PARAMS: MachineDeliveryParams = {
   mlcType: 'MLCX',
 };
 
-const GENERIC_DELIVERY: MachineDeliveryParams = DEFAULT_MACHINE_PARAMS;
+const GENERIC_DELIVERY: MachineDeliveryParams = { ...DEFAULT_MACHINE_PARAMS, mlcModel: 'Generic' };
 
 const TRUEBEAM_DELIVERY: MachineDeliveryParams = {
   maxDoseRate: 600,
@@ -142,12 +143,20 @@ const TRUEBEAM_DELIVERY: MachineDeliveryParams = {
     { energy: '6X', maxDoseRate: 600, isDefault: true },
     { energy: '10X', maxDoseRate: 600 },
     { energy: '15X', maxDoseRate: 600 },
+    { energy: '18X', maxDoseRate: 600 },
     { energy: '6FFF', maxDoseRate: 1400 },
     { energy: '10FFF', maxDoseRate: 2400 },
+    { energy: '6e', maxDoseRate: 1000 },
+    { energy: '9e', maxDoseRate: 1000 },
+    { energy: '12e', maxDoseRate: 1000 },
+    { energy: '15e', maxDoseRate: 1000 },
+    { energy: '18e', maxDoseRate: 1000 },
+    { energy: '20e', maxDoseRate: 1000 },
   ],
   maxGantrySpeed: 6.0,
   maxMLCSpeed: 25,
   mlcType: 'MLCX',
+  mlcModel: 'Millennium 120',
 };
 
 const HALCYON_DELIVERY: MachineDeliveryParams = {
@@ -159,20 +168,31 @@ const HALCYON_DELIVERY: MachineDeliveryParams = {
   maxGantrySpeed: 4.0,
   maxMLCSpeed: 50,
   mlcType: 'DUAL',
+  mlcModel: 'SX2 Dual-Layer',
 };
 
 const VERSA_HD_DELIVERY: MachineDeliveryParams = {
   maxDoseRate: 600,
+  maxDoseRateFFF: 1400,
   energyDoseRates: [
     { energy: '6X', maxDoseRate: 600, isDefault: true },
     { energy: '10X', maxDoseRate: 600 },
     { energy: '15X', maxDoseRate: 600 },
+    { energy: '18X', maxDoseRate: 600 },
     { energy: '6FFF', maxDoseRate: 1400 },
     { energy: '10FFF', maxDoseRate: 2400 },
+    { energy: '4e', maxDoseRate: 1000 },
+    { energy: '6e', maxDoseRate: 1000 },
+    { energy: '8e', maxDoseRate: 1000 },
+    { energy: '10e', maxDoseRate: 1000 },
+    { energy: '12e', maxDoseRate: 1000 },
+    { energy: '15e', maxDoseRate: 1000 },
+    { energy: '18e', maxDoseRate: 1000 },
   ],
   maxGantrySpeed: 6.0,
   maxMLCSpeed: 35,
-  mlcType: 'MLCY',
+  mlcType: 'MLCX',
+  mlcModel: 'Agility',
 };
 
 const ETHOS_DELIVERY: MachineDeliveryParams = {
@@ -181,10 +201,12 @@ const ETHOS_DELIVERY: MachineDeliveryParams = {
   energyDoseRates: [
     { energy: '6X', maxDoseRate: 800, isDefault: true },
     { energy: '6FFF', maxDoseRate: 1400 },
+    { energy: '10FFF', maxDoseRate: 2400 },
   ],
   maxGantrySpeed: 6.0,
   maxMLCSpeed: 25,
   mlcType: 'MLCX',
+  mlcModel: 'HD120',
 };
 
 const UNITY_DELIVERY: MachineDeliveryParams = {
@@ -194,19 +216,21 @@ const UNITY_DELIVERY: MachineDeliveryParams = {
   ],
   maxGantrySpeed: 6.0,
   maxMLCSpeed: 25,
-  mlcType: 'MLCY',
+  mlcType: 'MLCX',
+  mlcModel: 'Agility 160',
 };
 
 const HARMONY_DELIVERY: MachineDeliveryParams = {
-  maxDoseRate: 300,
+  maxDoseRate: 600,
   energyDoseRates: [
-    { energy: '6X', maxDoseRate: 300, isDefault: true },
-    { energy: '10X', maxDoseRate: 300 },
-    { energy: '15X', maxDoseRate: 300 },
+    { energy: '6X', maxDoseRate: 600, isDefault: true },
+    { energy: '10X', maxDoseRate: 600 },
+    { energy: '15X', maxDoseRate: 600 },
   ],
   maxGantrySpeed: 6.0,
   maxMLCSpeed: 35,
-  mlcType: 'MLCY',
+  mlcType: 'MLCX',
+  mlcModel: 'MLCi2',
 };
 
 export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
@@ -221,7 +245,7 @@ export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
   truebeam: {
     id: 'truebeam',
     name: 'Varian TrueBeam',
-    description: 'Optimized for TrueBeam with Millennium MLC',
+    description: 'Optimized for TrueBeam with Millennium 120 MLC',
     thresholds: TRUEBEAM_THRESHOLDS,
     deliveryParams: TRUEBEAM_DELIVERY,
     isBuiltIn: true,
@@ -229,7 +253,7 @@ export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
   halcyon: {
     id: 'halcyon',
     name: 'Varian Halcyon',
-    description: 'Stricter thresholds for dual-layer MLC',
+    description: 'Stricter thresholds for SX2 dual-layer MLC',
     thresholds: HALCYON_THRESHOLDS,
     deliveryParams: HALCYON_DELIVERY,
     isBuiltIn: true,
@@ -237,7 +261,7 @@ export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
   versa_hd: {
     id: 'versa_hd',
     name: 'Elekta Versa HD',
-    description: 'Optimized for Agility MLC',
+    description: 'Optimized for Agility 160-leaf MLC',
     thresholds: VERSA_HD_THRESHOLDS,
     deliveryParams: VERSA_HD_DELIVERY,
     isBuiltIn: true,
@@ -245,7 +269,7 @@ export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
   ethos: {
     id: 'ethos',
     name: 'Varian Ethos',
-    description: 'AI-driven adaptive therapy system',
+    description: 'AI-driven adaptive therapy with HD120 MLC',
     thresholds: ETHOS_THRESHOLDS,
     deliveryParams: ETHOS_DELIVERY,
     isBuiltIn: true,
@@ -253,7 +277,7 @@ export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
   unity: {
     id: 'unity',
     name: 'Elekta Unity (MR-Linac)',
-    description: 'MR-guided radiotherapy system',
+    description: 'MR-guided RT with Agility 160-leaf MLC',
     thresholds: UNITY_THRESHOLDS,
     deliveryParams: UNITY_DELIVERY,
     isBuiltIn: true,
@@ -261,7 +285,7 @@ export const BUILTIN_PRESETS: Record<string, MachinePresetConfig> = {
   harmony: {
     id: 'harmony',
     name: 'Elekta Harmony',
-    description: 'Essential linac with Agility MLC',
+    description: 'Essential linac with MLCi2 80-leaf MLC',
     thresholds: HARMONY_THRESHOLDS,
     deliveryParams: HARMONY_DELIVERY,
     isBuiltIn: true,
@@ -457,12 +481,17 @@ export const COMMON_ENERGIES = [
   { value: '10X', label: '10 MV', category: 'Photon' },
   { value: '15X', label: '15 MV', category: 'Photon' },
   { value: '18X', label: '18 MV', category: 'Photon' },
+  { value: '20X', label: '20 MV', category: 'Photon' },
   { value: '6FFF', label: '6 MV FFF', category: 'FFF' },
   { value: '10FFF', label: '10 MV FFF', category: 'FFF' },
   { value: '7X', label: '7 MV (Unity)', category: 'Photon' },
+  { value: '4e', label: '4 MeV', category: 'Electron' },
   { value: '6e', label: '6 MeV', category: 'Electron' },
+  { value: '8e', label: '8 MeV', category: 'Electron' },
   { value: '9e', label: '9 MeV', category: 'Electron' },
+  { value: '10e', label: '10 MeV', category: 'Electron' },
   { value: '12e', label: '12 MeV', category: 'Electron' },
   { value: '15e', label: '15 MeV', category: 'Electron' },
   { value: '18e', label: '18 MeV', category: 'Electron' },
+  { value: '20e', label: '20 MeV', category: 'Electron' },
 ];

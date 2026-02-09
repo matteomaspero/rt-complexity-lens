@@ -219,6 +219,36 @@ function parseControlPoint(
     jawPositions = previousCP.jawPositions;
   }
   
+  // For Elekta/Monaco plans that lack X jaws (ASYMX), derive X extent from MLC positions
+  // so that the collimator viewer can display a meaningful field rectangle
+  if (jawPositions.x1 === 0 && jawPositions.x2 === 0 && mlcPositions.bankA.length > 0) {
+    const mlcMin = Math.min(...mlcPositions.bankA);
+    const mlcMax = Math.max(...mlcPositions.bankB);
+    // Only apply if MLC has a meaningful opening (not all leaves closed)
+    if (mlcMax - mlcMin > 1) {
+      jawPositions = { ...jawPositions, x1: mlcMin, x2: mlcMax };
+    }
+  }
+  
+  // Similarly, if Y jaws are missing, derive from MLC leaf boundaries via beam definition
+  if (jawPositions.y1 === 0 && jawPositions.y2 === 0 && mlcPositions.bankA.length > 0) {
+    // Use beam-level leaf boundaries to estimate Y extent
+    const bldSeq = beamDataSet.elements[TAGS.BeamLimitingDeviceSequence];
+    if (bldSeq && bldSeq.items) {
+      for (const item of bldSeq.items) {
+        const itemDS = item.dataSet;
+        if (!itemDS) continue;
+        const deviceType = getString(itemDS, TAGS.RTBeamLimitingDeviceType);
+        if (deviceType === 'MLCX' || deviceType === 'MLCY') {
+          const boundaries = getFloatArray(itemDS, TAGS.LeafPositionBoundaries);
+          if (boundaries.length > 1) {
+            jawPositions = { ...jawPositions, y1: boundaries[0], y2: boundaries[boundaries.length - 1] };
+          }
+        }
+      }
+    }
+  }
+  
   // Parse isocenter position (may inherit from previous CP)
   let isocenterPosition: [number, number, number] | undefined;
   const isocenterArr = getFloatArray(cpDataSet, TAGS.IsocenterPosition);

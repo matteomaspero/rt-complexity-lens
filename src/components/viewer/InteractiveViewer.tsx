@@ -300,9 +300,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
         {/* Viewer Content */}
         <div className="flex-1 overflow-auto p-6">
           {currentBeam && currentCP && (
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-[1fr,380px] xl:grid-cols-[1fr,420px]">
               {/* Left Column - Visualizations */}
-              <div className="space-y-6">
+              <div className="space-y-6 min-w-0">
                 {/* Beam Summary Card */}
                 <BeamSummaryCard
                   beam={currentBeam}
@@ -460,7 +460,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               </div>
 
               {/* Right Column - Metrics Panel */}
-              <div className="lg:max-w-sm">
+              <div>
                 <MetricsPanel
                   metrics={sessionPlan.metrics}
                   currentBeamIndex={selectedBeamIndex}

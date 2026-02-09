@@ -126,7 +126,7 @@ export function ThresholdSettings({ className }: ThresholdSettingsProps) {
                 </div>
                 <div>
                   <span className="text-muted-foreground">MLC Type:</span>{' '}
-                  {selectedUserPreset.deliveryParams.mlcType}
+                  {selectedUserPreset.deliveryParams.mlcModel || selectedUserPreset.deliveryParams.mlcType}
                 </div>
               </div>
             </div>

@@ -258,6 +258,7 @@ export interface MachineDeliveryParams {
   maxGantrySpeed: number; // deg/s
   maxMLCSpeed: number; // mm/s
   mlcType: 'MLCX' | 'MLCY' | 'DUAL';
+  mlcModel?: string; // Human-readable MLC model name
 }
 
 // Parsing status

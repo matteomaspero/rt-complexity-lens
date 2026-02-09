@@ -241,7 +241,7 @@ export function PresetEditor({ preset, open, onOpenChange, onSave }: PresetEdito
               </div>
               <div className="col-span-2 space-y-2">
                 <Label htmlFor="mlc-type" className="text-xs">
-                  MLC Type
+                  MLC Type (DICOM)
                 </Label>
                 <Select
                   value={deliveryParams.mlcType}
@@ -253,11 +253,25 @@ export function PresetEditor({ preset, open, onOpenChange, onSave }: PresetEdito
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MLCX">MLCX (Varian-style)</SelectItem>
-                    <SelectItem value="MLCY">MLCY (Elekta-style)</SelectItem>
+                    <SelectItem value="MLCX">MLCX (standard)</SelectItem>
+                    <SelectItem value="MLCY">MLCY (Elekta legacy)</SelectItem>
                     <SelectItem value="DUAL">Dual Layer (Halcyon)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="mlc-model" className="text-xs">
+                  MLC Platform / Model Name
+                </Label>
+                <Input
+                  id="mlc-model"
+                  value={deliveryParams.mlcModel ?? ''}
+                  onChange={(e) =>
+                    handleDeliveryChange('mlcModel', e.target.value || undefined)
+                  }
+                  placeholder="e.g., Agility, HD120, Millennium 120"
+                  className="h-8"
+                />
               </div>
             </div>
           </div>
