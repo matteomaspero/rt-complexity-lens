@@ -177,7 +177,34 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     reference: 'Younge et al., 2016',
     doi: '10.1120/jacmp.v17i4.6241',
   },
-  
+
+  // ============================================================================
+  // TARGET-SPECIFIC APERTURE MODULATION METRICS
+  // ============================================================================
+  BAM: {
+    key: 'BAM',
+    name: 'Beam Aperture Modulation',
+    shortDescription: 'Beam-level target blockage fraction',
+    fullDescription: 'The MU-weighted average fraction of a target\'s Beam\'s Eye View projection that is blocked by MLC/jaws for a single beam. Calculated by projecting the 3D target structure onto the 2D BEV plane for each control point, computing the intersection with the aperture polygon, and averaging across all control points weighted by MU. Requires RTSTRUCT target structure as input.',
+    formula: 'BAM_i = \\frac{\\sum_{j} AM_{ij} \\cdot \\Delta MU_{ij}}{\\sum_j \\Delta MU_{ij}}, \\quad AM_{ij} = \\frac{A_{blocked}}{A_{target}}',
+    unit: null,
+    category: 'secondary',
+    reference: 'Muralidhar et al., 2024',
+    doi: '10.1002/mp.70144',
+  },
+
+  PAM: {
+    key: 'PAM',
+    name: 'Plan Aperture Modulation',
+    shortDescription: 'Plan-level target blockage fraction',
+    fullDescription: 'The MU-weighted average fraction of a target\'s projection that is blocked by MLC/jaws across the entire treatment plan. Combines BAM from all beams using MU-weighting. Provides a dimensionless geometric measure of aperture complexity relative to a specific anatomical target. Range [0, 1]: 0 indicates no modulation (target always fully within aperture), 1 indicates complete blockage. Requires RTSTRUCT target structure as input.',
+    formula: 'PAM = \\frac{\\sum_{i} BAM_i \\cdot MU_i}{\\sum_i MU_i}',
+    unit: null,
+    category: 'secondary',
+    reference: 'Muralidhar et al., 2024',
+    doi: '10.1002/mp.70144',
+  },
+
   TG: {
     key: 'TG',
     name: 'Tongue-and-Groove Index',

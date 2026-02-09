@@ -11,6 +11,38 @@ from enum import Enum
 from typing import List, Optional, Tuple
 
 
+# ============================================================================
+# Structure Types (RTSTRUCT)
+# ============================================================================
+
+@dataclass
+class ContourSequence:
+    """A single contour from an ROI (sequence of 3D points)."""
+    points: List[Tuple[float, float, float]]  # List of (x, y, z) points in patient coordinates
+    number_of_points: int = 0
+    
+    def __post_init__(self):
+        if self.number_of_points == 0:
+            self.number_of_points = len(self.points)
+
+
+@dataclass
+class Structure:
+    """ROI structure from RTSTRUCT (e.g., target, OAR)."""
+    name: str
+    number: int
+    reference_roi_number: Optional[int] = None
+    roi_display_color: Optional[Tuple[int, int, int]] = None  # RGB
+    contours: List[ContourSequence] = field(default_factory=list)
+    
+    def get_all_points(self) -> List[Tuple[float, float, float]]:
+        """Flatten all contour points into a single list."""
+        all_points = []
+        for contour in self.contours:
+            all_points.extend(contour.points)
+        return all_points
+
+
 class Technique(Enum):
     """Treatment technique type."""
     VMAT = "VMAT"
@@ -178,6 +210,7 @@ class ControlPointMetrics:
     meterset_weight: float
     aperture_perimeter: Optional[float] = None  # mm
     small_aperture_flags: Optional[SmallApertureFlags] = None
+    PAM: Optional[float] = None  # Plan Aperture Modulation (per control point)
 
 
 @dataclass
@@ -245,6 +278,7 @@ class BeamMetrics:
     SAS10: Optional[float] = None  # Small Aperture Score (10mm)
     EM: Optional[float] = None  # Edge Metric
     PI: Optional[float] = None  # Plan Irregularity
+    BAM: Optional[float] = None  # Beam Aperture Modulation (target-specific)
     
     # Per-control-point data
     control_point_metrics: List[ControlPointMetrics] = field(default_factory=list)
@@ -302,6 +336,7 @@ class PlanMetrics:
     SAS10: Optional[float] = None
     EM: Optional[float] = None
     PI: Optional[float] = None
+    PAM: Optional[float] = None  # Plan Aperture Modulation (target-specific)
     
     # Per-beam breakdown
     beam_metrics: List[BeamMetrics] = field(default_factory=list)

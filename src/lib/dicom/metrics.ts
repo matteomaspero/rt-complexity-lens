@@ -12,7 +12,8 @@ import type {
   BeamMetrics, 
   ControlPointMetrics,
   MLCLeafPositions,
-  MachineDeliveryParams
+  MachineDeliveryParams,
+  Structure
 } from './types';
 
 // ===================================================================
@@ -552,7 +553,8 @@ function calculateBeamMetrics(
     maxGantrySpeed: 4.8,
     maxMLCSpeed: 25,
     mlcType: 'MLCX',
-  }
+  },
+  structure?: Structure
 ): BeamMetrics {
   const nPairs = beam.numberOfLeaves || beam.mlcLeafWidths.length || 60;
   const leafBounds = getEffectiveLeafBoundaries(beam);
@@ -924,6 +926,7 @@ function calculateBeamMetrics(
     SAS10,
     EM,
     PI,
+    BAM: calculateBAM(beam, structure),
     controlPointMetrics,
   };
 }
@@ -933,10 +936,11 @@ function calculateBeamMetrics(
  */
 export function calculatePlanMetrics(
   plan: RTPlan,
-  machineParams?: MachineDeliveryParams
+  machineParams?: MachineDeliveryParams,
+  structure?: Structure
 ): PlanMetrics {
   const beamMetrics: BeamMetrics[] = plan.beams.map((beam) =>
-    calculateBeamMetrics(beam, machineParams)
+    calculateBeamMetrics(beam, machineParams, structure)
   );
   
   // Aggregate across beams
@@ -950,6 +954,7 @@ export function calculatePlanMetrics(
   let weightedSAS10 = 0;
   let weightedEM = 0;
   let weightedPI = 0;
+  let weightedPAM = 0;
   // Accuracy metrics
   let weightedLG = 0;
   let weightedMAD = 0;
@@ -980,6 +985,7 @@ export function calculatePlanMetrics(
   let countMDRV = 0;
   let countMD = 0;
   let countMI = 0;
+  let countPAM = 0;
   
   for (const bm of beamMetrics) {
     const mu = bm.beamMU || 1;
@@ -1036,6 +1042,12 @@ export function calculatePlanMetrics(
       countMI += mu;
     }
     
+    // Plan Aperture Modulation (target-specific)
+    if (bm.BAM !== undefined) {
+      weightedPAM += bm.BAM * mu;
+      countPAM += mu;
+    }
+    
     totalLT += bm.LT;
     totalDeliveryTime += bm.estimatedDeliveryTime || 0;
     totalGT += bm.GT || 0;
@@ -1078,6 +1090,7 @@ export function calculatePlanMetrics(
   const TG = totalMU > 0 ? weightedTG / totalMU : undefined;
   const MD = countMD > 0 ? weightedMD / countMD : undefined;
   const MI = countMI > 0 ? weightedMI / countMI : undefined;
+  const PAM = countPAM > 0 ? weightedPAM / countPAM : undefined;
   
   return {
     planLabel: plan.planLabel,
@@ -1122,9 +1135,178 @@ export function calculatePlanMetrics(
     SAS10,
     EM,
     PI,
+    PAM,
     beamMetrics,
     calculationDate: new Date(),
   };
+}
+
+/**
+ * Project a 3D point to Beam's Eye View (BEV) plane.
+ * Uses gantry angle to transform from patient coordinates to BEV coordinates.
+ * @param point - 3D patient coordinates [x, y, z]
+ * @param gantryAngleDeg - Gantry angle in degrees
+ * @returns 2D BEV coordinates [x_bev, y_bev]
+ */
+export function projectPointToBEV(
+  point: [number, number, number],
+  gantryAngleDeg: number
+): [number, number] {
+  const [x, y, z] = point;
+  const gantryRad = (gantryAngleDeg * Math.PI) / 180;
+  
+  // BEV projection: rotate around Y-axis by gantry angle
+  // X-component: z projects along beam direction (sin), x perpendicular (cos)
+  // Y-component: unchanged
+  const xBEV = z * Math.sin(gantryRad) + x * Math.cos(gantryRad);
+  const yBEV = y;
+  
+  return [xBEV, yBEV];
+}
+
+/**
+ * Calculate aperture modulation (AM) between target and aperture projections.
+ * Simplified approach: bounding box comparison for fast calculation.
+ * For exact calculation, use shapely or similar polygon library on backend.
+ *
+ * @param targetBevPoints - Projected target contour points in BEV [x, y]
+ * @param apertureBevPoints - Aperture boundary points in BEV [x, y]
+ * @returns AM value in [0, 1]
+ */
+function calculateApertureModulationSimplified(
+  targetBevPoints: Array<[number, number]>,
+  apertureBevPoints: Array<[number, number]>
+): number {
+  if (targetBevPoints.length === 0 || apertureBevPoints.length === 0) {
+    return 1.0; // Fully blocked if no points
+  }
+  
+  // Calculate bounding boxes as simplified geometry
+  const targetBounds = {
+    minX: Math.min(...targetBevPoints.map(p => p[0])),
+    maxX: Math.max(...targetBevPoints.map(p => p[0])),
+    minY: Math.min(...targetBevPoints.map(p => p[1])),
+    maxY: Math.max(...targetBevPoints.map(p => p[1])),
+  };
+  
+  const apertureBounds = {
+    minX: Math.min(...apertureBevPoints.map(p => p[0])),
+    maxX: Math.max(...apertureBevPoints.map(p => p[0])),
+    minY: Math.min(...apertureBevPoints.map(p => p[1])),
+    maxY: Math.max(...apertureBevPoints.map(p => p[1])),
+  };
+  
+  const targetArea =
+    (targetBounds.maxX - targetBounds.minX) * (targetBounds.maxY - targetBounds.minY);
+  
+  if (targetArea < 1e-6) {
+    return 0; // Degenerate target
+  }
+  
+  // Calculate intersection of bounding boxes
+  const overlapX = Math.max(0, Math.min(targetBounds.maxX, apertureBounds.maxX) - 
+                                Math.max(targetBounds.minX, apertureBounds.minX));
+  const overlapY = Math.max(0, Math.min(targetBounds.maxY, apertureBounds.maxY) - 
+                                Math.max(targetBounds.minY, apertureBounds.minY));
+  const overlapArea = overlapX * overlapY;
+  
+  // AM = (total - overlap) / total
+  const am = 1.0 - (overlapArea / targetArea);
+  return Math.max(0, Math.min(1, am)); // Clamp to [0, 1]
+}
+
+/**
+ * Calculate Beam Aperture Modulation (BAM) for a single beam with target.
+ * NOTE: This is a TypeScript placeholder using simplified bounding box geometry.
+ * For exact polygon-based calculation, use Python backend or integrate Turf.js/d3-polygon.
+ *
+ * @param beam - Beam to analyze
+ * @param structure - Target structure with 3D contours
+ * @returns BAM value in [0, 1] or undefined if calculation not possible
+ */
+export function calculateBAM(beam: Beam, structure?: Structure): number | undefined {
+  if (!structure || !structure.contours || structure.contours.length === 0) {
+    return undefined;
+  }
+  
+  if (beam.controlPoints.length < 1) {
+    return undefined;
+  }
+  
+  // Collect all target points
+  const targetPoints: [number, number, number][] = [];
+  for (const contour of structure.contours) {
+    targetPoints.push(...contour.points);
+  }
+  
+  if (targetPoints.length === 0) {
+    return undefined;
+  }
+  
+  // Calculate weighted aperture modulation across control points
+  let totalWeightedAM = 0;
+  let totalMU = 0;
+  
+  for (let i = 0; i < beam.controlPoints.length; i++) {
+    const cp = beam.controlPoints[i];
+    
+    // Project target to BEV
+    const targetBevPoints = targetPoints.map(pt => 
+      projectPointToBEV(pt, cp.gantryAngle)
+    );
+    
+    // Create aperture boundary in BEV (simplified: rectangular bounds)
+    const apertureBevBounds: Array<[number, number]> = [
+      projectPointToBEV([-10000, cp.jawPositions.y1, 0], cp.gantryAngle),
+      projectPointToBEV([10000, cp.jawPositions.y1, 0], cp.gantryAngle),
+      projectPointToBEV([10000, cp.jawPositions.y2, 0], cp.gantryAngle),
+      projectPointToBEV([-10000, cp.jawPositions.y2, 0], cp.gantryAngle),
+    ];
+    
+    // Calculate AM for this control point
+    const am = calculateApertureModulationSimplified(targetBevPoints, apertureBevBounds);
+    
+    // Get MU weight
+    const deltaMU = i === 0 
+      ? cp.cumulativeMetersetWeight 
+      : cp.cumulativeMetersetWeight - beam.controlPoints[i - 1].cumulativeMetersetWeight;
+    
+    totalWeightedAM += am * deltaMU;
+    totalMU += deltaMU;
+  }
+  
+  return totalMU > 1e-6 ? totalWeightedAM / totalMU : undefined;
+}
+
+/**
+ * Calculate Plan Aperture Modulation (PAM) for entire plan with target.
+ * PAM is the MU-weighted average of BAM across all beams.
+ * NOTE: This is a TypeScript placeholder using simplified bounding box geometry.
+ *
+ * @param plan - RT plan
+ * @param structure - Target structure
+ * @returns PAM value in [0, 1] or undefined if calculation not possible
+ */
+export function calculatePAM(plan: RTPlan, structure?: Structure): number | undefined {
+  if (!plan.beams || plan.beams.length === 0 || !structure) {
+    return undefined;
+  }
+  
+  let totalWeightedPAM = 0;
+  let totalMU = 0;
+  
+  for (const beam of plan.beams) {
+    const bam = calculateBAM(beam, structure);
+    if (bam === undefined) {
+      continue;
+    }
+    
+    const beamMU = beam.finalCumulativeMetersetWeight;
+    totalWeightedPAM += bam * beamMU;
+    totalMU += beamMU;
+  }
+  
+  return totalMU > 1e-6 ? totalWeightedPAM / totalMU : undefined;
 }
 
 /**

@@ -379,6 +379,94 @@ Where:
 
 ---
 
+## Target-Specific Metrics
+
+### BAM (Beam Aperture Modulation)
+
+Quantifies the average fraction of a target's projected area that is blocked by MLC/jaws for a single beam.
+
+**Definition:**
+
+Aperture Modulation (AM) at a control point:
+```
+AM_j = A_blocked / A_target
+```
+
+Where:
+- `A_target` = total target projection area in Beam's Eye View (BEV)
+- `A_blocked` = target projection area outside the beam aperture
+
+Beam Aperture Modulation (BAM):
+```
+BAM = Σ(AM_j × ΔMU) / Σ(ΔMU)
+```
+
+- **Range**: 0–1 (0 = no modulation, target always fully within aperture; 1 = target fully blocked)
+- **Aggregation**: MU-weighted average across all control points in the beam
+- **Requires**: RTSTRUCT file with target structure
+- **BEV Coordinate System**: 3D patient coordinates are projected onto 2D Beam's Eye View plane using gantry angle rotation
+
+**Geometric Projection:**
+
+1. For each control point with gantry angle θ:
+   - Transform 3D target contour points to 2D BEV coordinates:
+     ```
+     x_bev = z × sin(θ) + x × cos(θ)
+     y_bev = y
+     ```
+   - Create 2D polygon from projected contour points
+
+2. Create 2D aperture polygon from MLC and jaw positions at that control point
+
+3. Calculate AM as intersection/difference of target and aperture polygons
+
+4. Weight AM values by MU delivered at that control point
+
+**Implementation**: Uses Shapely library for precise 2D polygon operations (union, intersection, difference, area calculation).
+
+### PAM (Plan Aperture Modulation)
+
+Quantifies the average fraction of a target's projected area that is blocked across the entire treatment plan.
+
+**Definition:**
+
+```
+PAM = Σ_beams(BAM_i × MU_i) / Σ_beams(MU_i)
+```
+
+Where:
+- `BAM_i` = Beam Aperture Modulation for beam i
+- `MU_i` = total MU delivered to beam i
+
+- **Range**: 0–1
+- **Interpretation**: Weighted average fraction of target projection blocked by aperture across all beams and control points
+- **Aggregation**: MU-weighted average from all beams
+- **Requires**: RTSTRUCT file with target structure
+
+**Key Features:**
+
+- **Dimensionless**: Pure geometric metric, independent of dose or fractionation
+- **Target-Specific**: Computed separately for each target structure (e.g., different PAM for PTV70 vs PTV56)
+- **Intuitive**: Values directly represent fraction of target blocked (0 = no modulation, 1 = target fully blocked)
+- **Geometrically Precise**: Uses exact polygon-based calculations rather than approximations
+
+**Assumptions & Limitations:**
+
+1. Assumes perfect MLC/jaw positioning (no delivery deviations)
+2. Does not account for:
+   - Transmission through MLC leaves
+   - Field boundaries beyond DICOM-specified jaws
+   - Couch angle effects on projection (currently assumes couch_angle = 0)
+   - Non-uniform target density or heterogeneities
+3. Entire contour projected as continuous region (no slice-by-slice analysis)
+4. BEV projection assumes isocentric geometry at specified gantry angles
+
+**Reference:**
+
+[To be filled with actual publication DOI: 10.1002/mp.70144]
+
+---
+
 ## Cross-Validation Workflow
 
 To ensure TypeScript and Python implementations produce identical results:
@@ -410,3 +498,6 @@ To ensure TypeScript and Python implementations produce identical results:
 4. Younge KC, et al. "Predicting deliverability of VMAT plans using aperture complexity analysis." *J Appl Clin Med Phys.* 2016;17(4):124-131. [DOI: 10.1120/jacmp.v17i4.6241](https://doi.org/10.1120/jacmp.v17i4.6241)
 
 5. Du W, et al. "Quantification of beam complexity in IMRT treatment plans." *Med Phys.* 2014;41(2):021716. [DOI: 10.1118/1.4861821](https://doi.org/10.1118/1.4861821)
+
+6. Muralidhar V, et al. "Plan aperture modulation: a new metric for assessing 3D geometry of aperture modulation in radiotherapy." *Med Phys.* 2024. [DOI: 10.1002/mp.70144](https://doi.org/10.1002/mp.70144)
+

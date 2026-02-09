@@ -1,0 +1,510 @@
+{
+  "test_date": "C:\\Users\\teoir\\OneDrive\\Desktop\\rt-complexity-lens\\python\\tests\\test_time.txt",
+  "test_directory": "C:\\Users\\teoir\\OneDrive\\Desktop\\rt-complexity-lens\\testdata\\reference_dataset_v1.1\\Linac\\Eclipse",
+  "plans": [
+    {
+      "file": "RP.TG119.CS_ETH_2A_#1.dcm",
+      "plan_label": "CS_ETH_2A_#1",
+      "total_mu": 600.067010197529,
+      "num_beams": 3,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.CS_ETH_2A_#2.dcm",
+      "plan_label": "CS_ETH_2A_#2",
+      "total_mu": 873.3938809409251,
+      "num_beams": 3,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.CS_ETH_9F.dcm",
+      "plan_label": "CS_ETH_9F",
+      "total_mu": 1640.9714395431129,
+      "num_beams": 10,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.CS_TB_2A_#1.dcm",
+      "plan_label": "CS_TB_2A_#1",
+      "total_mu": 602.049107991946,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.43703156623191647,
+        "AAV": 0.5680839803090473,
+        "MFA": 26.61932953593129,
+        "LT": 57283.8,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.CS_TB_2A_#2.dcm",
+      "plan_label": "CS_TB_2A_#2",
+      "total_mu": 805.628942607724,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.2669007213139828,
+        "AAV": 0.45731442775671177,
+        "MFA": 19.37956128986191,
+        "LT": 59820.99999999996,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.CS_TB_9F.dcm",
+      "plan_label": "CS_TB_9F",
+      "total_mu": 1485.9516807995387,
+      "num_beams": 9,
+      "metrics_without_target": {
+        "MCS": 0.36000271095214686,
+        "AAV": 0.46814843964804487,
+        "MFA": 10.97015976312001,
+        "LT": 40238.670000000006,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.CS_UN_2A_#1.dcm",
+      "plan_label": "CS_UN_2A_#1",
+      "total_mu": 602.166224226299,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.35828274799878207,
+        "AAV": 0.5400548923795128,
+        "MFA": 22.835276499800493,
+        "LT": 35968.9,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.CS_UN_2A_#2.dcm",
+      "plan_label": "CS_UN_2A_#2",
+      "total_mu": 803.636409480351,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.22549172609991772,
+        "AAV": 0.3988089546283083,
+        "MFA": 16.476404154283177,
+        "LT": 34648.299999999996,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.CS_UN_9F.dcm",
+      "plan_label": "CS_UN_9F",
+      "total_mu": 1397.0,
+      "num_beams": 9,
+      "metrics_without_target": {
+        "MCS": 0.32423333424110506,
+        "AAV": 0.4241439662060013,
+        "MFA": 8.4530678966562,
+        "LT": 22975.699999999997,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_ETH_2A_#1.dcm",
+      "plan_label": "HN_ETH_2A_#1",
+      "total_mu": 600.0681058307889,
+      "num_beams": 3,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_ETH_2A_#2.dcm",
+      "plan_label": "HN_ETH_2A_#2",
+      "total_mu": 861.083619585814,
+      "num_beams": 3,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_ETH_7F.dcm",
+      "plan_label": "HN_ETH_7F",
+      "total_mu": 1886.9489012328543,
+      "num_beams": 10,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_TB_2A_#1.dcm",
+      "plan_label": "HN_TB_2A_#1",
+      "total_mu": 600.0909142196549,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.2985533691397064,
+        "AAV": 0.3966162655894172,
+        "MFA": 40.948716275401274,
+        "LT": 98358.90000000002,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_TB_2A_#2.dcm",
+      "plan_label": "HN_TB_2A_#2",
+      "total_mu": 771.583741401319,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.21603454589601695,
+        "AAV": 0.35553766600664316,
+        "MFA": 31.38345658429686,
+        "LT": 108812.20000000001,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_TB_7F.dcm",
+      "plan_label": "HN_TB_7F",
+      "total_mu": 1722.0,
+      "num_beams": 9,
+      "metrics_without_target": {
+        "MCS": 0.3697616905047367,
+        "AAV": 0.4505825041972587,
+        "MFA": 12.506625331004312,
+        "LT": 58568.49999999999,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_UN_2A_#1.dcm",
+      "plan_label": "HN_UN_2A_#1",
+      "total_mu": 602.933198201994,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.24798223727760035,
+        "AAV": 0.39488655566365644,
+        "MFA": 37.97125394820103,
+        "LT": 65544.99999999999,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_UN_2A_#2.dcm",
+      "plan_label": "HN_UN_2A_#2",
+      "total_mu": 749.721418617167,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.18107362047945288,
+        "AAV": 0.3338432029809919,
+        "MFA": 29.352028850884516,
+        "LT": 75045.50000000003,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.HN_UN_7F.dcm",
+      "plan_label": "HN_UN_7F",
+      "total_mu": 1614.0,
+      "num_beams": 9,
+      "metrics_without_target": {
+        "MCS": 0.29664480072639976,
+        "AAV": 0.41386956305508044,
+        "MFA": 11.584664836861572,
+        "LT": 35168.4,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_ETH_2A_#1.dcm",
+      "plan_label": "MT_ETH_2A_#1",
+      "total_mu": 433.002224618918,
+      "num_beams": 3,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_ETH_2A_#2.dcm",
+      "plan_label": "MT_ETH_2A_#2",
+      "total_mu": 560.975063275871,
+      "num_beams": 3,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_ETH_7F.dcm",
+      "plan_label": "MT_ETH_7F",
+      "total_mu": 714.7541731679432,
+      "num_beams": 8,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_TB_2A_#1.dcm",
+      "plan_label": "MT_TB_2A_#1",
+      "total_mu": 323.07859453609797,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.4371055104931938,
+        "AAV": 0.5556264771456815,
+        "MFA": 34.21143276199012,
+        "LT": 82353.80000000002,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_TB_2A_#2.dcm",
+      "plan_label": "MT_TB_2A_#2",
+      "total_mu": 507.44440731180197,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.18720114299953033,
+        "AAV": 0.37017338651437587,
+        "MFA": 23.07695638758032,
+        "LT": 99235.60000000003,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_TB_7F.dcm",
+      "plan_label": "MT_TB_7F",
+      "total_mu": 611.6997223014298,
+      "num_beams": 7,
+      "metrics_without_target": {
+        "MCS": 0.404257975432387,
+        "AAV": 0.5721487635161232,
+        "MFA": 19.03623514496052,
+        "LT": 35476.78,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_UN_2A_#1.dcm",
+      "plan_label": "MT_UN_2A_#1",
+      "total_mu": 330.48018188837,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.4124942123144025,
+        "AAV": 0.544102224181335,
+        "MFA": 33.97617427563133,
+        "LT": 59804.7,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_UN_2A_#2.dcm",
+      "plan_label": "MT_UN_2A_#2",
+      "total_mu": 469.21899211666005,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.16722609600857388,
+        "AAV": 0.35181269552481365,
+        "MFA": 21.681759026374625,
+        "LT": 78773.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.MT_UN_7F.dcm",
+      "plan_label": "MT_UN_7F",
+      "total_mu": 647.0,
+      "num_beams": 7,
+      "metrics_without_target": {
+        "MCS": 0.36696174944044996,
+        "AAV": 0.46364508167467666,
+        "MFA": 14.698810750461083,
+        "LT": 23866.199999999997,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_ETH_2A_#1.dcm",
+      "plan_label": "PR_ETH_2A_#1",
+      "total_mu": 767.012118164036,
+      "num_beams": 3,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_ETH_2A_#2.dcm",
+      "plan_label": "PR_ETH_2A_#2",
+      "total_mu": 879.4260106681199,
+      "num_beams": 3,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_ETH_7F.dcm",
+      "plan_label": "PR_ETH_7F",
+      "total_mu": 1051.763401686465,
+      "num_beams": 8,
+      "metrics_without_target": {
+        "MCS": 0.0,
+        "AAV": 0.0,
+        "MFA": 0.0,
+        "LT": 0.0,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_TB_2A_#1.dcm",
+      "plan_label": "PR_TB_2A_#1",
+      "total_mu": 766.458293942308,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.2797155523394973,
+        "AAV": 0.42326287328433926,
+        "MFA": 12.688717409857398,
+        "LT": 46747.59999999999,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_TB_2A_#2.dcm",
+      "plan_label": "PR_TB_2A_#2",
+      "total_mu": 873.75303962579,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.21662072610010635,
+        "AAV": 0.4087672074013686,
+        "MFA": 11.272205180513083,
+        "LT": 51066.5,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_TB_7F.dcm",
+      "plan_label": "PR_TB_7F",
+      "total_mu": 880.0,
+      "num_beams": 7,
+      "metrics_without_target": {
+        "MCS": 0.37827652286500074,
+        "AAV": 0.5245673270125524,
+        "MFA": 10.393531463504065,
+        "LT": 15840.8,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_UN_2A_#1.dcm",
+      "plan_label": "PR_UN_2A_#1",
+      "total_mu": 603.174072698441,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.23612115153650054,
+        "AAV": 0.47715708370250975,
+        "MFA": 15.127789643266999,
+        "LT": 25689.200000000004,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_UN_2A_#2.dcm",
+      "plan_label": "PR_UN_2A_#2",
+      "total_mu": 710.310151234092,
+      "num_beams": 2,
+      "metrics_without_target": {
+        "MCS": 0.190249530140819,
+        "AAV": 0.40763552668827924,
+        "MFA": 12.069600117567473,
+        "LT": 28157.79999999999,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    },
+    {
+      "file": "RP.TG119.PR_UN_7F.dcm",
+      "plan_label": "PR_UN_7F",
+      "total_mu": 848.0,
+      "num_beams": 7,
+      "metrics_without_target": {
+        "MCS": 0.28171660660518366,
+        "AAV": 0.49741644188788764,
+        "MFA": 9.638604947074713,
+        "LT": 8467.900000000001,
+        "PAM": null
+      },
+      "metrics_by_structure": {}
+    }
+  ]
+}

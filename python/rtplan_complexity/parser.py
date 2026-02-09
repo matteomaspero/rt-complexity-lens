@@ -18,6 +18,8 @@ from .types import (
     MLCLeafPositions,
     JawPositions,
     Technique,
+    Structure,
+    ContourSequence,
 )
 
 
@@ -531,3 +533,109 @@ def parse_rtplan(file_path: str) -> RTPlan:
         file_size=file_size,
         sop_instance_uid=_get_string(ds, "SOPInstanceUID"),
     )
+
+
+# ============================================================================
+# RTSTRUCT Parsing Functions
+# ============================================================================
+
+def parse_rtstruct(file_path: str) -> dict:
+    """
+    Parse an RTSTRUCT DICOM file and extract all structures.
+    
+    Args:
+        file_path: Path to the RTSTRUCT DICOM file.
+    
+    Returns:
+        Dictionary mapping structure names to Structure objects.
+    
+    Raises:
+        FileNotFoundError: If file doesn't exist.
+        ValueError: If file is not a valid RTSTRUCT.
+    """
+    try:
+        ds = pydicom.dcmread(file_path)
+    except Exception as e:
+        raise ValueError(f"Failed to read DICOM file: {e}")
+    
+    # Verify this is an RTSTRUCT
+    sop_class_uid = _get_string(ds, "SOPClassUID")
+    if sop_class_uid != "1.2.840.10008.5.1.4.1.1.481.4":  # RTSTRUCT SOP Class UID
+        raise ValueError(f"File is not an RTSTRUCT (SOP Class: {sop_class_uid})")
+    
+    structures: dict = {}
+    
+    # Parse ReferencedRoiNumber to ROI mapping
+    roi_map = {}
+    if hasattr(ds, "StructureSetROISequence"):
+        for roi in ds.StructureSetROISequence:
+            roi_number = int(roi.ReferencedROINumber)
+            roi_name = str(roi.ROIName)
+            roi_map[roi_number] = roi_name
+    
+    # Parse ROI Contour Sequence
+    if hasattr(ds, "ROIContourSequence"):
+        for roi_contour in ds.ROIContourSequence:
+            referenced_roi_num = int(roi_contour.ReferencedROINumber)
+            
+            # Get structure name
+            structure_name = roi_map.get(referenced_roi_num, f"ROI_{referenced_roi_num}")
+            
+            # Parse contours
+            contours = []
+            if hasattr(roi_contour, "ContourSequence"):
+                for contour_seq in roi_contour.ContourSequence:
+                    # Extract contour data
+                    contour_data = list(contour_seq.ContourData)
+                    # Contour data is a flat list: [x0, y0, z0, x1, y1, z1, ...]
+                    points = []
+                    for i in range(0, len(contour_data), 3):
+                        if i + 2 < len(contour_data):
+                            x = float(contour_data[i])
+                            y = float(contour_data[i + 1])
+                            z = float(contour_data[i + 2])
+                            points.append((x, y, z))
+                    
+                    if points:
+                        contours.append(ContourSequence(points=points, number_of_points=len(points)))
+            
+            # Create and store Structure
+            if contours:  # Only add if has contours
+                structure = Structure(
+                    name=structure_name,
+                    number=referenced_roi_num,
+                    reference_roi_number=referenced_roi_num,
+                    contours=contours,
+                )
+                structures[structure_name] = structure
+    
+    return structures
+
+
+def get_structure_by_name(structures: dict, structure_label: str) -> Optional[Structure]:
+    """
+    Retrieve a structure by name (case-insensitive).
+    
+    Args:
+        structures: Dictionary of structures from parse_rtstruct().
+        structure_label: Name of the structure to retrieve (case-insensitive).
+    
+    Returns:
+        Structure object if found, None otherwise.
+    """
+    # Try exact match first
+    if structure_label in structures:
+        return structures[structure_label]
+    
+    # Try case-insensitive match
+    label_lower = structure_label.lower()
+    for name, struct in structures.items():
+        if name.lower() == label_lower:
+            return struct
+    
+    # Try partial match
+    for name, struct in structures.items():
+        if label_lower in name.lower():
+            return struct
+    
+    return None

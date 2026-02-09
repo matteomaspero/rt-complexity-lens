@@ -1,5 +1,22 @@
 // DICOM RT Plan Types aligned with UCoMX nomenclature
 
+// ============================================================================
+// Structure Types (RTSTRUCT)
+// ============================================================================
+
+export interface ContourSequence {
+  points: [number, number, number][]; // List of [x, y, z] points in patient coordinates
+  numberOfPoints: number;
+}
+
+export interface Structure {
+  name: string;
+  number: number;
+  referenceROINumber?: number;
+  roiDisplayColor?: [number, number, number]; // RGB
+  contours: ContourSequence[];
+}
+
 export interface MLCLeafPositions {
   bankA: number[]; // Leaf positions for Bank A (negative X direction, typically)
   bankB: number[]; // Leaf positions for Bank B (positive X direction, typically)
@@ -124,6 +141,8 @@ export interface ControlPointMetrics {
     below10mm: boolean;
     below20mm: boolean;
   };
+  // Plan Aperture Modulation (per control point)
+  PAM?: number; // Aperture modulation at this control point [0, 1]
 }
 
 export interface BeamMetrics {
@@ -189,6 +208,7 @@ export interface BeamMetrics {
   SAS10?: number; // Small Aperture Score (10mm threshold)
   EM?: number; // Edge Metric
   PI?: number; // Plan Irregularity
+  BAM?: number; // Beam Aperture Modulation (target-specific, weighted average of AM) [0, 1]
   
   // Per-control-point data
   controlPointMetrics: ControlPointMetrics[];
@@ -244,6 +264,7 @@ export interface PlanMetrics {
   SAS10?: number;
   EM?: number;
   PI?: number;
+  PAM?: number; // Plan Aperture Modulation (target-specific, MU-weighted from all beams) [0, 1]
   
   // Per-beam breakdown
   beamMetrics: BeamMetrics[];

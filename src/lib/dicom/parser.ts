@@ -592,3 +592,138 @@ export function parseRTPlan(arrayBuffer: ArrayBuffer, fileName: string): RTPlan 
     sopInstanceUID: getString(dataSet, TAGS.SOPInstanceUID),
   };
 }
+
+/**
+ * Parse an RTSTRUCT DICOM file and extract structures (ROIs)
+ * @param arrayBuffer - ArrayBuffer containing DICOM file data
+ * @param fileName - Original file name for labeling
+ * @returns Map of structure names to Structure objects
+ */
+export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): Map<string, any> {
+  try {
+    const dataSet = dicomParser.parseDicom(arrayBuffer);
+    
+    const structures = new Map<string, any>();
+    
+    // DICOM tags for RTSTRUCT
+    const ROI_CONTOUR_SEQ = 'x30060039';
+    const REFERENCED_ROI_NUM = 'x30060084';
+    const CONTOUR_SEQ = 'x30060040';
+    const CONTOUR_DATA = 'x30060050';
+    const ROI_NAME = 'x300a0004';
+    const STRUCTURE_SET_ROI_SEQ = 'x30060020';
+    const ROI_NUMBER = 'x300a0022';
+    
+    // Build map of ROI numbers to names
+    const roiNameMap = new Map<number, string>();
+    try {
+      const ssRoiSeq = dataSet.elements[STRUCTURE_SET_ROI_SEQ];
+      if (ssRoiSeq && ssRoiSeq.items) {
+        for (const item of ssRoiSeq.items) {
+          const roiNum = parseInt(getString(item, ROI_NUMBER)) || 0;
+          const roiName = getString(item, ROI_NAME) || `ROI_${roiNum}`;
+          roiNameMap.set(roiNum, roiName);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse StructureSetROISequence:', e);
+    }
+    
+    // Parse contours
+    try {
+      const roiContourSeq = dataSet.elements[ROI_CONTOUR_SEQ];
+      if (roiContourSeq && roiContourSeq.items) {
+        for (const item of roiContourSeq.items) {
+          const refROINum = parseInt(getString(item, REFERENCED_ROI_NUM)) || 0;
+          const structName = roiNameMap.get(refROINum) || `ROI_${refROINum}`;
+          
+          const contours = [];
+          const contourSeq = item.elements[CONTOUR_SEQ];
+          if (contourSeq && contourSeq.items) {
+            for (const contourItem of contourSeq.items) {
+              const contourData = getFloatArray(contourItem, CONTOUR_DATA);
+              // Convert flat array to [x, y, z] tuples
+              const points: [number, number, number][] = [];
+              for (let i = 0; i < contourData.length; i += 3) {
+                if (i + 2 < contourData.length) {
+                  points.push([
+                    contourData[i],
+                    contourData[i + 1],
+                    contourData[i + 2],
+                  ]);
+                }
+              }
+              if (points.length > 0) {
+                contours.push({
+                  points,
+                  numberOfPoints: points.length,
+                });
+              }
+            }
+          }
+          
+          if (contours.length > 0) {
+            structures.set(structName, {
+              name: structName,
+              number: refROINum,
+              referenceROINumber: refROINum,
+              contours,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse ROI contours:', e);
+    }
+    
+    return structures;
+  } catch (error) {
+    console.error('Failed to parse RTSTRUCT:', error);
+    return new Map();
+  }
+}
+
+/**
+ * Get a structure by name from parsed structures (case-insensitive)
+ */
+export function getStructureByName(structures: Map<string, any>, label: string): any | undefined {
+  // Try exact match first
+  if (structures.has(label)) {
+    return structures.get(label);
+  }
+  
+  // Try case-insensitive match
+  const labelLower = label.toLowerCase();
+  for (const [name, struct] of structures) {
+    if (name.toLowerCase() === labelLower) {
+      return struct;
+    }
+  }
+  
+  // Try partial match
+  for (const [name, struct] of structures) {
+    if (name.toLowerCase().includes(labelLower)) {
+      return struct;
+    }
+  }
+  
+  return undefined;
+}
+
+/**
+ * Helper to get float array from DICOM element
+ */
+function getFloatArray(element: any, tag: string): number[] {
+  const el = element.elements?.[tag];
+  if (!el) return [];
+  
+  if (el.vr === 'DS') {
+    // Decimal String
+    const value = el.value || [];
+    return Array.isArray(value) ? value.map(v => parseFloat(v)) : [];
+  } else if (el.vr === 'FD') {
+    // Floating point double
+    return el.value || [];
+  }
+  return [];
+}
