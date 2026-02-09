@@ -1,4 +1,5 @@
 export { FileUploadZone } from './FileUploadZone';
+export { RTStructUploadZone } from './RTStructUploadZone';
 export { MLCApertureViewer } from './MLCApertureViewer';
 export { GantryViewer } from './GantryViewer';
 export { CollimatorViewer } from './CollimatorViewer';

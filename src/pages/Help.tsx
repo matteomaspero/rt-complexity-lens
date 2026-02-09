@@ -432,6 +432,63 @@ export default function Help() {
               </CardContent>
             </Card>
 
+            {/* Plan Aperture Modulation (PAM) */}
+            <Card id="target-based-metrics">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-primary" />
+                  Target-Based Metrics: PAM & BAM
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground leading-relaxed">
+                  Plan Aperture Modulation (PAM) and Beam Aperture Modulation (BAM) measure how well the MLC apertures 
+                  conform to target geometry. These metrics require a corresponding RTSTRUCT file with target structure(s).
+                </p>
+
+                <div className="space-y-4 mt-6">
+                  <div className="border-l-2 border-primary pl-4">
+                    <h4 className="font-semibold text-base">Plan Aperture Modulation (PAM)</h4>
+                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                      <strong>Definition:</strong> Average fraction of time the target is blocked by the primary collimator 
+                      or MLC apertures across all control points.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                      <strong>Range:</strong> 0.0 to 1.0, where:
+                    </p>
+                    <ul className="text-sm text-muted-foreground ml-4 mt-2 space-y-1">
+                      <li>• <strong>PAM = 0.0</strong>: Target is never blocked (excellent conformality)</li>
+                      <li>• <strong>PAM = 0.5</strong>: Target is blocked ~50% of the time (moderate blocking)</li>
+                      <li>• <strong>PAM = 1.0</strong>: Target is always completely blocked (poor conformality)</li>
+                    </ul>
+                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                      <strong>Interpretation:</strong> Lower PAM values indicate better MLC conformity to the target shape. 
+                      High PAM suggests opportunities for plan optimization or multi-arc delivery.
+                    </p>
+                  </div>
+
+                  <div className="border-l-2 border-blue-500 pl-4">
+                    <h4 className="font-semibold text-base">Beam Aperture Modulation (BAM)</h4>
+                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                      <strong>Definition:</strong> Per-beam average of target blocking by apertures, calculated identically to PAM 
+                      but for individual beams.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                      <strong>In the Viewer:</strong> Each beam shows its BAM value in the summary card. Multi-arc plans typically have 
+                      lower BAM per arc due to repeated beam angles allowing better conformality.
+                    </p>
+                  </div>
+                </div>
+
+                <NoteBox>
+                  <p>
+                    <strong>How to use:</strong> Upload an RTSTRUCT file (RS*.dcm) with your target structure after loading the plan. 
+                    PAM and BAM will automatically calculate. If multiple structures exist, select the target/PTV.
+                  </p>
+                </NoteBox>
+              </CardContent>
+            </Card>
+
             {/* Coordinate System - Link to dedicated page */}
             <Card id="coordinate-system" className="border-l-4 border-l-blue-500 bg-blue-500/5">
               <CardHeader>
@@ -522,6 +579,20 @@ export default function Help() {
 
                 <div className="flex items-start">
                   <StepBadge step={5} />
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-base">Load RTSTRUCT (Optional)</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      To calculate Plan Aperture Modulation (PAM) and Beam Aperture Modulation (BAM) metrics, 
+                      upload a corresponding RTSTRUCT file. PAM measures target coverage and aperture blocking. 
+                      The metrics automatically recalculate when the RTSTRUCT is loaded.
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-start">
+                  <StepBadge step={6} />
                   <div className="space-y-2">
                     <h4 className="font-semibold text-base">Export Data</h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">

@@ -151,6 +151,12 @@ export function BeamSummaryCard({
             <span className="text-xs text-muted-foreground">°/s</span>
           </p>
         </div>
+        {beam.BAM !== undefined && (
+          <div>
+            <span className="text-xs text-muted-foreground">BAM</span>
+            <p className="font-mono font-semibold">{beam.BAM.toFixed(4)}</p>
+          </div>
+        )}
       </div>
 
       {/* Info grid - Row 2: Geometric parameters */}

@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef, forwardRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import type { SessionPlan, Beam, ControlPoint } from '@/lib/dicom/types';
+import type { SessionPlan, Beam, ControlPoint, Structure } from '@/lib/dicom/types';
 import {
   FileUploadZone,
+  RTStructUploadZone,
   MLCApertureViewer,
   GantryViewer,
   CollimatorViewer,
@@ -26,6 +27,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Logo } from '@/components/ui/logo';
 import { HelpCircle, ChevronDown, Home, Github } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { calculatePlanMetrics } from '@/lib/dicom';
 
 export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   function InteractiveViewer(_props, ref) {
@@ -33,6 +35,8 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   const [selectedBeamIndex, setSelectedBeamIndex] = useState(0);
   const [currentCPIndex, setCurrentCPIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [loadedStructures, setLoadedStructures] = useState<Structure[] | null>(null);
+  const [selectedStructureIndex, setSelectedStructureIndex] = useState<number | null>(null);
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get current beam and control point
@@ -102,7 +106,32 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     setSelectedBeamIndex(0);
     setCurrentCPIndex(0);
     setIsPlaying(false);
+    setLoadedStructures(null);
+    setSelectedStructureIndex(null);
   }, []);
+
+  // Handle structures loaded from RTStructUploadZone
+  const handleStructuresLoaded = useCallback((structures: Structure[]) => {
+    setLoadedStructures(structures);
+    if (structures.length > 0) {
+      setSelectedStructureIndex(0);
+    }
+  }, []);
+
+  // Recalculate metrics when structure is selected
+  useEffect(() => {
+    if (sessionPlan && selectedStructureIndex !== null && loadedStructures) {
+      const selectedStructure = loadedStructures[selectedStructureIndex];
+      const updatedMetrics = calculatePlanMetrics(
+        sessionPlan.plan,
+        undefined,
+        selectedStructure
+      );
+      setSessionPlan((prev) =>
+        prev ? { ...prev, metrics: updatedMetrics } : null
+      );
+    }
+  }, [selectedStructureIndex, loadedStructures, sessionPlan?.plan]);
 
   // No plan loaded - show upload zone
   if (!sessionPlan) {
@@ -280,6 +309,10 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               <ThemeToggle />
               <FileUploadZone
                 onPlanLoaded={handlePlanLoaded}
+                className="h-12 w-48 border-dashed p-2"
+              />
+              <RTStructUploadZone
+                onStructuresLoaded={handleStructuresLoaded}
                 className="h-12 w-48 border-dashed p-2"
               />
             </div>
