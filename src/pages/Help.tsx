@@ -275,40 +275,69 @@ export default function Help() {
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="font-semibold">Preset</TableHead>
+                        <TableHead className="font-semibold">MLC Platform</TableHead>
                         <TableHead className="font-semibold">Max Dose Rate</TableHead>
                         <TableHead className="font-semibold">Max Gantry Speed</TableHead>
                         <TableHead className="font-semibold">Max MLC Speed</TableHead>
-                        <TableHead className="font-semibold">MLC Type</TableHead>
+                        <TableHead className="font-semibold">Energies</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       <TableRow>
                         <TableCell className="font-medium">Generic (Conservative)</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">Generic</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">600 MU/min</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">4.8 °/s</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">25 mm/s</TableCell>
-                        <TableCell className="text-muted-foreground font-mono text-sm">MLCX</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">—</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="font-medium">Varian TrueBeam</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">Millennium 120</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">600 (1400 FFF)</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">6.0 °/s</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">25 mm/s</TableCell>
-                        <TableCell className="text-muted-foreground font-mono text-sm">MLCX</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">6/10/15/18X, 6/10FFF, 6–20e</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="font-medium">Varian Halcyon</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">SX2 Dual-Layer</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">800 MU/min</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">4.0 °/s</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">50 mm/s</TableCell>
-                        <TableCell className="text-muted-foreground font-mono text-sm">Dual-layer</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">6X, 6FFF</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Varian Ethos</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">HD120</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">800 (1400 FFF)</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">6.0 °/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">25 mm/s</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">6X, 6/10FFF</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="font-medium">Elekta Versa HD</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">Agility</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">600 (1400 FFF)</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">6.0 °/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">35 mm/s</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">6/10/15/18X, 6/10FFF, 4–18e</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Elekta Unity (MR-Linac)</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">Agility 160</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">425 MU/min</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">6.0 °/s</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm">25 mm/s</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">7X</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Elekta Harmony</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">MLCi2</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">600 MU/min</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">6.0 °/s</TableCell>
                         <TableCell className="text-muted-foreground font-mono text-sm">35 mm/s</TableCell>
-                        <TableCell className="text-muted-foreground font-mono text-sm">MLCY</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">6/10/15X</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -362,7 +391,8 @@ export default function Help() {
                   {[
                     'Create new presets from scratch or duplicate built-in presets',
                     'Edit threshold warning and critical values for each metric',
-                    'Customize delivery parameters (dose rate, speeds)',
+                    'Customize delivery parameters (dose rate, speeds, MLC model)',
+                    'Configure energy-specific dose rates per machine',
                     'Import/export presets as JSON to share across teams',
                   ].map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">

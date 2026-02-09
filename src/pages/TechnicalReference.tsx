@@ -251,24 +251,46 @@ export default function TechnicalReference() {
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead className="font-semibold">Machine</TableHead>
-                        <TableHead className="font-semibold">MLC Type</TableHead>
+                        <TableHead className="font-semibold">MLC Platform</TableHead>
+                        <TableHead className="font-semibold">DICOM MLC Type</TableHead>
                         <TableHead className="font-semibold">Jaw Configuration</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       <TableRow>
-                        <TableCell className="font-medium">Varian C-arm (TrueBeam, Clinac)</TableCell>
-                        <TableCell className="text-muted-foreground">MLCX (leaves move in X-direction)</TableCell>
+                        <TableCell className="font-medium">Varian TrueBeam / Clinac</TableCell>
+                        <TableCell className="text-muted-foreground">Millennium 120</TableCell>
+                        <TableCell className="text-muted-foreground">MLCX</TableCell>
                         <TableCell className="text-muted-foreground">ASYMX, ASYMY jaws</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="font-medium">Varian Halcyon/Ethos</TableCell>
-                        <TableCell className="text-muted-foreground">Dual-layer stacked MLC</TableCell>
+                        <TableCell className="font-medium">Varian TrueBeam HD</TableCell>
+                        <TableCell className="text-muted-foreground">HD120</TableCell>
+                        <TableCell className="text-muted-foreground">MLCX</TableCell>
+                        <TableCell className="text-muted-foreground">ASYMX, ASYMY jaws</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Varian Halcyon / Ethos</TableCell>
+                        <TableCell className="text-muted-foreground">SX2 Dual-Layer</TableCell>
+                        <TableCell className="text-muted-foreground">MLCX (×2)</TableCell>
                         <TableCell className="text-muted-foreground">No physical jaws</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="font-medium">Elekta Agility/Versa HD</TableCell>
-                        <TableCell className="text-muted-foreground">MLCY (leaves move in Y-direction)</TableCell>
+                        <TableCell className="font-medium">Elekta Versa HD / Infinity</TableCell>
+                        <TableCell className="text-muted-foreground">Agility (160 leaves)</TableCell>
+                        <TableCell className="text-muted-foreground">MLCX</TableCell>
+                        <TableCell className="text-muted-foreground">X, Y jaw pairs</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Elekta Unity (MR-Linac)</TableCell>
+                        <TableCell className="text-muted-foreground">Agility 160</TableCell>
+                        <TableCell className="text-muted-foreground">MLCX</TableCell>
+                        <TableCell className="text-muted-foreground">Y jaws only</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Elekta Harmony / Synergy</TableCell>
+                        <TableCell className="text-muted-foreground">MLCi2 (80 leaves)</TableCell>
+                        <TableCell className="text-muted-foreground">MLCX</TableCell>
                         <TableCell className="text-muted-foreground">X, Y jaw pairs</TableCell>
                       </TableRow>
                     </TableBody>
