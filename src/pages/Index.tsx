@@ -32,7 +32,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <BookOpen className="h-5 w-5 text-primary" />
             <div>
@@ -52,7 +52,7 @@ const Index = () => {
       </header>
 
       {/* Main */}
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 space-y-8">
         {/* Upload Area — the primary action */}
         <Suspense fallback={<PageLoader />}>
           <InteractiveViewer />

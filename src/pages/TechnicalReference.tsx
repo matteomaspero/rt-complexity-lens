@@ -32,7 +32,7 @@ function NoteBox({ children }: { children: React.ReactNode }) {
 export default function TechnicalReference() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-6xl px-6 py-12">
+      <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">

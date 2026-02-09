@@ -33,7 +33,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ComponentType<{ clas
 export default function PythonDocs() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-6 py-12">
+      <div className="mx-auto max-w-7xl px-6 py-12">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
