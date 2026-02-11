@@ -151,10 +151,10 @@ export function BeamSummaryCard({
             <span className="text-xs text-muted-foreground">°/s</span>
           </p>
         </div>
-        {beam.BAM !== undefined && (
+        {(beam as any).BAM !== undefined && (
           <div>
             <span className="text-xs text-muted-foreground">BAM</span>
-            <p className="font-mono font-semibold">{beam.BAM.toFixed(4)}</p>
+            <p className="font-mono font-semibold">{((beam as any).BAM as number).toFixed(4)}</p>
           </div>
         )}
       </div>

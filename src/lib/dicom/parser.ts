@@ -601,7 +601,8 @@ export function parseRTPlan(arrayBuffer: ArrayBuffer, fileName: string): RTPlan 
  */
 export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): Map<string, any> {
   try {
-    const dataSet = dicomParser.parseDicom(arrayBuffer);
+    const byteArray = new Uint8Array(arrayBuffer);
+    const dataSet = dicomParser.parseDicom(byteArray);
     
     const structures = new Map<string, any>();
     
@@ -620,8 +621,8 @@ export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): 
       const ssRoiSeq = dataSet.elements[STRUCTURE_SET_ROI_SEQ];
       if (ssRoiSeq && ssRoiSeq.items) {
         for (const item of ssRoiSeq.items) {
-          const roiNum = parseInt(getString(item, ROI_NUMBER)) || 0;
-          const roiName = getString(item, ROI_NAME) || `ROI_${roiNum}`;
+          const roiNum = parseInt(getString(item.dataSet, ROI_NUMBER)) || 0;
+          const roiName = getString(item.dataSet, ROI_NAME) || `ROI_${roiNum}`;
           roiNameMap.set(roiNum, roiName);
         }
       }
@@ -634,14 +635,14 @@ export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): 
       const roiContourSeq = dataSet.elements[ROI_CONTOUR_SEQ];
       if (roiContourSeq && roiContourSeq.items) {
         for (const item of roiContourSeq.items) {
-          const refROINum = parseInt(getString(item, REFERENCED_ROI_NUM)) || 0;
+          const refROINum = parseInt(getString(item.dataSet, REFERENCED_ROI_NUM)) || 0;
           const structName = roiNameMap.get(refROINum) || `ROI_${refROINum}`;
           
           const contours = [];
-          const contourSeq = item.elements[CONTOUR_SEQ];
+          const contourSeq = item.dataSet.elements[CONTOUR_SEQ];
           if (contourSeq && contourSeq.items) {
             for (const contourItem of contourSeq.items) {
-              const contourData = getFloatArray(contourItem, CONTOUR_DATA);
+              const contourData = getFloatArray(contourItem.dataSet, CONTOUR_DATA);
               // Convert flat array to [x, y, z] tuples
               const points: [number, number, number][] = [];
               for (let i = 0; i < contourData.length; i += 3) {
