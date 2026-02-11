@@ -117,7 +117,7 @@ export default function BatchDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-6 space-y-6">
+      <main className="px-6 py-6 space-y-6 w-full max-w-none">
         {/* Upload Zone */}
         <BatchUploadZone />
 
@@ -126,8 +126,8 @@ export default function BatchDashboard() {
 
         {/* Stats and Export Row */}
         {hasPlans && (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+          <div className="grid gap-6 lg:grid-cols-4">
+            <div className="lg:col-span-3">
               <BatchSummaryStats />
             </div>
             <div className="space-y-6">

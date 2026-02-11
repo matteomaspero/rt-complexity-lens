@@ -69,7 +69,7 @@ function CohortAnalysisContent() {
       </header>
 
       {/* Main Content */}
-      <div className="p-6 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Upload Section */}
         <CohortUploadZone />
         <CohortProgressBar />

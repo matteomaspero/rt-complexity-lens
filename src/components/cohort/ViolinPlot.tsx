@@ -98,9 +98,9 @@ export function ViolinPlot({ className }: ViolinPlotProps) {
     );
   }
 
-  const plotWidth = 120;
-  const plotHeight = 200;
-  const padding = 40;
+  const plotWidth = 140;
+  const plotHeight = 300;
+  const padding = 44;
 
   return (
     <Card className={className}>

@@ -23,7 +23,7 @@ export function CumulativeMUChart({
   controlPoints,
   currentIndex,
   totalMU,
-  height = 150,
+  height = 200,
 }: CumulativeMUChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -107,7 +107,7 @@ interface GantrySpeedChartProps {
 export function GantrySpeedChart({
   controlPoints,
   currentIndex,
-  height = 150,
+  height = 200,
 }: GantrySpeedChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
 

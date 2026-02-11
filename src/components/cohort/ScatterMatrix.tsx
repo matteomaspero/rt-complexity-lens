@@ -221,7 +221,7 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
                 </div>
               </div>
 
-              <div className="h-48">
+              <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -283,7 +283,7 @@ export function ScatterMatrix({ className }: ScatterMatrixProps) {
                         strokeDasharray="4 4"
                       />
                     )}
-                    <Scatter data={pair.data} shape="circle">
+                    <Scatter data={pair.data} shape="circle" isAnimationActive={false}>
                       {pair.data.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 

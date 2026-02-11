@@ -144,7 +144,7 @@ export function exportToCSV(plans: BatchPlan[], options: ExportOptions): string 
 
     if (options.includeBeamMetrics) {
       const beamSummary = p.metrics.beamMetrics
-        .map(bm => `${bm.beamName}: ${bm.beamMU?.toFixed(1)} MU, MCS=${bm.MCS?.toFixed(3)}`)
+        .map(bm => `${bm.beamName}: ${bm.beamMU?.toFixed(1)} MU${bm.energyLabel ? `, ${bm.energyLabel}` : ''}, MCS=${bm.MCS?.toFixed(3)}`)
         .join(' | ');
       row.push(escapeCSV(beamSummary));
     }

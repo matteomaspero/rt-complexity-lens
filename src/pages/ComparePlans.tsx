@@ -133,7 +133,7 @@ export default function ComparePlans() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-6 space-y-6">
+      <main className="px-6 py-6 space-y-6 w-full max-w-none">
         {/* Upload Zone */}
         <ComparisonHeader
           planA={planA}
