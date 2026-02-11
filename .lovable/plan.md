@@ -1,257 +1,127 @@
 
-# Plan: Add Radiation Type and Beam Energy to RT Plan Data
+# Plan: Thorough Testing and Layout Improvements
 
 ## Overview
 
-This plan addresses adding **beam radiation type** and **nominal beam energy** information throughout the application, following DICOM RT Plan standards. This data is critical for:
-- Correlating complexity metrics with energy-specific dose rate limits
-- Enabling energy-based filtering and clustering in cohort analysis
-- Providing complete beam characterization in exports
-
-## Technical Background
-
-### DICOM Standard Nomenclature
-
-According to the DICOM RT Plan standard:
-
-| Attribute | Tag | Values |
-|-----------|-----|--------|
-| **Radiation Type** | (300A,00C6) | `PHOTON`, `ELECTRON`, `PROTON`, `NEUTRON`, `ION` |
-| **Nominal Beam Energy** | (300A,0114) | Numeric value in MeV (per nucleon for ions) |
-
-Energy notation convention used in clinical practice:
-- Photons: `6X`, `10X`, `15X`, `6FFF`, `10FFF` (X = MV, FFF = Flattening Filter Free)
-- Electrons: `6E`, `9E`, `12E`, `15E`, `18E` (E = MeV)
-- Protons/Ions: Numeric MeV value
+This plan addresses three areas: (1) metric accuracy verification, (2) documentation consistency, and (3) chart layout improvements to use full-screen width. The most impactful visual change is removing the `max-w-7xl` container constraints so charts and visualizations can breathe.
 
 ---
 
-## Implementation Plan
+## 1. Chart Layout -- Full-Width Plots
 
-### 1. Fix Existing Build Errors (Pre-requisite)
+Currently, all pages use `container` or `max-w-7xl` wrappers that constrain content to ~1280px. Charts are further squeezed by grid layouts (e.g., `lg:grid-cols-[1fr,380px]`). The plan is to widen the plotting areas significantly.
 
-Before adding new fields, fix the existing TypeScript errors in test files:
+### Changes
 
-**Files to update:**
-- `src/test/clustering.test.ts` - Add missing `mlcLeafBoundaries` field to mock beams
-- `src/test/metric-utils.test.ts` - Add missing `mlcLeafBoundaries` field to mock beams  
-- `src/test/dicom-metrics.test.ts` - Cast vendor file strings properly using `as TestFileName`
-- `src/test/export-metrics-json.test.ts` - Add proper type casting for `PlanMetrics`
+**Single Plan Viewer (`src/components/viewer/InteractiveViewer.tsx`)**
+- Change the two-column grid from `lg:grid-cols-[1fr,380px] xl:grid-cols-[1fr,420px]` to `lg:grid-cols-[1fr,360px]` with the viewer section having no max-width constraint
+- Increase chart heights: `CumulativeMUChart` and `GantrySpeedChart` from `height={140}` to `height={200}`
+- Increase `ComplexityHeatmap` sub-chart heights from `100px` to `140px`
+- Increase `DeliveryTimelineChart` chart height from `90px` to `120px`
 
-### 2. Update TypeScript Types
+**Batch Dashboard (`src/pages/BatchDashboard.tsx`)**
+- Remove `container` class from `<main>`, replace with `px-6` for edge-to-edge layout
+- Change grid from `lg:grid-cols-3` to `lg:grid-cols-4` so the summary stats area gets more room
+- Increase `BatchDistributionChart` histogram height from `200px` to `280px`
 
-**File: `src/lib/dicom/types.ts`**
+**Cohort Analysis (`src/pages/CohortAnalysis.tsx`)**
+- Remove the `p-6` padding constraint, use wider `px-4 sm:px-6 lg:px-8`
+- Make the visualization tabs section full-width (no max-w limit on `TabsList`)
+- Increase `BoxPlotChart` height from `h-80` to `h-[400px]`
+- Increase `ViolinPlot` SVG height from fixed values to larger responsive heights
 
-Add `nominalBeamEnergy` to the `Beam` interface:
+**Compare Plans (`src/pages/ComparePlans.tsx`)**
+- Remove `container` class from `<main>`, replace with `px-6`
+- Give comparison charts more vertical space
 
-```text
-interface Beam {
-  // ... existing fields
-  radiationType: string;  // Already exists: 'PHOTON' | 'ELECTRON' | 'PROTON' | etc
-  nominalBeamEnergy?: number;     // NEW: Energy in MeV (e.g., 6, 10, 15 for photons)
-  energyLabel?: string;           // NEW: Formatted label (e.g., '6X', '10FFF', '9E')
-}
-```
+### Files changed
+- `src/components/viewer/InteractiveViewer.tsx`
+- `src/components/viewer/Charts.tsx` (increase default `height` props)
+- `src/components/viewer/ComplexityHeatmap.tsx` (increase sub-chart heights)
+- `src/components/viewer/DeliveryTimelineChart.tsx` (increase `chartHeight`)
+- `src/components/batch/BatchDistributionChart.tsx` (increase histogram height)
+- `src/components/cohort/BoxPlotChart.tsx` (increase chart height)
+- `src/components/cohort/ViolinPlot.tsx` (increase SVG height)
+- `src/components/cohort/ScatterMatrix.tsx` (increase scatter plot height)
+- `src/pages/BatchDashboard.tsx` (wider layout)
+- `src/pages/CohortAnalysis.tsx` (wider layout)
+- `src/pages/ComparePlans.tsx` (wider layout)
 
-Add to `BeamMetrics` interface for export consistency:
+---
 
-```text
-interface BeamMetrics {
-  // ... existing fields
-  radiationType?: string;         // NEW
-  nominalBeamEnergy?: number;     // NEW
-  energyLabel?: string;           // NEW
-}
-```
+## 2. Metric Accuracy Verification
 
-### 3. Update DICOM Parser
-
-**File: `src/lib/dicom/parser.ts`**
-
-Add parsing for `NominalBeamEnergy` (300A,0114) from the first control point:
-
-```text
-const TAGS = {
-  // ... existing
-  NominalBeamEnergy: 'x300a0114',
-};
-
-function parseBeam(beamDataSet): Beam {
-  // Parse control points first
-  // Extract NominalBeamEnergy from first control point
-  // Generate energyLabel based on radiationType + energy value
-}
-```
-
-Energy label generation logic:
-- PHOTON + 6 MV → `'6X'`
-- PHOTON + 6 MV + FFF mode → `'6FFF'` (detected from dose rate or beam name)
-- ELECTRON + 9 MeV → `'9E'`
-- PROTON → Numeric MeV value
-
-### 4. Update Metrics Calculation
+### Energy fields propagation check
+The `nominalBeamEnergy` and `energyLabel` were added to types and parser but need verification that they flow correctly through the metrics calculation pipeline.
 
 **File: `src/lib/dicom/metrics.ts`**
+- Verify the `calculateBeamMetrics` function passes `radiationType`, `nominalBeamEnergy`, and `energyLabel` from the `Beam` object to the `BeamMetrics` result
+- If missing, add the three fields to the return object
 
-Pass radiation type and energy through to beam metrics:
-
-```text
-function calculateBeamMetrics(beam: Beam, ...): BeamMetrics {
-  return {
-    // ... existing metrics
-    radiationType: beam.radiationType,
-    nominalBeamEnergy: beam.nominalBeamEnergy,
-    energyLabel: beam.energyLabel,
-  };
-}
-```
-
-### 5. Update UI Components
-
-**File: `src/components/viewer/BeamSummaryCard.tsx`**
-
-Display radiation type and energy in the beam info grid:
-
-```text
-<div>
-  <span className="text-xs text-muted-foreground">Energy</span>
-  <p className="font-mono font-semibold">
-    {beam.energyLabel || beam.radiationType || '—'}
-    {beam.nominalBeamEnergy && (
-      <span className="ml-1 text-muted-foreground">
-        ({beam.nominalBeamEnergy} MeV)
-      </span>
-    )}
-  </p>
-</div>
-```
-
-**File: `src/components/comparison/BeamComparisonTable.tsx`**
-
-Add energy column to beam comparison table.
-
-### 6. Update Export Functions
+### CSV export missing energy columns
+The CSV export (`batch-export.ts`) includes energy in JSON beam-level export but NOT in CSV headers/rows.
 
 **File: `src/lib/batch/batch-export.ts`**
+- Add `Radiation Type`, `Energy` columns to CSV beam details string
+- Update the beam summary line to include `energyLabel` (e.g., `Beam1: 200 MU, 6X, MCS=0.234`)
 
-Include radiation type and energy in CSV/JSON exports:
-
-```text
-// CSV headers
-headers.push('Radiation Type', 'Energy');
-
-// JSON beam metrics
-{
-  beamName: b.beamName,
-  radiationType: b.radiationType,
-  nominalBeamEnergy: b.nominalBeamEnergy,
-  energyLabel: b.energyLabel,
-  // ... existing fields
-}
-```
-
-**File: `src/test/export-metrics-json.test.ts`**
-
-Update reference data export to include new fields.
-
-### 7. Update Python Toolkit
-
-**File: `python/rtplan_complexity/types.py`**
-
-Add corresponding fields to Python dataclasses:
-
-```text
-@dataclass
-class Beam:
-    # ... existing
-    radiation_type: str = "PHOTON"
-    nominal_beam_energy: Optional[float] = None
-    energy_label: Optional[str] = None
-```
-
-**File: `python/rtplan_complexity/parser.py`**
-
-Parse `NominalBeamEnergy` from control points using pydicom:
-
-```text
-def _parse_beam(beam_ds: Dataset) -> Beam:
-    # Get energy from first control point
-    cp_seq = getattr(beam_ds, "ControlPointSequence", None)
-    energy = None
-    if cp_seq:
-        energy = _get_float(cp_seq[0], "NominalBeamEnergy")
-    
-    return Beam(
-        # ... existing
-        radiation_type=_get_string(beam_ds, "RadiationType", "PHOTON"),
-        nominal_beam_energy=energy,
-        energy_label=_generate_energy_label(radiation_type, energy),
-    )
-```
-
-### 8. Add Cohort Clustering Dimension
-
-**File: `src/lib/cohort/clustering.ts`**
-
-Add energy-based clustering dimension:
-
-```text
-{
-  id: 'energy',
-  name: 'Beam Energy',
-  description: 'Cluster by radiation energy',
-  assign: (plan) => {
-    const energies = plan.plan.beams.map(b => b.energyLabel).filter(Boolean);
-    const unique = [...new Set(energies)];
-    return unique.length === 1 ? unique[0] : 'Mixed';
-  }
-}
-```
-
-### 9. Update Tests
-
-**New test file: `src/test/beam-energy.test.ts`**
-
-```text
-describe('Beam Energy Parsing', () => {
-  it('should extract nominal beam energy from test plans', () => {
-    const plan = parseTestPlan(TEST_FILES.TRUEBEAM_PLAN);
-    expect(plan.beams[0].nominalBeamEnergy).toBeDefined();
-  });
-
-  it('should generate correct energy labels', () => {
-    // Test various radiation type + energy combinations
-  });
-});
-```
-
-Update existing test mocks to include new required fields.
+### Beam summary in batch CSV
+Currently the beam summary only shows `beamName: MU, MCS`. Add energy label for completeness.
 
 ---
 
-## Files Changed Summary
+## 3. Documentation Consistency
 
-| File | Change Type |
-|------|-------------|
-| `src/lib/dicom/types.ts` | Add energy fields to Beam and BeamMetrics |
-| `src/lib/dicom/parser.ts` | Parse NominalBeamEnergy from control points |
-| `src/lib/dicom/metrics.ts` | Pass energy info to beam metrics |
-| `src/components/viewer/BeamSummaryCard.tsx` | Display energy in UI |
-| `src/components/comparison/BeamComparisonTable.tsx` | Add energy column |
-| `src/lib/batch/batch-export.ts` | Include energy in exports |
-| `src/lib/cohort/clustering.ts` | Add energy clustering dimension |
-| `python/rtplan_complexity/types.py` | Add Python type fields |
-| `python/rtplan_complexity/parser.py` | Parse energy with pydicom |
-| `src/test/clustering.test.ts` | Fix mock beam type + add energy |
-| `src/test/metric-utils.test.ts` | Fix mock beam type + add energy |
-| `src/test/dicom-metrics.test.ts` | Fix type assertions |
-| `src/test/export-metrics-json.test.ts` | Fix type casting |
+### Metrics Reference page check
+- The `MetricsReference.tsx` page renders from `METRIC_DEFINITIONS`. Since the energy fields are beam-level metadata (not complexity metrics), they do not need entries in `METRIC_DEFINITIONS`. No change needed here.
+
+### Help page and Python docs
+- No inconsistencies found. The `energyLabel` and `nominalBeamEnergy` are correctly documented in types and the Python toolkit types were updated.
+
+### BeamSummaryCard energy display
+- Already implemented in the previous round. The card shows `energyLabel` with MeV fallback. No additional changes needed.
+
+### BAM field type safety
+- Currently uses `(beam as any).BAM`. Add `BAM` as an optional field to the `Beam` interface to remove the unsafe cast.
+
+**File: `src/lib/dicom/types.ts`**
+- This field is already on `BeamMetrics` but is accessed from `Beam` in the summary card. The card should read from `beamMetrics` data instead, or the cast should remain since BAM is only computed post-parsing.
+
+**File: `src/components/viewer/BeamSummaryCard.tsx`**
+- The BAM display logic should be driven by the `controlPointMetrics` or a separate prop rather than casting `beam`. Clean up by accepting an optional `BAM` prop or reading from metrics context.
 
 ---
 
-## Testing Strategy
+## 4. Chart Smoothness Improvements
 
-1. **Unit Tests**: Verify energy parsing from test DICOM files
-2. **Export Tests**: Confirm energy fields appear in CSV/JSON output
-3. **UI Verification**: Check BeamSummaryCard displays energy correctly
-4. **Python Parity**: Run cross-validation to ensure TS↔Python consistency
+### Recharts animation settings
+Add `isAnimationActive={false}` to heavy charts (scatter, heatmap) to prevent jank on large datasets, while keeping subtle animations on simpler line charts.
+
+**Files to update:**
+- `src/components/cohort/BoxPlotChart.tsx` -- disable animation for bars
+- `src/components/cohort/ScatterMatrix.tsx` -- disable scatter animation
+- `src/components/batch/BatchDistributionChart.tsx` -- disable bar animation for large batches
+
+### Tooltip performance
+- Add `allowEscapeViewBox={{ x: true, y: true }}` to tooltips that get cut off at chart edges in the cohort and batch views
+
+---
+
+## Summary of All Files Changed
+
+| File | Changes |
+|------|---------|
+| `src/components/viewer/InteractiveViewer.tsx` | Wider grid, larger chart heights |
+| `src/components/viewer/Charts.tsx` | Increase default height from 150 to 200 |
+| `src/components/viewer/ComplexityHeatmap.tsx` | Increase sub-chart heights to 140px |
+| `src/components/viewer/DeliveryTimelineChart.tsx` | Increase chartHeight to 120px |
+| `src/components/viewer/BeamSummaryCard.tsx` | Clean up BAM type cast |
+| `src/components/batch/BatchDistributionChart.tsx` | Taller histogram, disable animation |
+| `src/components/cohort/BoxPlotChart.tsx` | Taller chart (400px), disable animation |
+| `src/components/cohort/ViolinPlot.tsx` | Increase SVG height |
+| `src/components/cohort/ScatterMatrix.tsx` | Taller plots, disable animation |
+| `src/pages/BatchDashboard.tsx` | Full-width layout |
+| `src/pages/CohortAnalysis.tsx` | Full-width layout, wider tabs |
+| `src/pages/ComparePlans.tsx` | Full-width layout |
+| `src/lib/batch/batch-export.ts` | Add energy to CSV beam summary |
+| `src/lib/dicom/metrics.ts` | Verify energy field propagation |
