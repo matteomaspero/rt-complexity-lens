@@ -333,7 +333,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
         {/* Viewer Content */}
         <div className="flex-1 overflow-auto p-6">
           {currentBeam && currentCP && (
-            <div className="grid gap-6 lg:grid-cols-[1fr,380px] xl:grid-cols-[1fr,420px]">
+            <div className="grid gap-6 lg:grid-cols-[1fr,360px]">
               {/* Left Column - Visualizations */}
               <div className="space-y-6 min-w-0">
                 {/* Beam Summary Card */}
@@ -402,12 +402,12 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                     controlPoints={currentBeam.controlPoints}
                     currentIndex={currentCPIndex}
                     totalMU={currentBeam.beamDose || sessionPlan.plan.totalMU / sessionPlan.plan.beams.length}
-                    height={140}
+                    height={200}
                   />
                   <GantrySpeedChart
                     controlPoints={currentBeam.controlPoints}
                     currentIndex={currentCPIndex}
-                    height={140}
+                    height={200}
                   />
                 </div>
 

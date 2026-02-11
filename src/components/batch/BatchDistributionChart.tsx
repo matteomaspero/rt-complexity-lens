@@ -82,7 +82,7 @@ export function BatchDistributionChart() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[200px]">
+        <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={mcsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--chart-grid))" />
@@ -121,7 +121,7 @@ export function BatchDistributionChart() {
                   );
                 }}
               />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={false}>
                 {mcsData.map((_, index) => (
                   <Cell 
                     key={`cell-${index}`} 

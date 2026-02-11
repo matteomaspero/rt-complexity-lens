@@ -70,7 +70,7 @@ export function ComplexityHeatmap({
             <ChartExportButton chartRef={lsvRef} filename="lsv_chart" />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={100}>
+        <ResponsiveContainer width="100%" height={140}>
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -106,6 +106,7 @@ export function ComplexityHeatmap({
               fill="hsl(var(--chart-primary))"
               fillOpacity={0.2}
               strokeWidth={2}
+              isAnimationActive={false}
             />
             <ReferenceLine
               x={currentAngle}
@@ -130,7 +131,7 @@ export function ComplexityHeatmap({
             <ChartExportButton chartRef={aavRef} filename="aav_chart" />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={100}>
+        <ResponsiveContainer width="100%" height={140}>
           <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -165,6 +166,7 @@ export function ComplexityHeatmap({
               stroke="hsl(var(--chart-secondary))"
               strokeWidth={2}
               dot={false}
+              isAnimationActive={false}
             />
             <ReferenceLine
               x={currentAngle}
@@ -189,7 +191,7 @@ export function ComplexityHeatmap({
             <ChartExportButton chartRef={areaRef} filename="aperture_area" />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={100}>
+        <ResponsiveContainer width="100%" height={140}>
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"

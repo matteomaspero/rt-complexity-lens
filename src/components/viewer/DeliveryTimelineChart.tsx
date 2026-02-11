@@ -82,7 +82,7 @@ export function DeliveryTimelineChart({
     fontSize: '12px',
   };
 
-  const chartHeight = 90;
+  const chartHeight = 120;
 
   return (
     <div className="space-y-3">
