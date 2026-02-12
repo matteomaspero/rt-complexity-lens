@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Download, Info, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { metricsToCSV } from '@/lib/dicom';
+import { plansToCSV, downloadFile, type ExportablePlan } from '@/lib/export-utils';
 import { useMetricsConfig } from '@/contexts/MetricsConfigContext';
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import {
@@ -264,28 +264,27 @@ function BeamsSummary({ beamMetrics, isMetricEnabled }: BeamsSummaryProps) {
 
 interface MetricsPanelProps {
   metrics: PlanMetrics;
+  plan?: import('@/lib/dicom/types').RTPlan;
   currentBeamIndex?: number;
 }
 
-export function MetricsPanel({ metrics, currentBeamIndex }: MetricsPanelProps) {
+export function MetricsPanel({ metrics, plan, currentBeamIndex }: MetricsPanelProps) {
   const { isMetricEnabled, getEnabledMetricKeys } = useMetricsConfig();
 
   const currentBeam =
     currentBeamIndex !== undefined ? metrics.beamMetrics[currentBeamIndex] : null;
 
   const handleExportCSV = () => {
-    const enabledKeys = getEnabledMetricKeys();
-    const csv = metricsToCSV(metrics, enabledKeys);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement('a');
-    link.href = url;
+    // Use the unified export format: one row per plan, all metrics as columns
+    const exportable: ExportablePlan = {
+      fileName: plan?.planLabel ?? metrics.planLabel ?? 'plan',
+      plan: plan ?? { beams: [], planLabel: metrics.planLabel, technique: 'UNKNOWN' } as any,
+      metrics,
+    };
+    const csv = plansToCSV([exportable]);
     const dateStr = new Date().toISOString().split('T')[0];
-    link.download = `${metrics.planLabel.replace(/[^a-zA-Z0-9]/g, '_')}_metrics_${dateStr}.csv`;
-    link.click();
-
-    URL.revokeObjectURL(url);
+    const safeName = metrics.planLabel.replace(/[^a-zA-Z0-9]/g, '_');
+    downloadFile(csv, `${safeName}_metrics_${dateStr}.csv`, 'text/csv');
   };
 
   return (

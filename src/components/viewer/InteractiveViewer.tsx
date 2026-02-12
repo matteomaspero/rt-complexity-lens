@@ -496,6 +496,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               <div>
                 <MetricsPanel
                   metrics={sessionPlan.metrics}
+                  plan={sessionPlan.plan}
                   currentBeamIndex={selectedBeamIndex}
                 />
               </div>
