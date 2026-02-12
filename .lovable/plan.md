@@ -1,127 +1,134 @@
+# Plan: Unified CSV/JSON Export Format
 
-# Plan: Thorough Testing and Layout Improvements
+## Problem
 
-## Overview
+There are three completely different CSV export implementations, each with its own format and metric coverage:
 
-This plan addresses three areas: (1) metric accuracy verification, (2) documentation consistency, and (3) chart layout improvements to use full-screen width. The most impactful visual change is removing the `max-w-7xl` container constraints so charts and visualizations can breathe.
+1. **Single Plan** (`metricsToCSV` in `metrics.ts`): Vertical layout (one metric per row with columns: Metric, Full Name, Value, Unit). Not tabular -- cannot be combined with other exports or imported into spreadsheets for multi-plan analysis.
+2. **Batch** (`exportToCSV` in `batch-export.ts`): Tabular (one plan per row) but crams all beam details into a single text cell (e.g., `"Beam1: 200 MU, 6X | Beam2: 150 MU, 10X"`). Only exports ~24 of 30+ available metrics. Missing radiation type, energy columns.
+3. **Cohort** (`handleExportCSV` in `CohortExportPanel.tsx`): Mixes four different data sections (statistics, clusters, correlation matrix, individual plans) into one CSV file separated by `#` comment lines. This breaks standard CSV parsers.
 
----
+## Solution
 
-## 1. Chart Layout -- Full-Width Plots
-
-Currently, all pages use `container` or `max-w-7xl` wrappers that constrain content to ~1280px. Charts are further squeezed by grid layouts (e.g., `lg:grid-cols-[1fr,380px]`). The plan is to widen the plotting areas significantly.
-
-### Changes
-
-**Single Plan Viewer (`src/components/viewer/InteractiveViewer.tsx`)**
-- Change the two-column grid from `lg:grid-cols-[1fr,380px] xl:grid-cols-[1fr,420px]` to `lg:grid-cols-[1fr,360px]` with the viewer section having no max-width constraint
-- Increase chart heights: `CumulativeMUChart` and `GantrySpeedChart` from `height={140}` to `height={200}`
-- Increase `ComplexityHeatmap` sub-chart heights from `100px` to `140px`
-- Increase `DeliveryTimelineChart` chart height from `90px` to `120px`
-
-**Batch Dashboard (`src/pages/BatchDashboard.tsx`)**
-- Remove `container` class from `<main>`, replace with `px-6` for edge-to-edge layout
-- Change grid from `lg:grid-cols-3` to `lg:grid-cols-4` so the summary stats area gets more room
-- Increase `BatchDistributionChart` histogram height from `200px` to `280px`
-
-**Cohort Analysis (`src/pages/CohortAnalysis.tsx`)**
-- Remove the `p-6` padding constraint, use wider `px-4 sm:px-6 lg:px-8`
-- Make the visualization tabs section full-width (no max-w limit on `TabsList`)
-- Increase `BoxPlotChart` height from `h-80` to `h-[400px]`
-- Increase `ViolinPlot` SVG height from fixed values to larger responsive heights
-
-**Compare Plans (`src/pages/ComparePlans.tsx`)**
-- Remove `container` class from `<main>`, replace with `px-6`
-- Give comparison charts more vertical space
-
-### Files changed
-- `src/components/viewer/InteractiveViewer.tsx`
-- `src/components/viewer/Charts.tsx` (increase default `height` props)
-- `src/components/viewer/ComplexityHeatmap.tsx` (increase sub-chart heights)
-- `src/components/viewer/DeliveryTimelineChart.tsx` (increase `chartHeight`)
-- `src/components/batch/BatchDistributionChart.tsx` (increase histogram height)
-- `src/components/cohort/BoxPlotChart.tsx` (increase chart height)
-- `src/components/cohort/ViolinPlot.tsx` (increase SVG height)
-- `src/components/cohort/ScatterMatrix.tsx` (increase scatter plot height)
-- `src/pages/BatchDashboard.tsx` (wider layout)
-- `src/pages/CohortAnalysis.tsx` (wider layout)
-- `src/pages/ComparePlans.tsx` (wider layout)
+Create a single shared export utility (`src/lib/export-utils.ts`) that all modes use. The format will be a clean, standard tabular CSV: **one row per plan, one column per metric**, easily importable in Excel, R, Python, etc. Consider making multiple rows for different beams
 
 ---
 
-## 2. Metric Accuracy Verification
+## New Unified CSV Format
 
-### Energy fields propagation check
-The `nominalBeamEnergy` and `energyLabel` were added to types and parser but need verification that they flow correctly through the metrics calculation pipeline.
+```text
+File,Plan Label,Technique,Beam Count,CP Count,Radiation Type,Energy,MFA (cm2),EFS (mm),PA (cm2),JA (cm2),psmall,Total MU,Delivery Time (s),GT (deg),MUCA (MU/CP),MCS,LSV,AAV,LT (mm),LTMCS,SAS5,SAS10,EM,PI,LG (mm),MAD (mm),TG,PM,LTMU,GS,LS,mDRV
+plan1.dcm,Head,VMAT,2,178,PHOTON,6X,12.34,45.6,120.5,200.3,0.12,450.0,120.5,358.0,2.53,0.234,0.456,0.789,1234.5,288.9,0.045,0.123,0.067,1.23,4.56,2.34,0.089,0.766,0.45,4.2,12.3,45.6
+plan2.dcm,Pelvis,IMRT,7,49,PHOTON,10X,...
+```
 
-**File: `src/lib/dicom/metrics.ts`**
-- Verify the `calculateBeamMetrics` function passes `radiationType`, `nominalBeamEnergy`, and `energyLabel` from the `Beam` object to the `BeamMetrics` result
-- If missing, add the three fields to the return object
+Key design decisions:
 
-### CSV export missing energy columns
-The CSV export (`batch-export.ts`) includes energy in JSON beam-level export but NOT in CSV headers/rows.
-
-**File: `src/lib/batch/batch-export.ts`**
-- Add `Radiation Type`, `Energy` columns to CSV beam details string
-- Update the beam summary line to include `energyLabel` (e.g., `Beam1: 200 MU, 6X, MCS=0.234`)
-
-### Beam summary in batch CSV
-Currently the beam summary only shows `beamName: MU, MCS`. Add energy label for completeness.
+- No `#` comment lines (breaks CSV parsers). Metadata goes into a separate `_meta` sheet or is omitted from CSV (kept in JSON only).
+- All 30+ metrics always present as columns. Empty cell if metric is not applicable.
+- Radiation type and energy are derived from the dominant beam (or "Mixed" if multiple energies).
+- Per-beam breakdown is a separate CSV file (not crammed into one column).
 
 ---
 
-## 3. Documentation Consistency
+## Technical Details
 
-### Metrics Reference page check
-- The `MetricsReference.tsx` page renders from `METRIC_DEFINITIONS`. Since the energy fields are beam-level metadata (not complexity metrics), they do not need entries in `METRIC_DEFINITIONS`. No change needed here.
+### 1. Create shared export utility
 
-### Help page and Python docs
-- No inconsistencies found. The `energyLabel` and `nominalBeamEnergy` are correctly documented in types and the Python toolkit types were updated.
+**New file: `src/lib/export-utils.ts**`
 
-### BeamSummaryCard energy display
-- Already implemented in the previous round. The card shows `energyLabel` with MeV fallback. No additional changes needed.
+This module defines:
 
-### BAM field type safety
-- Currently uses `(beam as any).BAM`. Add `BAM` as an optional field to the `Beam` interface to remove the unsafe cast.
+- `ALL_EXPORT_COLUMNS`: ordered list of all column definitions (key, header label, decimals, extractor function)
+- `planToRow(plan, metrics)`: converts any plan+metrics pair to a flat row object
+- `rowsToCSV(rows, columns)`: converts row objects to clean CSV string
+- `rowsToJSON(rows, meta)`: converts to branded JSON with summary statistics
+- `beamsToCSV(plans)`: separate per-beam CSV with one row per beam
+- `downloadFile(content, filename, mimeType)`: shared download helper (moved from batch-export.ts)
 
-**File: `src/lib/dicom/types.ts`**
-- This field is already on `BeamMetrics` but is accessed from `Beam` in the summary card. The card should read from `beamMetrics` data instead, or the cast should remain since BAM is only computed post-parsing.
+The column list will include all metrics from `METRIC_DEFINITIONS` plus metadata columns (file name, plan label, technique, beam count, CP count, radiation type, energy label).
 
-**File: `src/components/viewer/BeamSummaryCard.tsx`**
-- The BAM display logic should be driven by the `controlPointMetrics` or a separate prop rather than casting `beam`. Clean up by accepting an optional `BAM` prop or reading from metrics context.
+### 2. Update Single Plan export
+
+**File: `src/components/viewer/MetricsPanel.tsx**`
+
+Replace the current vertical CSV export with the new tabular format. A single-plan export produces a CSV with one header row and one data row -- same columns as batch, so files can be concatenated.
+
+**File: `src/lib/dicom/metrics.ts**`
+
+Remove the old `metricsToCSV` function (lines 1317-1514). Replace with a thin wrapper that calls the shared utility.
+
+### 3. Update Batch export
+
+**File: `src/lib/batch/batch-export.ts**`
+
+Rewrite `exportToCSV` to use the shared `planToRow` + `rowsToCSV`. Remove the custom metric lists (`GEOMETRIC_METRICS`, `BEAM_METRICS`, `COMPLEXITY_METRICS`) since the shared utility handles all columns.
+
+For "per-beam breakdown", export a second CSV file using `beamsToCSV` instead of cramming beam details into one text column.
+
+**File: `src/components/batch/BatchExportPanel.tsx**`
+
+Update the "Per-beam breakdown" checkbox to trigger a separate beam-level CSV download alongside the plan-level CSV (two files downloaded).
+
+### 4. Update Cohort export
+
+**File: `src/components/cohort/CohortExportPanel.tsx**`
+
+Replace `handleExportCSV` to use the shared utility for the individual plan data section. Statistics and correlation data will only be included in JSON exports (where nested structures are natural) -- not mixed into the CSV.
+
+The CSV will be purely tabular: one row per plan, same columns as batch.
+
+### 5. Per-beam CSV format
+
+When "per-beam breakdown" is selected, a separate file is exported:
+
+```text
+File,Plan Label,Beam Number,Beam Name,Radiation Type,Energy,Beam MU,Arc Length (deg),CPs,Est Time (s),MCS,LSV,AAV,MFA (cm2),LT (mm),LG (mm),MAD (mm),EFS (mm),SAS5,SAS10,EM,PI,PA (cm2),JA (cm2),TG,PM
+plan1.dcm,Head,1,Arc1,PHOTON,6X,225.0,358.0,89,60.2,0.234,...
+plan1.dcm,Head,2,Arc2,PHOTON,6X,225.0,358.0,89,60.3,0.245,...
+```
+
+### 6. JSON export consistency
+
+All three modes will produce JSON with the same top-level structure:
+
+```json
+{
+  "tool": "RTp-lens",
+  "toolUrl": "https://rt-complexity-lens.lovable.app",
+  "exportDate": "...",
+  "exportType": "single|batch|cohort",
+  "planCount": 1,
+  "plans": [ { "fileName": "...", "metrics": {...}, "beamMetrics": [...] } ],
+  "summary": { ... },
+  "cohortData": { "clusters": [...], "correlation": {...} }
+}
+```
+
+Cohort-specific data (clusters, correlation, extended stats) goes into `cohortData`. This field is absent for single/batch exports.
 
 ---
 
-## 4. Chart Smoothness Improvements
+## Files Changed
 
-### Recharts animation settings
-Add `isAnimationActive={false}` to heavy charts (scatter, heatmap) to prevent jank on large datasets, while keeping subtle animations on simpler line charts.
 
-**Files to update:**
-- `src/components/cohort/BoxPlotChart.tsx` -- disable animation for bars
-- `src/components/cohort/ScatterMatrix.tsx` -- disable scatter animation
-- `src/components/batch/BatchDistributionChart.tsx` -- disable bar animation for large batches
+| File                                          | Change                                                                                                           |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `src/lib/export-utils.ts`                     | **NEW** -- shared export utility with column definitions, row conversion, CSV/JSON generators                    |
+| `src/lib/dicom/metrics.ts`                    | Remove old `metricsToCSV` function (~200 lines deleted)                                                          |
+| `src/lib/dicom/index.ts`                      | Remove `metricsToCSV` from barrel export                                                                         |
+| `src/components/viewer/MetricsPanel.tsx`      | Use new shared export for single-plan CSV                                                                        |
+| `src/lib/batch/batch-export.ts`               | Rewrite to use shared utility; remove duplicate metric lists                                                     |
+| `src/components/batch/BatchExportPanel.tsx`   | Simplify options (remove category checkboxes since all metrics always included); per-beam triggers separate file |
+| `src/components/cohort/CohortExportPanel.tsx` | Use shared utility for CSV; keep cohort stats in JSON only                                                       |
 
-### Tooltip performance
-- Add `allowEscapeViewBox={{ x: true, y: true }}` to tooltips that get cut off at chart edges in the cohort and batch views
 
 ---
 
-## Summary of All Files Changed
+## What Gets Exported (Complete Column List)
 
-| File | Changes |
-|------|---------|
-| `src/components/viewer/InteractiveViewer.tsx` | Wider grid, larger chart heights |
-| `src/components/viewer/Charts.tsx` | Increase default height from 150 to 200 |
-| `src/components/viewer/ComplexityHeatmap.tsx` | Increase sub-chart heights to 140px |
-| `src/components/viewer/DeliveryTimelineChart.tsx` | Increase chartHeight to 120px |
-| `src/components/viewer/BeamSummaryCard.tsx` | Clean up BAM type cast |
-| `src/components/batch/BatchDistributionChart.tsx` | Taller histogram, disable animation |
-| `src/components/cohort/BoxPlotChart.tsx` | Taller chart (400px), disable animation |
-| `src/components/cohort/ViolinPlot.tsx` | Increase SVG height |
-| `src/components/cohort/ScatterMatrix.tsx` | Taller plots, disable animation |
-| `src/pages/BatchDashboard.tsx` | Full-width layout |
-| `src/pages/CohortAnalysis.tsx` | Full-width layout, wider tabs |
-| `src/pages/ComparePlans.tsx` | Full-width layout |
-| `src/lib/batch/batch-export.ts` | Add energy to CSV beam summary |
-| `src/lib/dicom/metrics.ts` | Verify energy field propagation |
+**Plan-level CSV (all modes):**
+File, Plan Label, Technique, Beam Count, CP Count, Radiation Type, Energy, MFA, EFS, PA, JA, psmall, Total MU, Delivery Time, GT, MUCA, LTMU, GS, LS, mDRV, MCS, LSV, AAV, LT, LTMCS, SAS5, SAS10, EM, PI, LG, MAD, TG, PM, MD, MI
+
+**Beam-level CSV (optional second file):**
+File, Plan Label, Beam Number, Beam Name, Radiation Type, Nominal Energy (MeV), Energy Label, Beam MU, Arc Length, CPs, Est Delivery Time, MCS, LSV, AAV, MFA, LT, LTMCS, LG, MAD, EFS, psmall, SAS5, SAS10, EM, PI, PA, JA, TG, PM, MUCA, LTMU, Collimator Angle
