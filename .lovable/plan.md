@@ -1,134 +1,188 @@
-# Plan: Unified CSV/JSON Export Format
 
-## Problem
+# Plan: Restructured Export with Two-Row Headers, Additional Fields, and GT Fix
 
-There are three completely different CSV export implementations, each with its own format and metric coverage:
+## Overview
 
-1. **Single Plan** (`metricsToCSV` in `metrics.ts`): Vertical layout (one metric per row with columns: Metric, Full Name, Value, Unit). Not tabular -- cannot be combined with other exports or imported into spreadsheets for multi-plan analysis.
-2. **Batch** (`exportToCSV` in `batch-export.ts`): Tabular (one plan per row) but crams all beam details into a single text cell (e.g., `"Beam1: 200 MU, 6X | Beam2: 150 MU, 10X"`). Only exports ~24 of 30+ available metrics. Missing radiation type, energy columns.
-3. **Cohort** (`handleExportCSV` in `CohortExportPanel.tsx`): Mixes four different data sections (statistics, clusters, correlation matrix, individual plans) into one CSV file separated by `#` comment lines. This breaks standard CSV parsers.
-
-## Solution
-
-Create a single shared export utility (`src/lib/export-utils.ts`) that all modes use. The format will be a clean, standard tabular CSV: **one row per plan, one column per metric**, easily importable in Excel, R, Python, etc. Consider making multiple rows for different beams
+Three changes: (1) reorder export columns so directly-extractable plan/beam metadata comes first, followed by computed metrics; (2) add a two-row CSV header with category labels on row 1 and metric names on row 2; (3) fix the GT (Gantry Travel) calculation to sum all inter-control-point angle differences instead of just start-to-end.
 
 ---
 
-## New Unified CSV Format
+## 1. Fix GT Calculation
+
+**Problem**: GT is currently set to `arcLength`, which is computed as `Math.abs(gantryAngleEnd - gantryAngleStart)` with a `>180` wraparound. This fails for full arcs (start == end gives 0) and doesn't account for actual gantry path through all control points.
+
+**Fix in `src/lib/dicom/metrics.ts` (beam-level, ~line 760-806)**:
+
+Replace the arcLength and GT calculation with a proper summation through all control points:
 
 ```text
-File,Plan Label,Technique,Beam Count,CP Count,Radiation Type,Energy,MFA (cm2),EFS (mm),PA (cm2),JA (cm2),psmall,Total MU,Delivery Time (s),GT (deg),MUCA (MU/CP),MCS,LSV,AAV,LT (mm),LTMCS,SAS5,SAS10,EM,PI,LG (mm),MAD (mm),TG,PM,LTMU,GS,LS,mDRV
-plan1.dcm,Head,VMAT,2,178,PHOTON,6X,12.34,45.6,120.5,200.3,0.12,450.0,120.5,358.0,2.53,0.234,0.456,0.789,1234.5,288.9,0.045,0.123,0.067,1.23,4.56,2.34,0.089,0.766,0.45,4.2,12.3,45.6
-plan2.dcm,Pelvis,IMRT,7,49,PHOTON,10X,...
+// Calculate true gantry travel by summing all CP-to-CP angle differences
+let totalGantryTravel = 0;
+for (let i = 1; i < beam.controlPoints.length; i++) {
+  let delta = Math.abs(beam.controlPoints[i].gantryAngle - beam.controlPoints[i-1].gantryAngle);
+  if (delta > 180) delta = 360 - delta;
+  totalGantryTravel += delta;
+}
+const arcLength = beam.isArc ? totalGantryTravel : undefined;
+const GT = totalGantryTravel > 0 ? totalGantryTravel : undefined;
 ```
 
-Key design decisions:
-
-- No `#` comment lines (breaks CSV parsers). Metadata goes into a separate `_meta` sheet or is omitted from CSV (kept in JSON only).
-- All 30+ metrics always present as columns. Empty cell if metric is not applicable.
-- Radiation type and energy are derived from the dominant beam (or "Mixed" if multiple energies).
-- Per-beam breakdown is a separate CSV file (not crammed into one column).
+This matches the approach already used in `BeamSummaryCard.tsx` (lines 47-52) which correctly sums segment-by-segment.
 
 ---
 
-## Technical Details
+## 2. Add Missing Extractable Fields to Export
 
-### 1. Create shared export utility
+Add columns for data that is parsed from DICOM but currently not exported:
 
-**New file: `src/lib/export-utils.ts**`
+**Plan-level**: PatientID, PatientName, Treatment Machine, Institution
 
-This module defines:
+**Beam-level**: Gantry Range (start-end as string), Avg Dose Rate, Isocenter (x,y,z), Table Angle, Collimator Angle, Table Position (V,L,Lat)
 
-- `ALL_EXPORT_COLUMNS`: ordered list of all column definitions (key, header label, decimals, extractor function)
-- `planToRow(plan, metrics)`: converts any plan+metrics pair to a flat row object
-- `rowsToCSV(rows, columns)`: converts row objects to clean CSV string
-- `rowsToJSON(rows, meta)`: converts to branded JSON with summary statistics
-- `beamsToCSV(plans)`: separate per-beam CSV with one row per beam
-- `downloadFile(content, filename, mimeType)`: shared download helper (moved from batch-export.ts)
+These fields are already available on `RTPlan`, `Beam`, and `BeamMetrics` interfaces -- they just need column definitions added to `export-utils.ts`.
 
-The column list will include all metrics from `METRIC_DEFINITIONS` plus metadata columns (file name, plan label, technique, beam count, CP count, radiation type, energy label).
+---
 
-### 2. Update Single Plan export
+## 3. Reorder Columns: Metadata First, Then Metrics
 
-**File: `src/components/viewer/MetricsPanel.tsx**`
-
-Replace the current vertical CSV export with the new tabular format. A single-plan export produces a CSV with one header row and one data row -- same columns as batch, so files can be concatenated.
-
-**File: `src/lib/dicom/metrics.ts**`
-
-Remove the old `metricsToCSV` function (lines 1317-1514). Replace with a thin wrapper that calls the shared utility.
-
-### 3. Update Batch export
-
-**File: `src/lib/batch/batch-export.ts**`
-
-Rewrite `exportToCSV` to use the shared `planToRow` + `rowsToCSV`. Remove the custom metric lists (`GEOMETRIC_METRICS`, `BEAM_METRICS`, `COMPLEXITY_METRICS`) since the shared utility handles all columns.
-
-For "per-beam breakdown", export a second CSV file using `beamsToCSV` instead of cramming beam details into one text column.
-
-**File: `src/components/batch/BatchExportPanel.tsx**`
-
-Update the "Per-beam breakdown" checkbox to trigger a separate beam-level CSV download alongside the plan-level CSV (two files downloaded).
-
-### 4. Update Cohort export
-
-**File: `src/components/cohort/CohortExportPanel.tsx**`
-
-Replace `handleExportCSV` to use the shared utility for the individual plan data section. Statistics and correlation data will only be included in JSON exports (where nested structures are natural) -- not mixed into the CSV.
-
-The CSV will be purely tabular: one row per plan, same columns as batch.
-
-### 5. Per-beam CSV format
-
-When "per-beam breakdown" is selected, a separate file is exported:
+The new column order for plan-level CSV:
 
 ```text
-File,Plan Label,Beam Number,Beam Name,Radiation Type,Energy,Beam MU,Arc Length (deg),CPs,Est Time (s),MCS,LSV,AAV,MFA (cm2),LT (mm),LG (mm),MAD (mm),EFS (mm),SAS5,SAS10,EM,PI,PA (cm2),JA (cm2),TG,PM
-plan1.dcm,Head,1,Arc1,PHOTON,6X,225.0,358.0,89,60.2,0.234,...
-plan1.dcm,Head,2,Arc2,PHOTON,6X,225.0,358.0,89,60.3,0.245,...
+Category row:  Plan Info,,,,,,,,,,,,,Prescription,,,,Delivery,,,,,,,Geometric,,,,,,Complexity,,,,,,,,,,,,,,Deliverability,,,,
+Name row:      File,Patient ID,Patient Name,Plan Label,Technique,Beam Count,CP Count,Radiation Type,Energy,Machine,...,Rx Dose (Gy),Dose/Fx (Gy),Fractions,MU/Gy,Total MU,Delivery Time (s),GT (deg),...,MFA (cm2),EFS (mm),...,MCS,LSV,AAV,...,LTMU,GS,...
 ```
 
-### 6. JSON export consistency
+Grouping:
+- **Plan Info**: File, Patient ID, Patient Name, Plan Label, Technique, Beam Count, CP Count, Radiation Type, Energy, Machine, Institution
+- **Prescription**: Rx Dose, Dose/Fx, Fractions, MU/Gy
+- **Delivery**: Total MU, Delivery Time, GT, Avg Dose Rate, psmall
+- **Geometric**: MFA, EFS, PA, JA
+- **Complexity (Primary)**: MCS, LSV, AAV
+- **Complexity (Secondary)**: LT, LTMCS, SAS5, SAS10, EM, PI, LG, MAD, TG, PM, MD, MI
+- **Deliverability**: MUCA, LTMU, LTNLMU, LNA, LTAL, GS, mGSV, LS, mDRV
 
-All three modes will produce JSON with the same top-level structure:
+Similarly for beam-level CSV, adding: Isocenter, Table Angle, Collimator, Table Position, Avg Dose Rate, Gantry Range.
 
-```json
-{
-  "tool": "RTp-lens",
-  "toolUrl": "https://rt-complexity-lens.lovable.app",
-  "exportDate": "...",
-  "exportType": "single|batch|cohort",
-  "planCount": 1,
-  "plans": [ { "fileName": "...", "metrics": {...}, "beamMetrics": [...] } ],
-  "summary": { ... },
-  "cohortData": { "clusters": [...], "correlation": {...} }
+---
+
+## 4. Two-Row CSV Header
+
+Row 1 contains the category name only at the first column of each group, all other cells in that group are empty. Row 2 contains the metric name with unit. Data starts at row 3.
+
+```text
+Plan Info,,,,,,,,,,,,Prescription,,,,Delivery,,,,,Geometric,,,,Complexity (Primary),,,Complexity (Secondary),,,,,,,,,,,,Deliverability,,,,,,,,
+File,Patient ID,Patient Name,Plan Label,Technique,Beam Count,CP Count,Radiation Type,Energy,Machine,Institution,,Rx Dose (Gy),Dose/Fx (Gy),Fractions,MU/Gy,Total MU,Delivery Time (s),GT (deg),Avg Dose Rate (MU/min),psmall,MFA (cm2),EFS (mm),PA (cm2),JA (cm2),MCS,LSV,AAV,LT (mm),LTMCS,SAS5,SAS10,EM,PI,LG (mm),MAD (mm),TG,PM,MD,MI,MUCA (MU/CP),LTMU (mm/MU),LTNLMU,LNA,LTAL (mm/deg),GS (deg/s),mGSV (deg/s),LS (mm/s),mDRV (MU/min)
+plan1.dcm,AB***CD,Anonymized,Head,VMAT,2,178,PHOTON,6X,TrueBeam,Hospital,...
+```
+
+---
+
+## 5. Technical Details
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/lib/export-utils.ts` | Restructure `PLAN_COLUMNS` and `BEAM_COLUMNS` with category grouping, add missing fields (patientId, patientName, machine, institution, isocenter, table angle, collimator, dose rate, gantry range, table position), implement two-row header generation in `plansToCSV` and `beamsToCSV` |
+| `src/lib/dicom/metrics.ts` | Fix GT calculation (~line 760-806): replace `arcLength = abs(end - start)` with CP-by-CP summation. Also fix arcLength to use same logic |
+
+### Column Definition Changes in export-utils.ts
+
+Each column definition gains a `category` field:
+
+```typescript
+interface ColumnDef {
+  key: string;
+  header: string;
+  category: string;  // NEW: 'Plan Info' | 'Prescription' | 'Delivery' | 'Geometric' | etc.
+  decimals: number;
+  extract: (p: ExportablePlan) => number | string | undefined;
 }
 ```
 
-Cohort-specific data (clusters, correlation, extended stats) goes into `cohortData`. This field is absent for single/batch exports.
+The `plansToCSV` function builds two header rows:
+
+```typescript
+function buildCategoryRow(columns: ColumnDef[]): string {
+  let lastCategory = '';
+  return columns.map(col => {
+    if (col.category !== lastCategory) {
+      lastCategory = col.category;
+      return escapeCSV(col.category);
+    }
+    return '';
+  }).join(',');
+}
+```
+
+### New extractors for missing fields
+
+```typescript
+// Plan-level
+{ key: 'patientId', header: 'Patient ID', category: 'Plan Info', extract: p => p.plan.patientId },
+{ key: 'patientName', header: 'Patient Name', category: 'Plan Info', extract: p => p.plan.patientName },
+{ key: 'machine', header: 'Machine', category: 'Plan Info', extract: p => p.plan.treatmentMachineName },
+{ key: 'institution', header: 'Institution', category: 'Plan Info', extract: p => p.plan.institutionName },
+
+// Beam-level additions
+{ key: 'gantryRange', header: 'Gantry Range', extract: bm => `${bm.gantryAngleStart}→${bm.gantryAngleEnd}` },
+{ key: 'avgDoseRate', header: 'Avg Dose Rate (MU/min)', extract: bm => bm.avgDoseRate },
+{ key: 'isocenter', header: 'Isocenter (mm)', extract: bm => formatIsocenter(bm) },
+{ key: 'tableAngle', header: 'Table Angle (deg)', extract: bm => bm.patientSupportAngle },
+{ key: 'tablePosition', header: 'Table Position (V,L,Lat)', extract: bm => formatTablePos(bm) },
+```
+
+For beam-level export, some fields (isocenter, table angle, table position, gantry start/end) need to be added to the `BeamMetrics` interface so they're available at export time, or extracted from the beam's first control point during export.
+
+### BeamMetrics additions in types.ts
+
+```typescript
+interface BeamMetrics {
+  // ... existing
+  gantryAngleStart?: number;
+  gantryAngleEnd?: number;
+  patientSupportAngle?: number;
+  isocenterPosition?: [number, number, number];
+  tableTopVertical?: number;
+  tableTopLongitudinal?: number;
+  tableTopLateral?: number;
+}
+```
+
+These are set in `calculateBeamMetrics` from `beam.controlPoints[0]`.
+
+### GT fix details in metrics.ts
+
+Replace lines ~760-776:
+
+```typescript
+// Current (WRONG):
+if (beam.isArc && beam.controlPoints.length > 1) {
+  arcLength = Math.abs(beam.gantryAngleEnd - beam.gantryAngleStart);
+  if (arcLength > 180) arcLength = 360 - arcLength;
+}
+
+// Fixed (sum all CP-to-CP deltas):
+let totalGantryTravel = 0;
+if (beam.controlPoints.length > 1) {
+  for (let i = 1; i < beam.controlPoints.length; i++) {
+    let delta = Math.abs(
+      beam.controlPoints[i].gantryAngle - beam.controlPoints[i-1].gantryAngle
+    );
+    if (delta > 180) delta = 360 - delta;
+    totalGantryTravel += delta;
+  }
+}
+arcLength = beam.isArc && totalGantryTravel > 0 ? totalGantryTravel : undefined;
+const GT = totalGantryTravel > 0 ? totalGantryTravel : undefined;
+```
 
 ---
 
-## Files Changed
+## Summary
 
-
-| File                                          | Change                                                                                                           |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `src/lib/export-utils.ts`                     | **NEW** -- shared export utility with column definitions, row conversion, CSV/JSON generators                    |
-| `src/lib/dicom/metrics.ts`                    | Remove old `metricsToCSV` function (~200 lines deleted)                                                          |
-| `src/lib/dicom/index.ts`                      | Remove `metricsToCSV` from barrel export                                                                         |
-| `src/components/viewer/MetricsPanel.tsx`      | Use new shared export for single-plan CSV                                                                        |
-| `src/lib/batch/batch-export.ts`               | Rewrite to use shared utility; remove duplicate metric lists                                                     |
-| `src/components/batch/BatchExportPanel.tsx`   | Simplify options (remove category checkboxes since all metrics always included); per-beam triggers separate file |
-| `src/components/cohort/CohortExportPanel.tsx` | Use shared utility for CSV; keep cohort stats in JSON only                                                       |
-
-
----
-
-## What Gets Exported (Complete Column List)
-
-**Plan-level CSV (all modes):**
-File, Plan Label, Technique, Beam Count, CP Count, Radiation Type, Energy, MFA, EFS, PA, JA, psmall, Total MU, Delivery Time, GT, MUCA, LTMU, GS, LS, mDRV, MCS, LSV, AAV, LT, LTMCS, SAS5, SAS10, EM, PI, LG, MAD, TG, PM, MD, MI
-
-**Beam-level CSV (optional second file):**
-File, Plan Label, Beam Number, Beam Name, Radiation Type, Nominal Energy (MeV), Energy Label, Beam MU, Arc Length, CPs, Est Delivery Time, MCS, LSV, AAV, MFA, LT, LTMCS, LG, MAD, EFS, psmall, SAS5, SAS10, EM, PI, PA, JA, TG, PM, MUCA, LTMU, Collimator Angle
+- **GT fix**: Sum CP-by-CP gantry angle deltas instead of start-minus-end
+- **New columns**: Patient ID, Patient Name, Machine, Institution, Avg Dose Rate at plan level; Isocenter, Table Angle, Gantry Range, Table Position at beam level
+- **Reordered**: Plan Info first, then Prescription, Delivery, Geometric, Complexity, Deliverability
+- **Two-row header**: Category labels on row 1 (first column of each group only), metric names on row 2, data from row 3
+- **Files**: `src/lib/export-utils.ts`, `src/lib/dicom/metrics.ts`, `src/lib/dicom/types.ts`
