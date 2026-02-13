@@ -757,8 +757,8 @@ function calculateBeamMetrics(
   
   const LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
   
-  // Calculate arc length and collimator angles
-  let arcLength: number | undefined;
+  // Calculate arc length via CP-by-CP gantry angle summation (fixes full-arc GT=0 bug)
+  let totalGantryTravel = 0;
   let averageGantrySpeed: number | undefined;
   let collimatorAngleStart: number | undefined;
   let collimatorAngleEnd: number | undefined;
@@ -768,12 +768,14 @@ function calculateBeamMetrics(
     collimatorAngleEnd = beam.controlPoints[beam.controlPoints.length - 1].beamLimitingDeviceAngle;
   }
   
-  if (beam.isArc && beam.controlPoints.length > 1) {
-    arcLength = Math.abs(beam.gantryAngleEnd - beam.gantryAngleStart);
-    if (arcLength > 180) {
-      arcLength = 360 - arcLength;
+  if (beam.controlPoints.length > 1) {
+    for (let i = 1; i < beam.controlPoints.length; i++) {
+      let delta = Math.abs(beam.controlPoints[i].gantryAngle - beam.controlPoints[i-1].gantryAngle);
+      if (delta > 180) delta = 360 - delta;
+      totalGantryTravel += delta;
     }
   }
+  const arcLength = beam.isArc && totalGantryTravel > 0 ? totalGantryTravel : undefined;
   
   // Estimate delivery time
   const deliveryEstimate = estimateBeamDeliveryTime(beam, controlPointMetrics, machineParams);
@@ -802,8 +804,8 @@ function calculateBeamMetrics(
   // LTAL - Leaf Travel per Arc Length
   const LTAL = (arcLength && arcLength > 0) ? LT / arcLength : undefined;
   
-  // GT - Gantry Travel (same as arc length for arcs)
-  const GT = arcLength;
+  // GT - Gantry Travel (total angle traversed across all CPs)
+  const GT = totalGantryTravel > 0 ? totalGantryTravel : undefined;
   
   // GS - Gantry Speed
   const GS = (arcLength && deliveryEstimate.deliveryTime > 0) 
@@ -922,6 +924,13 @@ function calculateBeamMetrics(
     limitingFactor: deliveryEstimate.limitingFactor,
     collimatorAngleStart,
     collimatorAngleEnd,
+    gantryAngleStart: beam.gantryAngleStart,
+    gantryAngleEnd: beam.gantryAngleEnd,
+    patientSupportAngle: beam.controlPoints[0]?.patientSupportAngle,
+    isocenterPosition: beam.controlPoints[0]?.isocenterPosition,
+    tableTopVertical: beam.controlPoints[0]?.tableTopVertical,
+    tableTopLongitudinal: beam.controlPoints[0]?.tableTopLongitudinal,
+    tableTopLateral: beam.controlPoints[0]?.tableTopLateral,
     SAS5,
     SAS10,
     EM,

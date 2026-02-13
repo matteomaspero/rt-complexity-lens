@@ -203,6 +203,15 @@ export interface BeamMetrics {
   collimatorAngleStart?: number;
   collimatorAngleEnd?: number;
   
+  // Beam geometry (from first control point)
+  gantryAngleStart?: number;
+  gantryAngleEnd?: number;
+  patientSupportAngle?: number;
+  isocenterPosition?: [number, number, number];
+  tableTopVertical?: number;
+  tableTopLongitudinal?: number;
+  tableTopLateral?: number;
+  
   // Additional complexity metrics
   SAS5?: number; // Small Aperture Score (5mm threshold)
   SAS10?: number; // Small Aperture Score (10mm threshold)
