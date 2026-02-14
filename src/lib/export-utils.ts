@@ -3,7 +3,7 @@
  * 
  * Provides a single, consistent CSV/JSON export format across all modes
  * (single plan, batch, cohort). CSV format: two-row header (category + metric name),
- * one row per plan, one column per metric.
+ * plan-total row + per-beam rows for each plan.
  */
 
 import type { RTPlan, PlanMetrics, BeamMetrics } from '@/lib/dicom/types';
@@ -24,14 +24,12 @@ interface ColumnDef {
   category: string;
   decimals: number;
   extract: (p: ExportablePlan) => number | string | undefined;
-}
-
-interface BeamColumnDef {
-  key: string;
-  header: string;
-  category: string;
-  decimals: number;
-  extract: (bm: BeamMetrics) => number | string | undefined;
+  /** Extract from beam-level data for beam rows; undefined = plan-only column */
+  extractBeam?: (bm: BeamMetrics) => number | string | undefined;
+  /** If true, column is only filled for beam rows */
+  beamOnly?: boolean;
+  /** If true, column is only filled for plan rows */
+  planOnly?: boolean;
 }
 
 export type ExportType = 'single' | 'batch' | 'cohort';
@@ -93,6 +91,11 @@ function metricVal(m: PlanMetrics, key: string): number | undefined {
   return typeof v === 'number' ? v : undefined;
 }
 
+function beamMetricVal(bm: BeamMetrics, key: string): number | undefined {
+  const v = (bm as unknown as Record<string, unknown>)[key];
+  return typeof v === 'number' ? v : undefined;
+}
+
 /** Build the category row: category name at first column of each group, empty elsewhere */
 function buildCategoryRow(columns: { category: string }[]): string {
   let lastCategory = '';
@@ -120,175 +123,134 @@ function formatTablePos(bm: BeamMetrics): string {
 }
 
 // ---------------------------------------------------------------------------
-// Plan-level column definitions (reordered: metadata → prescription → delivery → metrics)
+// Unified column definitions — used for both plan-total and beam rows
 // ---------------------------------------------------------------------------
 
 export const PLAN_COLUMNS: ColumnDef[] = [
   // ── Plan Info ──
-  { key: 'fileName', header: 'File', category: 'Plan Info', decimals: 0, extract: p => p.fileName },
-  { key: 'patientId', header: 'Patient ID', category: 'Plan Info', decimals: 0, extract: p => p.plan.patientId },
-  { key: 'patientName', header: 'Patient Name', category: 'Plan Info', decimals: 0, extract: p => p.plan.patientName },
-  { key: 'planLabel', header: 'Plan Label', category: 'Plan Info', decimals: 0, extract: p => p.plan.planLabel },
-  { key: 'technique', header: 'Technique', category: 'Plan Info', decimals: 0, extract: p => p.plan.technique },
-  { key: 'beamCount', header: 'Beam Count', category: 'Plan Info', decimals: 0, extract: p => p.plan.beams?.length ?? 0 },
-  { key: 'cpCount', header: 'CP Count', category: 'Plan Info', decimals: 0, extract: p => p.plan.beams?.reduce((s, b) => s + (b.numberOfControlPoints || 0), 0) ?? 0 },
-  { key: 'radiationType', header: 'Radiation Type', category: 'Plan Info', decimals: 0, extract: p => getDominantRadiationType(p.plan) },
-  { key: 'energy', header: 'Energy', category: 'Plan Info', decimals: 0, extract: p => getDominantEnergy(p.plan) },
-  { key: 'machine', header: 'Machine', category: 'Plan Info', decimals: 0, extract: p => p.plan.treatmentMachineName ?? '' },
-  { key: 'institution', header: 'Institution', category: 'Plan Info', decimals: 0, extract: p => p.plan.institutionName ?? '' },
+  { key: 'fileName', header: 'File', category: 'Plan Info', decimals: 0, extract: p => p.fileName, extractBeam: () => undefined },
+  { key: 'patientId', header: 'Patient ID', category: 'Plan Info', decimals: 0, extract: p => p.plan.patientId, extractBeam: () => undefined },
+  { key: 'patientName', header: 'Patient Name', category: 'Plan Info', decimals: 0, extract: p => p.plan.patientName, extractBeam: () => undefined },
+  { key: 'planLabel', header: 'Plan Label', category: 'Plan Info', decimals: 0, extract: p => p.plan.planLabel, extractBeam: () => undefined },
+  { key: 'technique', header: 'Technique', category: 'Plan Info', decimals: 0, extract: p => p.plan.technique, extractBeam: () => undefined },
+  { key: 'beamCount', header: 'Beam Count', category: 'Plan Info', decimals: 0, extract: p => p.plan.beams?.length ?? 0, extractBeam: () => undefined },
+  { key: 'cpCount', header: 'CP Count', category: 'Plan Info', decimals: 0, extract: p => p.plan.beams?.reduce((s, b) => s + (b.numberOfControlPoints || 0), 0) ?? 0, extractBeam: bm => bm.numberOfControlPoints },
+  { key: 'radiationType', header: 'Radiation Type', category: 'Plan Info', decimals: 0, extract: p => getDominantRadiationType(p.plan), extractBeam: bm => bm.radiationType ?? '' },
+  { key: 'energy', header: 'Energy', category: 'Plan Info', decimals: 0, extract: p => getDominantEnergy(p.plan), extractBeam: bm => bm.energyLabel ?? (bm.nominalBeamEnergy !== undefined ? `${bm.nominalBeamEnergy} MeV` : '') },
+  { key: 'machine', header: 'Machine', category: 'Plan Info', decimals: 0, extract: p => p.plan.treatmentMachineName ?? '', extractBeam: () => undefined },
+  { key: 'institution', header: 'Institution', category: 'Plan Info', decimals: 0, extract: p => p.plan.institutionName ?? '', extractBeam: () => undefined },
 
-  // ── Prescription ──
-  { key: 'prescribedDose', header: 'Rx Dose (Gy)', category: 'Prescription', decimals: 2, extract: p => metricVal(p.metrics, 'prescribedDose') },
-  { key: 'dosePerFraction', header: 'Dose/Fx (Gy)', category: 'Prescription', decimals: 2, extract: p => metricVal(p.metrics, 'dosePerFraction') },
-  { key: 'numberOfFractions', header: 'Fractions', category: 'Prescription', decimals: 0, extract: p => metricVal(p.metrics, 'numberOfFractions') },
-  { key: 'MUperGy', header: 'MU/Gy', category: 'Prescription', decimals: 1, extract: p => metricVal(p.metrics, 'MUperGy') },
+  // ── Row Identifiers ──
+  { key: 'beam', header: 'Beam', category: 'Row', decimals: 0, extract: () => 'ALL', extractBeam: bm => `${bm.beamNumber}-${bm.beamName}` },
+  { key: 'level', header: 'Level', category: 'Row', decimals: 0, extract: () => 'Plan', extractBeam: () => 'Beam' },
 
-  // ── Delivery ──
-  { key: 'totalMU', header: 'Total MU', category: 'Delivery', decimals: 1, extract: p => p.metrics.totalMU },
-  { key: 'totalDeliveryTime', header: 'Delivery Time (s)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'totalDeliveryTime') },
-  { key: 'GT', header: 'GT (°)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'GT') },
-  { key: 'avgDoseRate', header: 'Avg Dose Rate (MU/min)', category: 'Delivery', decimals: 1, extract: p => getAvgDoseRate(p.metrics) },
-  { key: 'psmall', header: 'psmall', category: 'Delivery', decimals: 4, extract: p => metricVal(p.metrics, 'psmall') },
+  // ── Beam Geometry (beam-only) ──
+  { key: 'gantryRange', header: 'Gantry Range', category: 'Beam Geometry', decimals: 0, beamOnly: true, extract: () => undefined, extractBeam: bm => bm.gantryAngleStart !== undefined && bm.gantryAngleEnd !== undefined ? `${bm.gantryAngleStart.toFixed(1)}→${bm.gantryAngleEnd.toFixed(1)}` : '' },
+  { key: 'collimator', header: 'Collimator (°)', category: 'Beam Geometry', decimals: 1, beamOnly: true, extract: () => undefined, extractBeam: bm => bm.collimatorAngleStart },
+  { key: 'tableAngle', header: 'Table Angle (°)', category: 'Beam Geometry', decimals: 1, beamOnly: true, extract: () => undefined, extractBeam: bm => bm.patientSupportAngle },
+  { key: 'isocenter', header: 'Isocenter (mm)', category: 'Beam Geometry', decimals: 0, beamOnly: true, extract: () => undefined, extractBeam: bm => formatIsocenter(bm) },
+  { key: 'tablePosition', header: 'Table Position (V,L,Lat)', category: 'Beam Geometry', decimals: 0, beamOnly: true, extract: () => undefined, extractBeam: bm => formatTablePos(bm) },
 
-  // ── Geometric ──
-  { key: 'MFA', header: 'MFA (cm²)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'MFA') },
-  { key: 'EFS', header: 'EFS (mm)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'EFS') },
-  { key: 'PA', header: 'PA (cm²)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'PA') },
-  { key: 'JA', header: 'JA (cm²)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'JA') },
-
-  // ── Complexity (Primary) ──
-  { key: 'MCS', header: 'MCS', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'MCS') },
-  { key: 'LSV', header: 'LSV', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'LSV') },
-  { key: 'AAV', header: 'AAV', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'AAV') },
-
-  // ── Complexity (Secondary) ──
-  { key: 'LT', header: 'LT (mm)', category: 'Complexity (Secondary)', decimals: 1, extract: p => metricVal(p.metrics, 'LT') },
-  { key: 'LTMCS', header: 'LTMCS', category: 'Complexity (Secondary)', decimals: 1, extract: p => metricVal(p.metrics, 'LTMCS') },
-  { key: 'SAS5', header: 'SAS5', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'SAS5') },
-  { key: 'SAS10', header: 'SAS10', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'SAS10') },
-  { key: 'EM', header: 'EM', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'EM') },
-  { key: 'PI', header: 'PI', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'PI') },
-  { key: 'LG', header: 'LG (mm)', category: 'Complexity (Secondary)', decimals: 2, extract: p => metricVal(p.metrics, 'LG') },
-  { key: 'MAD', header: 'MAD (mm)', category: 'Complexity (Secondary)', decimals: 2, extract: p => metricVal(p.metrics, 'MAD') },
-  { key: 'TG', header: 'TG', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'TG') },
-  { key: 'PM', header: 'PM', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'PM') },
-  { key: 'MD', header: 'MD', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'MD') },
-  { key: 'MI', header: 'MI', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'MI') },
-
-  // ── Deliverability ──
-  { key: 'MUCA', header: 'MUCA (MU/CP)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'MUCA') },
-  { key: 'LTMU', header: 'LTMU (mm/MU)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'LTMU') },
-  { key: 'LTNLMU', header: 'LTNLMU', category: 'Deliverability', decimals: 6, extract: p => metricVal(p.metrics, 'LTNLMU') },
-  { key: 'LNA', header: 'LNA', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'LNA') },
-  { key: 'LTAL', header: 'LTAL (mm/°)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LTAL') },
-  { key: 'GS', header: 'GS (°/s)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'GS') },
-  { key: 'mGSV', header: 'mGSV (°/s)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'mGSV') },
-  { key: 'LS', header: 'LS (mm/s)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LS') },
-  { key: 'mDRV', header: 'mDRV (MU/min)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'mDRV') },
-];
-
-// ---------------------------------------------------------------------------
-// Beam-level column definitions
-// ---------------------------------------------------------------------------
-
-const BEAM_COLUMNS: BeamColumnDef[] = [
-  // ── Plan Info ──
-  { key: 'beamNumber', header: 'Beam Number', category: 'Beam Info', decimals: 0, extract: bm => bm.beamNumber },
-  { key: 'beamName', header: 'Beam Name', category: 'Beam Info', decimals: 0, extract: bm => bm.beamName },
-  { key: 'radiationType', header: 'Radiation Type', category: 'Beam Info', decimals: 0, extract: bm => bm.radiationType ?? '' },
-  { key: 'nominalBeamEnergy', header: 'Nominal Energy (MeV)', category: 'Beam Info', decimals: 0, extract: bm => bm.nominalBeamEnergy },
-  { key: 'energyLabel', header: 'Energy Label', category: 'Beam Info', decimals: 0, extract: bm => bm.energyLabel ?? '' },
-  { key: 'numberOfControlPoints', header: 'CPs', category: 'Beam Info', decimals: 0, extract: bm => bm.numberOfControlPoints },
-
-  // ── Beam Geometry ──
-  { key: 'gantryRange', header: 'Gantry Range', category: 'Beam Geometry', decimals: 0, extract: bm => bm.gantryAngleStart !== undefined && bm.gantryAngleEnd !== undefined ? `${bm.gantryAngleStart.toFixed(1)}→${bm.gantryAngleEnd.toFixed(1)}` : '' },
-  { key: 'arcLength', header: 'Arc Length (°)', category: 'Beam Geometry', decimals: 1, extract: bm => bm.arcLength },
-  { key: 'collimatorAngleStart', header: 'Collimator (°)', category: 'Beam Geometry', decimals: 1, extract: bm => bm.collimatorAngleStart },
-  { key: 'patientSupportAngle', header: 'Table Angle (°)', category: 'Beam Geometry', decimals: 1, extract: bm => bm.patientSupportAngle },
-  { key: 'isocenter', header: 'Isocenter (mm)', category: 'Beam Geometry', decimals: 0, extract: bm => formatIsocenter(bm) },
-  { key: 'tablePosition', header: 'Table Position (V,L,Lat)', category: 'Beam Geometry', decimals: 0, extract: bm => formatTablePos(bm) },
+  // ── Prescription (plan-only) ──
+  { key: 'prescribedDose', header: 'Rx Dose (Gy)', category: 'Prescription', decimals: 2, planOnly: true, extract: p => metricVal(p.metrics, 'prescribedDose'), extractBeam: () => undefined },
+  { key: 'dosePerFraction', header: 'Dose/Fx (Gy)', category: 'Prescription', decimals: 2, planOnly: true, extract: p => metricVal(p.metrics, 'dosePerFraction'), extractBeam: () => undefined },
+  { key: 'numberOfFractions', header: 'Fractions', category: 'Prescription', decimals: 0, planOnly: true, extract: p => metricVal(p.metrics, 'numberOfFractions'), extractBeam: () => undefined },
+  { key: 'MUperGy', header: 'MU/Gy', category: 'Prescription', decimals: 1, planOnly: true, extract: p => metricVal(p.metrics, 'MUperGy'), extractBeam: () => undefined },
 
   // ── Delivery ──
-  { key: 'beamMU', header: 'Beam MU', category: 'Delivery', decimals: 1, extract: bm => bm.beamMU },
-  { key: 'estimatedDeliveryTime', header: 'Est Time (s)', category: 'Delivery', decimals: 1, extract: bm => bm.estimatedDeliveryTime },
-  { key: 'avgDoseRate', header: 'Avg Dose Rate (MU/min)', category: 'Delivery', decimals: 1, extract: bm => bm.avgDoseRate },
-  { key: 'GT', header: 'GT (°)', category: 'Delivery', decimals: 1, extract: bm => bm.GT },
+  { key: 'totalMU', header: 'Total MU', category: 'Delivery', decimals: 1, extract: p => p.metrics.totalMU, extractBeam: bm => bm.beamMU },
+  { key: 'totalDeliveryTime', header: 'Delivery Time (s)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'totalDeliveryTime'), extractBeam: bm => bm.estimatedDeliveryTime },
+  { key: 'GT', header: 'GT (°)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'GT'), extractBeam: bm => bm.GT },
+  { key: 'avgDoseRate', header: 'Avg Dose Rate (MU/min)', category: 'Delivery', decimals: 1, extract: p => getAvgDoseRate(p.metrics), extractBeam: bm => bm.avgDoseRate },
+  { key: 'psmall', header: 'psmall', category: 'Delivery', decimals: 4, extract: p => metricVal(p.metrics, 'psmall'), extractBeam: bm => bm.psmall },
 
   // ── Geometric ──
-  { key: 'MFA', header: 'MFA (cm²)', category: 'Geometric', decimals: 2, extract: bm => bm.MFA },
-  { key: 'EFS', header: 'EFS (mm)', category: 'Geometric', decimals: 2, extract: bm => bm.EFS },
-  { key: 'PA', header: 'PA (cm²)', category: 'Geometric', decimals: 2, extract: bm => bm.PA },
-  { key: 'JA', header: 'JA (cm²)', category: 'Geometric', decimals: 2, extract: bm => bm.JA },
-  { key: 'psmall', header: 'psmall', category: 'Geometric', decimals: 4, extract: bm => bm.psmall },
+  { key: 'MFA', header: 'MFA (cm²)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'MFA'), extractBeam: bm => bm.MFA },
+  { key: 'EFS', header: 'EFS (mm)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'EFS'), extractBeam: bm => bm.EFS },
+  { key: 'PA', header: 'PA (cm²)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'PA'), extractBeam: bm => bm.PA },
+  { key: 'JA', header: 'JA (cm²)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'JA'), extractBeam: bm => bm.JA },
 
   // ── Complexity (Primary) ──
-  { key: 'MCS', header: 'MCS', category: 'Complexity (Primary)', decimals: 4, extract: bm => bm.MCS },
-  { key: 'LSV', header: 'LSV', category: 'Complexity (Primary)', decimals: 4, extract: bm => bm.LSV },
-  { key: 'AAV', header: 'AAV', category: 'Complexity (Primary)', decimals: 4, extract: bm => bm.AAV },
+  { key: 'MCS', header: 'MCS', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'MCS'), extractBeam: bm => bm.MCS },
+  { key: 'LSV', header: 'LSV', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'LSV'), extractBeam: bm => bm.LSV },
+  { key: 'AAV', header: 'AAV', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'AAV'), extractBeam: bm => bm.AAV },
 
   // ── Complexity (Secondary) ──
-  { key: 'LT', header: 'LT (mm)', category: 'Complexity (Secondary)', decimals: 1, extract: bm => bm.LT },
-  { key: 'LTMCS', header: 'LTMCS', category: 'Complexity (Secondary)', decimals: 1, extract: bm => bm.LTMCS },
-  { key: 'SAS5', header: 'SAS5', category: 'Complexity (Secondary)', decimals: 4, extract: bm => bm.SAS5 },
-  { key: 'SAS10', header: 'SAS10', category: 'Complexity (Secondary)', decimals: 4, extract: bm => bm.SAS10 },
-  { key: 'EM', header: 'EM', category: 'Complexity (Secondary)', decimals: 4, extract: bm => bm.EM },
-  { key: 'PI', header: 'PI', category: 'Complexity (Secondary)', decimals: 4, extract: bm => bm.PI },
-  { key: 'LG', header: 'LG (mm)', category: 'Complexity (Secondary)', decimals: 2, extract: bm => bm.LG },
-  { key: 'MAD', header: 'MAD (mm)', category: 'Complexity (Secondary)', decimals: 2, extract: bm => bm.MAD },
-  { key: 'TG', header: 'TG', category: 'Complexity (Secondary)', decimals: 4, extract: bm => bm.TG },
-  { key: 'PM', header: 'PM', category: 'Complexity (Secondary)', decimals: 4, extract: bm => bm.PM },
+  { key: 'LT', header: 'LT (mm)', category: 'Complexity (Secondary)', decimals: 1, extract: p => metricVal(p.metrics, 'LT'), extractBeam: bm => bm.LT },
+  { key: 'LTMCS', header: 'LTMCS', category: 'Complexity (Secondary)', decimals: 1, extract: p => metricVal(p.metrics, 'LTMCS'), extractBeam: bm => bm.LTMCS },
+  { key: 'SAS5', header: 'SAS5', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'SAS5'), extractBeam: bm => bm.SAS5 },
+  { key: 'SAS10', header: 'SAS10', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'SAS10'), extractBeam: bm => bm.SAS10 },
+  { key: 'EM', header: 'EM', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'EM'), extractBeam: bm => bm.EM },
+  { key: 'PI', header: 'PI', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'PI'), extractBeam: bm => bm.PI },
+  { key: 'LG', header: 'LG (mm)', category: 'Complexity (Secondary)', decimals: 2, extract: p => metricVal(p.metrics, 'LG'), extractBeam: bm => bm.LG },
+  { key: 'MAD', header: 'MAD (mm)', category: 'Complexity (Secondary)', decimals: 2, extract: p => metricVal(p.metrics, 'MAD'), extractBeam: bm => bm.MAD },
+  { key: 'TG', header: 'TG', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'TG'), extractBeam: bm => bm.TG },
+  { key: 'PM', header: 'PM', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'PM'), extractBeam: bm => bm.PM },
+  { key: 'MD', header: 'MD', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'MD'), extractBeam: bm => bm.MD },
+  { key: 'MI', header: 'MI', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'MI'), extractBeam: bm => bm.MI },
 
   // ── Deliverability ──
-  { key: 'MUCA', header: 'MUCA (MU/CP)', category: 'Deliverability', decimals: 4, extract: bm => bm.MUCA },
-  { key: 'LTMU', header: 'LTMU (mm/MU)', category: 'Deliverability', decimals: 4, extract: bm => bm.LTMU },
-  { key: 'GS', header: 'GS (°/s)', category: 'Deliverability', decimals: 2, extract: bm => bm.GS },
-  { key: 'LS', header: 'LS (mm/s)', category: 'Deliverability', decimals: 2, extract: bm => bm.LS },
-  { key: 'mDRV', header: 'mDRV (MU/min)', category: 'Deliverability', decimals: 2, extract: bm => bm.mDRV },
+  { key: 'MUCA', header: 'MUCA (MU/CP)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'MUCA'), extractBeam: bm => bm.MUCA },
+  { key: 'LTMU', header: 'LTMU (mm/MU)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'LTMU'), extractBeam: bm => bm.LTMU },
+  { key: 'LTNLMU', header: 'LTNLMU', category: 'Deliverability', decimals: 6, extract: p => metricVal(p.metrics, 'LTNLMU'), extractBeam: bm => bm.LTNLMU },
+  { key: 'LNA', header: 'LNA', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'LNA'), extractBeam: bm => bm.LNA },
+  { key: 'LTAL', header: 'LTAL (mm/°)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LTAL'), extractBeam: bm => bm.LTAL },
+  { key: 'GS', header: 'GS (°/s)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'GS'), extractBeam: bm => bm.GS },
+  { key: 'mGSV', header: 'mGSV (°/s)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'mGSV'), extractBeam: bm => bm.mGSV },
+  { key: 'LS', header: 'LS (mm/s)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LS'), extractBeam: bm => bm.LS },
+  { key: 'mDRV', header: 'mDRV (MU/min)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'mDRV'), extractBeam: bm => bm.mDRV },
 ];
 
 // ---------------------------------------------------------------------------
 // CSV generators
 // ---------------------------------------------------------------------------
 
-/** Convert an array of plans to a standard tabular CSV string (plan-level). */
+/** Format a single cell value for CSV */
+function formatCell(col: ColumnDef, raw: number | string | undefined): string {
+  if (typeof raw === 'number') return fmtNum(raw, col.decimals);
+  return escapeCSV(raw);
+}
+
+/** Combined CSV: plan-total row + per-beam rows for each plan */
 export function plansToCSV(plans: ExportablePlan[]): string {
   const categoryRow = buildCategoryRow(PLAN_COLUMNS);
   const headerRow = PLAN_COLUMNS.map(c => c.header).join(',');
-  const rows = plans.map(p =>
-    PLAN_COLUMNS.map(col => {
-      const raw = col.extract(p);
-      if (typeof raw === 'number') return fmtNum(raw, col.decimals);
-      return escapeCSV(raw);
-    }).join(',')
-  );
-  return [categoryRow, headerRow, ...rows].join('\n');
-}
-
-/** Convert plans to a beam-level CSV (one row per beam). */
-export function beamsToCSV(plans: ExportablePlan[]): string {
-  const metaColumns: BeamColumnDef[] = [
-    { key: 'file', header: 'File', category: 'Plan Info', decimals: 0, extract: () => '' },
-    { key: 'planLabel', header: 'Plan Label', category: 'Plan Info', decimals: 0, extract: () => '' },
-  ];
-  const allColumns = [...metaColumns, ...BEAM_COLUMNS];
-
-  const categoryRow = buildCategoryRow(allColumns);
-  const headerRow = allColumns.map(c => c.header).join(',');
 
   const rows: string[] = [];
   for (const p of plans) {
+    // Plan-total row
+    const planRow = PLAN_COLUMNS.map(col => {
+      if (col.beamOnly) return '';
+      return formatCell(col, col.extract(p));
+    }).join(',');
+    rows.push(planRow);
+
+    // Per-beam rows
     for (const bm of p.metrics.beamMetrics) {
-      const metaValues = [escapeCSV(p.fileName), escapeCSV(p.plan.planLabel)];
-      const beamValues = BEAM_COLUMNS.map(col => {
-        const raw = col.extract(bm);
-        if (typeof raw === 'number') return fmtNum(raw, col.decimals);
-        return escapeCSV(raw);
-      });
-      rows.push([...metaValues, ...beamValues].join(','));
+      const beamRow = PLAN_COLUMNS.map(col => {
+        if (col.planOnly) return '';
+        if (col.extractBeam) {
+          const val = col.extractBeam(bm);
+          // For beam rows, fall back to plan extract for plan-info columns that return undefined
+          if (val === undefined && !col.beamOnly) {
+            return formatCell(col, col.extract(p));
+          }
+          return formatCell(col, val);
+        }
+        // No extractBeam defined — use plan extract (for plan info columns)
+        return formatCell(col, col.extract(p));
+      }).join(',');
+      rows.push(beamRow);
     }
   }
 
   return [categoryRow, headerRow, ...rows].join('\n');
+}
+
+/** Legacy beam-only CSV (kept for internal use) */
+export function beamsToCSV(plans: ExportablePlan[]): string {
+  // Now just delegates to the combined format
+  return plansToCSV(plans);
 }
 
 // ---------------------------------------------------------------------------
@@ -349,24 +311,27 @@ export function plansToJSON(plans: ExportablePlan[], options: ExportJSONOptions)
 
       // All metrics as flat object
       const metrics: Record<string, number | undefined> = {};
-      const skipKeys = ['fileName', 'patientId', 'patientName', 'planLabel', 'technique', 'beamCount', 'cpCount', 'radiationType', 'energy', 'machine', 'institution'];
+      const skipKeys = ['fileName', 'patientId', 'patientName', 'planLabel', 'technique', 'beamCount', 'cpCount', 'radiationType', 'energy', 'machine', 'institution', 'beam', 'level'];
       for (const col of PLAN_COLUMNS) {
         if (skipKeys.includes(col.key)) continue;
+        if (col.beamOnly) continue;
         const val = col.extract(p);
         if (typeof val === 'number') metrics[col.key] = val;
       }
       planData.metrics = metrics;
 
-      if (options.includeBeamMetrics) {
-        planData.beamMetrics = p.metrics.beamMetrics.map(bm => {
-          const bmData: Record<string, unknown> = {};
-          for (const col of BEAM_COLUMNS) {
-            const val = col.extract(bm);
+      // Always include beam metrics in JSON
+      planData.beamMetrics = p.metrics.beamMetrics.map(bm => {
+        const bmData: Record<string, unknown> = {};
+        for (const col of PLAN_COLUMNS) {
+          if (col.planOnly) continue;
+          if (col.extractBeam) {
+            const val = col.extractBeam(bm);
             if (val !== undefined && val !== '') bmData[col.key] = val;
           }
-          return bmData;
-        });
-      }
+        }
+        return bmData;
+      });
 
       return planData;
     }),
@@ -396,7 +361,7 @@ export function downloadFile(content: string, filename: string, mimeType: string
 }
 
 // ---------------------------------------------------------------------------
-// Convenience: export plan-level + optional beam-level
+// Convenience: export plan-level + beam-level (always combined for CSV)
 // ---------------------------------------------------------------------------
 
 export function exportPlans(
@@ -415,16 +380,11 @@ export function exportPlans(
 
   if (options.format === 'csv') {
     const csv = plansToCSV(plans);
-    downloadFile(csv, `${prefix}-plans-${timestamp}.csv`, 'text/csv');
-
-    if (options.includeBeamCSV) {
-      const beamCsv = beamsToCSV(plans);
-      downloadFile(beamCsv, `${prefix}-beams-${timestamp}.csv`, 'text/csv');
-    }
+    downloadFile(csv, `${prefix}-${timestamp}.csv`, 'text/csv');
   } else {
     const json = plansToJSON(plans, {
       exportType: options.exportType ?? 'batch',
-      includeBeamMetrics: options.includeBeamMetrics ?? options.includeBeamCSV ?? false,
+      includeBeamMetrics: true,
       cohortData: options.cohortData,
     });
     downloadFile(json, `${prefix}-${timestamp}.json`, 'application/json');

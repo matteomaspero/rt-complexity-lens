@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Download, FileJson, FileSpreadsheet } from 'lucide-react';
@@ -12,7 +11,6 @@ export function CohortExportPanel() {
   const { successfulPlans, extendedStats, clusters, clusterStats, correlationMatrix } = useCohort();
 
   const [format, setFormat] = useState<'csv' | 'json'>('csv');
-  const [includeBeamBreakdown, setIncludeBeamBreakdown] = useState(false);
 
   const handleExport = () => {
     if (successfulPlans.length === 0) return;
@@ -41,8 +39,6 @@ export function CohortExportPanel() {
 
     exportPlans(exportable, {
       format,
-      includeBeamCSV: includeBeamBreakdown,
-      includeBeamMetrics: includeBeamBreakdown,
       exportType: 'cohort',
       filenamePrefix: 'rtplens-cohort',
       cohortData,
@@ -85,24 +81,9 @@ export function CohortExportPanel() {
           </RadioGroup>
         </div>
 
-        {/* Options */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Options</Label>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="cohort-beamBreakdown"
-              checked={includeBeamBreakdown}
-              onCheckedChange={(v) => setIncludeBeamBreakdown(v === true)}
-            />
-            <Label htmlFor="cohort-beamBreakdown" className="text-sm font-normal cursor-pointer">
-              {format === 'csv' ? 'Include per-beam CSV (separate file)' : 'Include per-beam metrics'}
-            </Label>
-          </div>
-        </div>
-
         <p className="text-xs text-muted-foreground">
           {format === 'csv'
-            ? 'Clean tabular CSV — one row per plan, all metrics as columns.'
+            ? 'Plan-total and per-beam rows in a single CSV file.'
             : 'JSON includes summary statistics, clusters, and correlation data.'}
         </p>
 

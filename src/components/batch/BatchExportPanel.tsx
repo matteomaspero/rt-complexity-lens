@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Download, FileJson, FileSpreadsheet } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useBatch } from '@/contexts/BatchContext';
@@ -11,16 +10,12 @@ import { exportBatch, type ExportOptions } from '@/lib/batch/batch-export';
 export function BatchExportPanel() {
   const { plans, selectedPlans } = useBatch();
   const [format, setFormat] = useState<'csv' | 'json'>('csv');
-  const [includeBeamBreakdown, setIncludeBeamBreakdown] = useState(false);
 
   const successfulPlans = plans.filter(p => p.status === 'success');
   const plansToExport = selectedPlans.length > 0 ? selectedPlans : successfulPlans;
 
   const handleExport = () => {
-    const options: ExportOptions = {
-      format,
-      includeBeamBreakdown,
-    };
+    const options: ExportOptions = { format };
     exportBatch(plansToExport, options);
   };
 
@@ -59,23 +54,8 @@ export function BatchExportPanel() {
           </RadioGroup>
         </div>
 
-        {/* Options */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Options</Label>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="beamBreakdown"
-              checked={includeBeamBreakdown}
-              onCheckedChange={(v) => setIncludeBeamBreakdown(v === true)}
-            />
-            <Label htmlFor="beamBreakdown" className="text-sm font-normal cursor-pointer">
-              {format === 'csv' ? 'Include per-beam CSV (separate file)' : 'Include per-beam metrics'}
-            </Label>
-          </div>
-        </div>
-
         <p className="text-xs text-muted-foreground">
-          All metrics are exported — one row per plan, one column per metric.
+          CSV includes plan-total and per-beam rows. JSON includes full metrics with beam breakdown.
         </p>
 
         {/* Export button */}

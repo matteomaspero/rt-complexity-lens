@@ -7,7 +7,6 @@ import { exportPlans, type ExportablePlan } from '@/lib/export-utils';
 
 export interface ExportOptions {
   format: 'csv' | 'json';
-  includeBeamBreakdown: boolean;
 }
 
 function toExportable(plans: BatchPlan[]): ExportablePlan[] {
@@ -22,8 +21,6 @@ export function exportBatch(plans: BatchPlan[], options: ExportOptions) {
 
   exportPlans(exportable, {
     format: options.format,
-    includeBeamCSV: options.includeBeamBreakdown,
-    includeBeamMetrics: options.includeBeamBreakdown,
     exportType: 'batch',
     filenamePrefix: 'rtplens-batch',
   });
