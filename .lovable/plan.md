@@ -2,7 +2,7 @@
 
 ## Overview
 
-Three changes: (1) reorder metric visualizations across all modes to match the export column order (demographic, plan overview, Plan Info/Delivery first, then Geometric, Complexity, Deliverability); (2) expand the comparison diff table to include ALL metrics; (3) change CSV export to include both plan-total and per-beam rows in a single file by default.
+Three changes: (1) reorder metric visualizations across all modes to match the export column order (demographic, plan overview, Plan Info/Delivery first, then Geometric, Complexity, Deliverability); (2) expand the  comparison diff table to include ALL metrics; (3) change CSV export to include both plan-total and per-beam rows in a single file by default.
 
 ---
 
