@@ -13,6 +13,7 @@ export interface MetricDiff {
   direction: DiffDirection;
   significance: DiffSignificance;
   unit?: string;
+  category: string;
   // For complexity metrics, lower is generally better
   lowerIsBetter?: boolean;
 }
@@ -43,6 +44,7 @@ function createMetricDiff(
   label: string,
   valueA: number | undefined,
   valueB: number | undefined,
+  category: string,
   unit?: string,
   lowerIsBetter = false
 ): MetricDiff {
@@ -61,28 +63,93 @@ function createMetricDiff(
     direction: getDirection(absoluteDiff),
     significance: getSignificance(percentDiff),
     unit,
+    category,
     lowerIsBetter,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Full metric comparison definitions — ordered to match export columns
+// ---------------------------------------------------------------------------
+
+interface ComparisonMetricDef {
+  key: string;
+  label: string;
+  category: string;
+  unit?: string;
+  lowerIsBetter: boolean;
+}
+
+const ALL_COMPARISON_METRICS: ComparisonMetricDef[] = [
+  // Prescription
+  { key: 'prescribedDose', label: 'Prescribed Dose', category: 'Prescription', unit: 'Gy', lowerIsBetter: false },
+  { key: 'dosePerFraction', label: 'Dose per Fraction', category: 'Prescription', unit: 'Gy', lowerIsBetter: false },
+  { key: 'numberOfFractions', label: 'Fractions', category: 'Prescription', lowerIsBetter: false },
+  { key: 'MUperGy', label: 'MU per Gy', category: 'Prescription', unit: 'MU/Gy', lowerIsBetter: true },
+
+  // Delivery
+  { key: 'totalMU', label: 'Total MU', category: 'Delivery', unit: 'MU', lowerIsBetter: true },
+  { key: 'totalDeliveryTime', label: 'Delivery Time', category: 'Delivery', unit: 's', lowerIsBetter: true },
+  { key: 'GT', label: 'Gantry Travel', category: 'Delivery', unit: '°', lowerIsBetter: false },
+  { key: 'psmall', label: '% Small Fields', category: 'Delivery', lowerIsBetter: true },
+
+  // Geometric
+  { key: 'MFA', label: 'Mean Field Area', category: 'Geometric', unit: 'cm²', lowerIsBetter: false },
+  { key: 'EFS', label: 'Equiv. Field Size', category: 'Geometric', unit: 'mm', lowerIsBetter: false },
+  { key: 'PA', label: 'Plan Area', category: 'Geometric', unit: 'cm²', lowerIsBetter: false },
+  { key: 'JA', label: 'Jaw Area', category: 'Geometric', unit: 'cm²', lowerIsBetter: false },
+
+  // Complexity (Primary)
+  { key: 'MCS', label: 'Modulation Complexity', category: 'Complexity (Primary)', lowerIsBetter: false },
+  { key: 'LSV', label: 'Leaf Sequence Variability', category: 'Complexity (Primary)', lowerIsBetter: false },
+  { key: 'AAV', label: 'Aperture Area Variability', category: 'Complexity (Primary)', lowerIsBetter: true },
+
+  // Complexity (Secondary)
+  { key: 'LT', label: 'Leaf Travel', category: 'Complexity (Secondary)', unit: 'mm', lowerIsBetter: true },
+  { key: 'LTMCS', label: 'LT-weighted MCS', category: 'Complexity (Secondary)', lowerIsBetter: false },
+  { key: 'SAS5', label: 'Small Aperture (5mm)', category: 'Complexity (Secondary)', lowerIsBetter: true },
+  { key: 'SAS10', label: 'Small Aperture (10mm)', category: 'Complexity (Secondary)', lowerIsBetter: true },
+  { key: 'EM', label: 'Edge Metric', category: 'Complexity (Secondary)', unit: 'mm⁻¹', lowerIsBetter: true },
+  { key: 'PI', label: 'Plan Irregularity', category: 'Complexity (Secondary)', lowerIsBetter: true },
+  { key: 'LG', label: 'Leaf Gap', category: 'Complexity (Secondary)', unit: 'mm', lowerIsBetter: false },
+  { key: 'MAD', label: 'Mean Asymmetry Distance', category: 'Complexity (Secondary)', unit: 'mm', lowerIsBetter: true },
+  { key: 'TG', label: 'Tongue-and-Groove', category: 'Complexity (Secondary)', lowerIsBetter: true },
+  { key: 'PM', label: 'Plan Modulation', category: 'Complexity (Secondary)', lowerIsBetter: true },
+  { key: 'MD', label: 'Modulation Degree', category: 'Complexity (Secondary)', lowerIsBetter: true },
+  { key: 'MI', label: 'Modulation Index', category: 'Complexity (Secondary)', lowerIsBetter: true },
+
+  // Deliverability
+  { key: 'MUCA', label: 'MU per Control Arc', category: 'Deliverability', unit: 'MU/CP', lowerIsBetter: false },
+  { key: 'LTMU', label: 'Leaf Travel per MU', category: 'Deliverability', unit: 'mm/MU', lowerIsBetter: true },
+  { key: 'LTNLMU', label: 'LT per Leaf and MU', category: 'Deliverability', lowerIsBetter: true },
+  { key: 'LNA', label: 'LT per Leaf and CA', category: 'Deliverability', lowerIsBetter: true },
+  { key: 'LTAL', label: 'LT per Arc Length', category: 'Deliverability', unit: 'mm/°', lowerIsBetter: true },
+  { key: 'GS', label: 'Gantry Speed', category: 'Deliverability', unit: '°/s', lowerIsBetter: false },
+  { key: 'mGSV', label: 'Gantry Speed Variation', category: 'Deliverability', unit: '°/s', lowerIsBetter: true },
+  { key: 'LS', label: 'Leaf Speed', category: 'Deliverability', unit: 'mm/s', lowerIsBetter: false },
+  { key: 'mDRV', label: 'Dose Rate Variation', category: 'Deliverability', unit: 'MU/min', lowerIsBetter: true },
+];
+
+function metricVal(m: PlanMetrics, key: string): number | undefined {
+  const v = (m as unknown as Record<string, unknown>)[key];
+  return typeof v === 'number' ? v : undefined;
 }
 
 export function calculatePlanComparison(
   metricsA: PlanMetrics,
   metricsB: PlanMetrics
 ): PlanComparison {
-  const metricsComparison: MetricDiff[] = [
-    createMetricDiff('MCS', 'Modulation Complexity', metricsA.MCS, metricsB.MCS, undefined, false),
-    createMetricDiff('LSV', 'Leaf Sequence Variability', metricsA.LSV, metricsB.LSV, undefined, false),
-    createMetricDiff('AAV', 'Aperture Area Variability', metricsA.AAV, metricsB.AAV, undefined, true),
-    createMetricDiff('MFA', 'Mean Field Area', metricsA.MFA, metricsB.MFA, 'cm²', false),
-    createMetricDiff('LT', 'Leaf Travel', metricsA.LT, metricsB.LT, 'mm', true),
-    createMetricDiff('LTMCS', 'LT-weighted MCS', metricsA.LTMCS, metricsB.LTMCS, undefined, false),
-    createMetricDiff('totalMU', 'Total MU', metricsA.totalMU, metricsB.totalMU, 'MU', true),
-    createMetricDiff('totalDeliveryTime', 'Est. Delivery Time', metricsA.totalDeliveryTime, metricsB.totalDeliveryTime, 's', true),
-    createMetricDiff('SAS5', 'Small Aperture (5mm)', metricsA.SAS5, metricsB.SAS5, undefined, true),
-    createMetricDiff('SAS10', 'Small Aperture (10mm)', metricsA.SAS10, metricsB.SAS10, undefined, true),
-    createMetricDiff('EM', 'Edge Metric', metricsA.EM, metricsB.EM, 'mm⁻¹', true),
-    createMetricDiff('PI', 'Plan Irregularity', metricsA.PI, metricsB.PI, undefined, true),
-  ];
+  const metricsComparison: MetricDiff[] = [];
+
+  for (const def of ALL_COMPARISON_METRICS) {
+    const valA = metricVal(metricsA, def.key);
+    const valB = metricVal(metricsB, def.key);
+    // Skip metrics where both plans have no value
+    if (valA === undefined && valB === undefined) continue;
+    metricsComparison.push(
+      createMetricDiff(def.key, def.label, valA, valB, def.category, def.unit, def.lowerIsBetter)
+    );
+  }
 
   const totalCPsA = metricsA.beamMetrics.reduce((sum, b) => sum + b.numberOfControlPoints, 0);
   const totalCPsB = metricsB.beamMetrics.reduce((sum, b) => sum + b.numberOfControlPoints, 0);
@@ -92,9 +159,22 @@ export function calculatePlanComparison(
     structuralChanges: {
       beamCountDiff: metricsB.beamMetrics.length - metricsA.beamMetrics.length,
       totalCPDiff: totalCPsB - totalCPsA,
-      techniqueSame: true, // Will be set by caller
+      techniqueSame: true,
     },
   };
+}
+
+/** Get unique category names in order from the comparison */
+export function getComparisonCategories(diffs: MetricDiff[]): string[] {
+  const seen = new Set<string>();
+  const cats: string[] = [];
+  for (const d of diffs) {
+    if (!seen.has(d.category)) {
+      seen.add(d.category);
+      cats.push(d.category);
+    }
+  }
+  return cats;
 }
 
 export interface BeamDiff {

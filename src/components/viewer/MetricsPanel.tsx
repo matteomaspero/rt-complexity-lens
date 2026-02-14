@@ -57,11 +57,11 @@ function resolveValue(
 // ---------------------------------------------------------------------------
 
 const CATEGORY_ORDER: MetricCategory[] = [
-  'primary',
-  'secondary',
-  'accuracy',
-  'deliverability',
   'delivery',
+  'primary',
+  'accuracy',
+  'secondary',
+  'deliverability',
 ];
 
 // ---------------------------------------------------------------------------
