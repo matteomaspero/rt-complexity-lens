@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import type { PlanMetrics } from '@/lib/dicom/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Download, Info, AlertTriangle } from 'lucide-react';
+import { Download, Info, AlertTriangle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { plansToCSV, downloadFile, type ExportablePlan } from '@/lib/export-utils';
+import { generateSinglePlanPDF, type PDFChartRef } from '@/lib/pdf-report';
 import { useMetricsConfig } from '@/contexts/MetricsConfigContext';
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import {
@@ -266,16 +268,17 @@ interface MetricsPanelProps {
   metrics: PlanMetrics;
   plan?: import('@/lib/dicom/types').RTPlan;
   currentBeamIndex?: number;
+  chartContainerRef?: React.RefObject<HTMLDivElement>;
 }
 
-export function MetricsPanel({ metrics, plan, currentBeamIndex }: MetricsPanelProps) {
+export function MetricsPanel({ metrics, plan, currentBeamIndex, chartContainerRef }: MetricsPanelProps) {
   const { isMetricEnabled, getEnabledMetricKeys } = useMetricsConfig();
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const currentBeam =
     currentBeamIndex !== undefined ? metrics.beamMetrics[currentBeamIndex] : null;
 
   const handleExportCSV = () => {
-    // Use the unified export format: one row per plan, all metrics as columns
     const exportable: ExportablePlan = {
       fileName: plan?.planLabel ?? metrics.planLabel ?? 'plan',
       plan: plan ?? { beams: [], planLabel: metrics.planLabel, technique: 'UNKNOWN' } as any,
@@ -287,15 +290,40 @@ export function MetricsPanel({ metrics, plan, currentBeamIndex }: MetricsPanelPr
     downloadFile(csv, `${safeName}_metrics_${dateStr}.csv`, 'text/csv');
   };
 
+  const handleExportPDF = async () => {
+    if (!plan) return;
+    setPdfLoading(true);
+    try {
+      const chartRefs: PDFChartRef[] = [];
+      if (chartContainerRef?.current) {
+        // Capture all chart sections from the viewer
+        const sections = chartContainerRef.current.querySelectorAll<HTMLElement>('[data-chart-section]');
+        sections.forEach(el => {
+          const label = el.getAttribute('data-chart-section') || 'Chart';
+          chartRefs.push({ label, element: el });
+        });
+      }
+      await generateSinglePlanPDF(plan, metrics, chartRefs);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   return (
     <Card className="h-full overflow-auto">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Complexity Metrics</CardTitle>
-          <Button variant="ghost" size="sm" onClick={handleExportCSV}>
-            <Download className="mr-1 h-4 w-4" />
-            CSV
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={handleExportCSV}>
+              <Download className="mr-1 h-4 w-4" />
+              CSV
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={pdfLoading || !plan}>
+              <FileText className="mr-1 h-4 w-4" />
+              {pdfLoading ? '...' : 'PDF'}
+            </Button>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground">UCoMX v1.1</p>
       </CardHeader>

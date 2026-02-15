@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { HelpCircle, Home, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import { useMemo } from 'react';
 
 function CohortAnalysisContent() {
   const { successfulPlans, clearAll, isProcessing } = useCohort();
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate clustering suggestions
   const clusteringSuggestions = useMemo(() => {
@@ -92,7 +94,7 @@ function CohortAnalysisContent() {
             <div className="grid gap-6 lg:grid-cols-4">
               <div className="lg:col-span-1 space-y-4">
                 <ClusteringConfig />
-                <CohortExportPanel />
+                <CohortExportPanel chartContainerRef={chartContainerRef} />
               </div>
               <div className="lg:col-span-3">
                 <div className="rounded-lg border bg-card p-4">
@@ -106,6 +108,7 @@ function CohortAnalysisContent() {
             </div>
 
             {/* Visualization Tabs */}
+            <div ref={chartContainerRef}>
             <Tabs defaultValue="boxplot" className="w-full">
               <TabsList className="grid w-full grid-cols-4 max-w-md">
                 <TabsTrigger value="boxplot">Box Plots</TabsTrigger>
@@ -114,22 +117,23 @@ function CohortAnalysisContent() {
                 <TabsTrigger value="violin">Violin</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="boxplot" className="mt-4">
+              <TabsContent value="boxplot" className="mt-4" data-chart-section="Box Plots">
                 <BoxPlotChart />
               </TabsContent>
 
-              <TabsContent value="scatter" className="mt-4">
+              <TabsContent value="scatter" className="mt-4" data-chart-section="Scatter Matrix">
                 <ScatterMatrix />
               </TabsContent>
 
-              <TabsContent value="correlation" className="mt-4">
+              <TabsContent value="correlation" className="mt-4" data-chart-section="Correlation Heatmap">
                 <CorrelationHeatmap />
               </TabsContent>
 
-              <TabsContent value="violin" className="mt-4">
+              <TabsContent value="violin" className="mt-4" data-chart-section="Violin Plots">
                 <ViolinPlot />
               </TabsContent>
             </Tabs>
+            </div>
 
             {/* Extended Statistics Table */}
             <ExtendedStatsTable />
