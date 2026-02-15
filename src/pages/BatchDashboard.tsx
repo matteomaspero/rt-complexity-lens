@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Trash2, HelpCircle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ export default function BatchDashboard() {
   const { plans, clearAll, isProcessing } = useBatch();
   const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
   const hasPlans = plans.length > 0;
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const builtInOptions = Object.values(BUILTIN_PRESETS);
 
@@ -127,12 +129,14 @@ export default function BatchDashboard() {
         {/* Stats and Export Row */}
         {hasPlans && (
           <div className="grid gap-6 lg:grid-cols-4">
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3" ref={chartContainerRef}>
               <BatchSummaryStats />
             </div>
             <div className="space-y-6">
-              <BatchExportPanel />
-              <BatchDistributionChart />
+              <BatchExportPanel chartContainerRef={chartContainerRef} />
+              <div data-chart-section="Distribution">
+                <BatchDistributionChart />
+              </div>
             </div>
           </div>
         )}

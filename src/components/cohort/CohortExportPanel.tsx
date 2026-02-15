@@ -3,17 +3,42 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Download, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, FileText } from 'lucide-react';
 import { useCohort } from '@/contexts/CohortContext';
 import { exportPlans, type ExportablePlan } from '@/lib/export-utils';
+import { generateCohortPDF, type PDFChartRef } from '@/lib/pdf-report';
 
-export function CohortExportPanel() {
+export function CohortExportPanel({ chartContainerRef }: { chartContainerRef?: React.RefObject<HTMLDivElement> }) {
   const { successfulPlans, extendedStats, clusters, clusterStats, correlationMatrix } = useCohort();
 
-  const [format, setFormat] = useState<'csv' | 'json'>('csv');
+  const [format, setFormat] = useState<'csv' | 'json' | 'pdf'>('csv');
+  const [pdfLoading, setPdfLoading] = useState(false);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (successfulPlans.length === 0) return;
+
+    if (format === 'pdf') {
+      setPdfLoading(true);
+      try {
+        const exportable: ExportablePlan[] = successfulPlans.map(p => ({
+          fileName: p.fileName,
+          plan: p.plan,
+          metrics: p.metrics,
+        }));
+        const chartRefs: PDFChartRef[] = [];
+        if (chartContainerRef?.current) {
+          const sections = chartContainerRef.current.querySelectorAll<HTMLElement>('[data-chart-section]');
+          sections.forEach(el => {
+            const label = el.getAttribute('data-chart-section') || 'Chart';
+            chartRefs.push({ label, element: el });
+          });
+        }
+        await generateCohortPDF(exportable, chartRefs);
+      } finally {
+        setPdfLoading(false);
+      }
+      return;
+    }
 
     const exportable: ExportablePlan[] = successfulPlans.map(p => ({
       fileName: p.fileName,
@@ -61,7 +86,7 @@ export function CohortExportPanel() {
           <Label className="text-sm font-medium">Format</Label>
           <RadioGroup
             value={format}
-            onValueChange={(v) => setFormat(v as 'csv' | 'json')}
+            onValueChange={(v) => setFormat(v as 'csv' | 'json' | 'pdf')}
             className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
@@ -78,13 +103,22 @@ export function CohortExportPanel() {
                 JSON
               </Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="pdf" id="cohort-pdf" />
+              <Label htmlFor="cohort-pdf" className="flex items-center gap-1 text-sm font-normal cursor-pointer">
+                <FileText className="h-4 w-4" />
+                PDF
+              </Label>
+            </div>
           </RadioGroup>
         </div>
 
         <p className="text-xs text-muted-foreground">
           {format === 'csv'
             ? 'Plan-total and per-beam rows in a single CSV file.'
-            : 'JSON includes summary statistics, clusters, and correlation data.'}
+            : format === 'json'
+            ? 'JSON includes summary statistics, clusters, and correlation data.'
+            : 'Structured PDF report with statistics, metrics tables, and charts.'}
         </p>
 
         {/* Export button */}
@@ -92,9 +126,9 @@ export function CohortExportPanel() {
           <span className="text-sm text-muted-foreground">
             {hasData ? `${successfulPlans.length} plans` : 'No plans'}
           </span>
-          <Button onClick={handleExport} disabled={!hasData} className="gap-2">
+          <Button onClick={handleExport} disabled={!hasData || pdfLoading} className="gap-2">
             <Download className="h-4 w-4" />
-            Export
+            {pdfLoading ? 'Generating...' : 'Export'}
           </Button>
         </div>
 

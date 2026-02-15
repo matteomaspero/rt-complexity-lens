@@ -50,6 +50,7 @@
     "embla-carousel-react": "^8.6.0",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
+    "jspdf": "^4.1.0",
     "jszip": "^3.10.1",
     "katex": "^0.16.28",
     "lucide-react": "^0.462.0",

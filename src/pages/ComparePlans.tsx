@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, HelpCircle, Settings } from 'lucide-react';
+import { ArrowLeft, HelpCircle, Settings, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -24,12 +24,15 @@ import {
   ComparisonPolarChart,
 } from '@/components/comparison';
 import { matchBeams } from '@/lib/comparison/beam-matcher';
+import { generateComparePDF, type PDFChartRef } from '@/lib/pdf-report';
 
 export default function ComparePlans() {
   const [planA, setPlanA] = useState<SessionPlan | null>(null);
   const [planB, setPlanB] = useState<SessionPlan | null>(null);
   const [selectedBeamMatch, setSelectedBeamMatch] = useState(0);
   const [currentCPIndex, setCurrentCPIndex] = useState(0);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const compareContentRef = useRef<HTMLDivElement>(null);
   
   const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
 
@@ -68,6 +71,28 @@ export default function ComparePlans() {
   }, []);
 
   const builtInOptions = Object.values(BUILTIN_PRESETS);
+
+  const handleExportPDF = useCallback(async () => {
+    if (!planA || !planB) return;
+    setPdfLoading(true);
+    try {
+      const chartRefs: PDFChartRef[] = [];
+      if (compareContentRef.current) {
+        const sections = compareContentRef.current.querySelectorAll<HTMLElement>('[data-chart-section]');
+        sections.forEach(el => {
+          const label = el.getAttribute('data-chart-section') || 'Chart';
+          chartRefs.push({ label, element: el });
+        });
+      }
+      await generateComparePDF(
+        { plan: planA.plan, metrics: planA.metrics, fileName: planA.fileName },
+        { plan: planB.plan, metrics: planB.metrics, fileName: planB.fileName },
+        chartRefs,
+      );
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [planA, planB]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,6 +147,12 @@ export default function ComparePlans() {
                 }
               />
             </div>
+            {bothLoaded && (
+              <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={pdfLoading} className="gap-1">
+                <FileText className="h-4 w-4" />
+                {pdfLoading ? '...' : 'PDF'}
+              </Button>
+            )}
             <Link to="/help">
               <Button variant="ghost" size="icon">
                 <HelpCircle className="h-5 w-5" />
@@ -146,7 +177,7 @@ export default function ComparePlans() {
 
         {/* Comparison Content */}
         {bothLoaded && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2" ref={compareContentRef}>
             {/* Left Column */}
             <div className="space-y-6">
               <MetricsDiffTable
@@ -174,8 +205,9 @@ export default function ComparePlans() {
                     onCPIndexChange={setCurrentCPIndex}
                   />
                   
-                  {/* Comparison Charts */}
-                  <ComparisonMUChart
+                   {/* Comparison Charts */}
+                  <div data-chart-section="MU Comparison">
+                   <ComparisonMUChart
                     beamA={selectedBeams.beamA}
                     beamB={selectedBeams.beamB}
                     muA={planA.metrics.beamMetrics.find(
@@ -185,7 +217,8 @@ export default function ComparePlans() {
                       (m) => m.beamNumber === selectedBeams.beamB.beamNumber
                     )?.beamMU ?? 0}
                     currentCPIndex={currentCPIndex}
-                  />
+                   />
+                  </div>
                   
                   <ComparisonDeliveryChart
                     beamA={selectedBeams.beamA}
@@ -199,6 +232,7 @@ export default function ComparePlans() {
                     currentCPIndex={currentCPIndex}
                   />
                   
+                  <div data-chart-section="Polar Chart">
                   <ComparisonPolarChart
                     beamA={selectedBeams.beamA}
                     beamB={selectedBeams.beamB}
@@ -213,6 +247,7 @@ export default function ComparePlans() {
                       )?.controlPointMetrics ?? []
                     }
                   />
+                  </div>
                 </>
               )}
             </div>

@@ -187,7 +187,7 @@ export const DEMO_CATEGORIES = [
 ] as const;
 
 export async function fetchDemoBuffer(filename: string): Promise<ArrayBuffer> {
-  const response = await fetch(`/test-data/${filename}`);
+  const response = await fetch(`/test-data/${encodeURIComponent(filename)}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch demo file: ${response.status}`);
   }

@@ -38,6 +38,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   const [loadedStructures, setLoadedStructures] = useState<Structure[] | null>(null);
   const [selectedStructureIndex, setSelectedStructureIndex] = useState<number | null>(null);
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Get current beam and control point
   const currentBeam: Beam | null = sessionPlan?.plan.beams[selectedBeamIndex] ?? null;
@@ -335,7 +336,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
           {currentBeam && currentCP && (
             <div className="grid gap-6 lg:grid-cols-[1fr,360px]">
               {/* Left Column - Visualizations */}
-              <div className="space-y-6 min-w-0">
+              <div className="space-y-6 min-w-0" ref={chartContainerRef}>
                 {/* Beam Summary Card */}
                 <BeamSummaryCard
                   beam={currentBeam}
@@ -397,7 +398,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 </div>
 
                 {/* Charts */}
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2" data-chart-section="MU & Gantry Speed">
                   <CumulativeMUChart
                     controlPoints={currentBeam.controlPoints}
                     currentIndex={currentCPIndex}
@@ -412,7 +413,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 </div>
 
                 {/* MU Distribution Section */}
-                <Collapsible defaultOpen className="rounded-lg border bg-card">
+                <Collapsible defaultOpen className="rounded-lg border bg-card" data-chart-section="MU Distribution">
                   <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
                     <h4 className="text-sm font-medium flex items-center gap-2">
                       <span className="w-1 h-4 bg-primary rounded-full" />
@@ -430,7 +431,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 </Collapsible>
 
                 {/* Delivery Analysis Section */}
-                <Collapsible defaultOpen className="rounded-lg border bg-card">
+                <Collapsible defaultOpen className="rounded-lg border bg-card" data-chart-section="Delivery Analysis">
                   <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
                     <h4 className="text-sm font-medium flex items-center gap-2">
                       <span className="w-1 h-4 bg-primary rounded-full" />
@@ -448,7 +449,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 </Collapsible>
 
                 {/* Complexity Analysis Section */}
-                <Collapsible defaultOpen className="rounded-lg border bg-card">
+                <Collapsible defaultOpen className="rounded-lg border bg-card" data-chart-section="Complexity Analysis">
                   <CollapsibleTrigger className="flex w-full items-center justify-between p-4 hover:bg-muted/50 [&[data-state=open]>svg]:rotate-180">
                     <h4 className="text-sm font-medium flex items-center gap-2">
                       <span className="w-1 h-4 bg-primary rounded-full" />
@@ -498,6 +499,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   metrics={sessionPlan.metrics}
                   plan={sessionPlan.plan}
                   currentBeamIndex={selectedBeamIndex}
+                  chartContainerRef={chartContainerRef}
                 />
               </div>
             </div>

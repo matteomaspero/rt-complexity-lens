@@ -1,20 +1,45 @@
 import { useState } from 'react';
-import { Download, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Download, FileJson, FileSpreadsheet, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useBatch } from '@/contexts/BatchContext';
 import { exportBatch, type ExportOptions } from '@/lib/batch/batch-export';
+import { generateBatchPDF, type PDFChartRef } from '@/lib/pdf-report';
+import type { ExportablePlan } from '@/lib/export-utils';
 
-export function BatchExportPanel() {
+export function BatchExportPanel({ chartContainerRef }: { chartContainerRef?: React.RefObject<HTMLDivElement> }) {
   const { plans, selectedPlans } = useBatch();
-  const [format, setFormat] = useState<'csv' | 'json'>('csv');
+  const [format, setFormat] = useState<'csv' | 'json' | 'pdf'>('csv');
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const successfulPlans = plans.filter(p => p.status === 'success');
   const plansToExport = selectedPlans.length > 0 ? selectedPlans : successfulPlans;
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    if (format === 'pdf') {
+      setPdfLoading(true);
+      try {
+        const exportable: ExportablePlan[] = plansToExport.map(p => ({
+          fileName: p.fileName,
+          plan: p.plan,
+          metrics: p.metrics,
+        }));
+        const chartRefs: PDFChartRef[] = [];
+        if (chartContainerRef?.current) {
+          const sections = chartContainerRef.current.querySelectorAll<HTMLElement>('[data-chart-section]');
+          sections.forEach(el => {
+            const label = el.getAttribute('data-chart-section') || 'Chart';
+            chartRefs.push({ label, element: el });
+          });
+        }
+        await generateBatchPDF(exportable, chartRefs);
+      } finally {
+        setPdfLoading(false);
+      }
+      return;
+    }
     const options: ExportOptions = { format };
     exportBatch(plansToExport, options);
   };
@@ -34,7 +59,7 @@ export function BatchExportPanel() {
           <Label className="text-sm font-medium">Format</Label>
           <RadioGroup
             value={format}
-            onValueChange={(v) => setFormat(v as 'csv' | 'json')}
+            onValueChange={(v) => setFormat(v as 'csv' | 'json' | 'pdf')}
             className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
@@ -51,11 +76,22 @@ export function BatchExportPanel() {
                 JSON
               </Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="pdf" id="pdf" />
+              <Label htmlFor="pdf" className="flex items-center gap-1 text-sm font-normal cursor-pointer">
+                <FileText className="h-4 w-4" />
+                PDF
+              </Label>
+            </div>
           </RadioGroup>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          CSV includes plan-total and per-beam rows. JSON includes full metrics with beam breakdown.
+          {format === 'csv'
+            ? 'Plan-total and per-beam rows in a single CSV file.'
+            : format === 'json'
+            ? 'JSON includes full metrics with beam breakdown.'
+            : 'Structured PDF report with statistics, metrics tables, and charts.'}
         </p>
 
         {/* Export button */}
@@ -65,9 +101,9 @@ export function BatchExportPanel() {
               ? `${selectedPlans.length} selected`
               : `${successfulPlans.length} plans`}
           </span>
-          <Button onClick={handleExport} className="gap-2">
+          <Button onClick={handleExport} className="gap-2" disabled={pdfLoading}>
             <Download className="h-4 w-4" />
-            {selectedPlans.length > 0 ? 'Export Selected' : 'Export All'}
+            {pdfLoading ? 'Generating...' : selectedPlans.length > 0 ? 'Export Selected' : 'Export All'}
           </Button>
         </div>
       </CardContent>
