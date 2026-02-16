@@ -129,18 +129,21 @@ function drawTable(
   headers: string[],
   rows: TableRow[],
   colWidths?: number[],
+  contentWidth?: number,
 ): number {
+  const cw = contentWidth ?? CONTENT_W;
   const nCols = headers.length;
-  const defaultW = CONTENT_W / nCols;
+  const defaultW = cw / nCols;
   const widths = colWidths ?? headers.map(() => defaultW);
+  const baseX = MARGIN;
 
   // Header
   y = ensureSpace(doc, y, 12);
   doc.setFillColor(...HEADER_COLOR);
-  doc.rect(MARGIN, y - 4, CONTENT_W, 6, 'F');
-  doc.setFontSize(7);
+  doc.rect(baseX, y - 4, cw, 6, 'F');
+  doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
-  let x = MARGIN + 1;
+  let x = baseX + 1;
   for (let c = 0; c < nCols; c++) {
     doc.text(headers[c], x, y, { maxWidth: widths[c] - 2 });
     x += widths[c];
@@ -148,7 +151,7 @@ function drawTable(
   y += 4;
 
   // Rows
-  doc.setFontSize(7);
+  doc.setFontSize(7.5);
   for (let r = 0; r < rows.length; r++) {
     y = ensureSpace(doc, y, 5);
     const row = rows[r];
@@ -191,31 +194,41 @@ function drawTable(
 // Chart capture
 // ---------------------------------------------------------------------------
 
-async function captureChart(element: HTMLElement): Promise<string | null> {
+interface CapturedChart {
+  data: string;
+  ratio: number;
+  label: string;
+}
+
+async function captureChart(element: HTMLElement): Promise<{ data: string; ratio: number } | null> {
   try {
     const canvas = await html2canvas(element, {
-      scale: 2,
+      scale: 1.5,
       backgroundColor: '#ffffff',
       logging: false,
       useCORS: true,
     });
-    return canvas.toDataURL('image/png');
+    const ratio = canvas.height / canvas.width;
+    return { data: canvas.toDataURL('image/jpeg', 0.85), ratio };
   } catch {
     return null;
   }
 }
 
-function addChartPage(doc: jsPDF, y: number, label: string, imgData: string): number {
-  y = ensureSpace(doc, y, 80);
+function addChartPage(doc: jsPDF, y: number, label: string, chart: { data: string; ratio: number }, contentW: number = CONTENT_W, xOffset: number = MARGIN): number {
+  const maxH = 120;
+  let imgW = contentW;
+  let imgH = imgW * chart.ratio;
+  if (imgH > maxH) {
+    imgH = maxH;
+    imgW = imgH / chart.ratio;
+  }
+  y = ensureSpace(doc, y, imgH + 14);
   doc.setFontSize(10);
   doc.setTextColor(...TEXT_COLOR);
-  doc.text(label, MARGIN, y);
+  doc.text(label, xOffset, y);
   y += 4;
-
-  const imgW = CONTENT_W;
-  const imgH = imgW * 0.5; // 2:1 aspect
-  y = ensureSpace(doc, y, imgH + 4);
-  doc.addImage(imgData, 'PNG', MARGIN, y, imgW, imgH);
+  doc.addImage(chart.data, 'JPEG', xOffset, y, imgW, imgH);
   y += imgH + 6;
   return y;
 }
@@ -386,9 +399,9 @@ export async function generateSinglePlanPDF(
   // Charts
   for (const ref of chartRefs) {
     if (!ref.element) continue;
-    const imgData = await captureChart(ref.element);
-    if (imgData) {
-      y = addChartPage(doc, y, ref.label, imgData);
+    const chart = await captureChart(ref.element);
+    if (chart) {
+      y = addChartPage(doc, y, ref.label, chart);
     }
   }
 
@@ -476,31 +489,14 @@ export async function generateBatchPDF(
   y += 6;
   y = drawTable(doc, y, statsHeaders, statsRows, statsWidths);
 
-  // Per-plan table
-  doc.addPage('landscape');
-  y = 15;
-  doc.setFontSize(12);
-  doc.setTextColor(...HEADER_COLOR);
-  doc.text('Per-Plan Metrics', 15, y);
-  y += 6;
-
-  const { headers, rows, widths } = buildMetricsRows(plans, true);
-  y = drawTable(doc, y, headers, rows, widths);
-
   // Charts
   for (const ref of chartRefs) {
     if (!ref.element) continue;
-    const imgData = await captureChart(ref.element);
-    if (imgData) {
+    const chart = await captureChart(ref.element);
+    if (chart) {
       doc.addPage('landscape');
       y = 15;
-      doc.setFontSize(10);
-      doc.setTextColor(...TEXT_COLOR);
-      doc.text(ref.label, 15, y);
-      y += 4;
-      const imgW = 267;
-      const imgH = imgW * 0.45;
-      doc.addImage(imgData, 'PNG', 15, y, imgW, imgH);
+      y = addChartPage(doc, y, ref.label, chart, 267, 15);
     }
   }
 
@@ -585,30 +581,14 @@ export async function generateCohortPDF(
   y += 6;
   y = drawTable(doc, y, statsHeaders, statsRows, statsWidths);
 
-  // Per-plan
-  doc.addPage('landscape');
-  y = 15;
-  doc.setFontSize(12);
-  doc.setTextColor(...HEADER_COLOR);
-  doc.text('Per-Plan Metrics', 15, y);
-  y += 6;
-  const { headers, rows, widths } = buildMetricsRows(plans, true);
-  y = drawTable(doc, y, headers, rows, widths);
-
   // Charts
   for (const ref of chartRefs) {
     if (!ref.element) continue;
-    const imgData = await captureChart(ref.element);
-    if (imgData) {
+    const chart = await captureChart(ref.element);
+    if (chart) {
       doc.addPage('landscape');
       y = 15;
-      doc.setFontSize(10);
-      doc.setTextColor(...TEXT_COLOR);
-      doc.text(ref.label, 15, y);
-      y += 4;
-      const imgW = 267;
-      const imgH = imgW * 0.45;
-      doc.addImage(imgData, 'PNG', 15, y, imgW, imgH);
+      y = addChartPage(doc, y, ref.label, chart, 267, 15);
     }
   }
 
@@ -698,9 +678,9 @@ export async function generateComparePDF(
   // Charts
   for (const ref of chartRefs) {
     if (!ref.element) continue;
-    const imgData = await captureChart(ref.element);
-    if (imgData) {
-      y = addChartPage(doc, y, ref.label, imgData);
+    const chart = await captureChart(ref.element);
+    if (chart) {
+      y = addChartPage(doc, y, ref.label, chart);
     }
   }
 
