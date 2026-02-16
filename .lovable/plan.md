@@ -1,152 +1,105 @@
-# Plan: Fix Batch Demo Loading and Add PDF Report Export
 
-## Part 1: Fix Batch Demo Data Loading
 
-### Problem
+# Plan: Fix PDF Readability, Chart Stretching, and File Size
 
-5 of 25 demo files fail to load in batch mode. All failing files have `#` in their filenames (e.g., `RP.TG119.CS_ETH_2A_#1.dcm`). The `fetchDemoBuffer` function builds the URL as `/test-data/${filename}` without encoding, so `#` is interpreted as a URL fragment identifier, truncating the actual filename.
+## Problems Identified
 
-### Fix
+1. **Charts are stretched**: `addChartPage` forces a fixed 2:1 aspect ratio (`imgH = imgW * 0.5`) regardless of the actual chart dimensions. Batch/cohort uses `0.45`. This distorts every chart.
 
-**File: `src/lib/demo-data.ts**` -- in `fetchDemoBuffer`, URL-encode the filename:
+2. **Large file size**: Charts are captured at `scale: 2` and embedded as PNG (lossless). A single chart image can be 2-5MB of base64 data. Multiple charts = massive PDF.
+
+3. **Poor readability**: The per-plan metrics table (`buildMetricsRows`) tries to fit 30+ columns horizontally into one row, making each column ~3-5mm wide with 7pt text -- effectively unreadable. Tables need to be restructured for the medium.
+
+---
+
+## Fix 1: Preserve Actual Chart Aspect Ratio
+
+**File: `src/lib/pdf-report.ts`**
+
+Replace the fixed aspect ratio with one computed from the actual captured canvas dimensions:
 
 ```typescript
-export async function fetchDemoBuffer(filename: string): Promise<ArrayBuffer> {
-  const response = await fetch(`/test-data/${encodeURIComponent(filename)}`);
-  // ...
+async function captureChart(element: HTMLElement): Promise<{ data: string; ratio: number } | null> {
+  const canvas = await html2canvas(element, {
+    scale: 1.5,  // reduced from 2
+    backgroundColor: '#ffffff',
+    logging: false,
+    useCORS: true,
+  });
+  const ratio = canvas.height / canvas.width;
+  return { data: canvas.toDataURL('image/jpeg', 0.85), ratio };
 }
 ```
 
-This is a one-line fix that resolves all 5 failures.
+Then in `addChartPage`:
+```typescript
+function addChartPage(doc, y, label, chart: { data: string; ratio: number }, contentW: number): number {
+  const imgW = contentW;
+  const imgH = imgW * chart.ratio;  // actual aspect ratio, not forced
+  const maxH = 120; // cap height to avoid charts spanning multiple pages
+  const finalH = Math.min(imgH, maxH);
+  const finalW = imgH > maxH ? finalH / chart.ratio : imgW;
+  // ... embed with correct dimensions
+}
+```
+
+This fixes stretching for all chart types (tall heatmaps, wide bar charts, square scatter plots).
 
 ---
 
-## Part 2: Structured PDF Report Export
+## Fix 2: Reduce File Size (JPEG + Lower Scale)
 
-### Approach
+**File: `src/lib/pdf-report.ts`**
 
-Use `jsPDF` (new dependency) together with the already-installed `html2canvas` to generate structured, multi-page PDF reports. Each mode gets a "Download PDF Report" button alongside existing CSV/JSON options.
+Three changes:
+- Reduce `html2canvas` scale from `2` to `1.5` (still sharp enough for PDF at 150 DPI effective)
+- Use `canvas.toDataURL('image/jpeg', 0.85)` instead of PNG -- JPEG is ~5-10x smaller for charts
+- Pass `'JPEG'` to `doc.addImage()` instead of `'PNG'`
 
-The PDF is built programmatically (not by screenshotting the page) using jsPDF's text/table API for clean, print-quality output. Charts and visualizations are captured via `html2canvas` and embedded as images.
-
-### PDF Report Structure (all modes)
-
-**Page 1 -- Cover / Summary**
-
-- Title: "RTp-lens Complexity Report"
-- Export date, tool URL
-- Plan info table: File, Patient ID, Patient Name, Plan Label, Technique, Machine, Institution
-- Prescription summary: Rx Dose, Dose/Fx, Fractions, MU/Gy
-
-**Page 2+ -- Metrics Tables**
-
-- Categorized tables matching the export column order:
-  - Delivery parameters
-  - Geometric metrics
-  - Complexity (Primary)
-  - Complexity (Secondary)
-  - Deliverability
-- For single plan: one table with plan-total and per-beam rows
-- For batch/cohort: summary statistics table (min, max, 95th percentile, 1-3rd quartile, mean, std) plus individual plan rows
-
-**Page N -- Charts (captured from DOM)**
-
-- Single Plan: MLC aperture snapshot, MU chart, complexity heatmap
-- Batch: Distribution histogram, summary stats cards
-- Cohort: Box plots, correlation heatmap, scatter matrix, cluster summary
-- Compare: Metric diff table, polar chart, MU comparison
-
-### Mode-Specific Content
-
-**Single Plan PDF:**
-
-1. Cover with plan info
-2. Full metrics table (plan-level + beam-level rows)
-3. Beam summary cards
-4. Charts: MU chart, gantry speed, angular distribution, complexity heatmap, delivery timeline
-
-**Batch PDF:**
-
-1. Cover with batch summary (N plans, success/error counts)
-2. Aggregate statistics table
-3. Per-plan metrics table
-4. Distribution chart
-5. Outlier report (if applicable)
-
-**Cohort PDF:**
-
-1. Cover with cohort summary
-2. Extended statistics table
-3. Per-plan metrics table
-4. Box plot charts
-5. Correlation heatmap
-6. Cluster summary
-
-**Compare PDF:**
-
-1. Cover with Plan A vs Plan B info
-2. Full metrics diff table (all categories)
-3. Beam comparison table
-4. MU comparison chart
-5. Polar chart
+Expected size reduction: ~70-80% per chart image. A 3MB PNG chart becomes ~400KB JPEG.
 
 ---
 
-## Technical Details
+## Fix 3: Restructure Tables for Readability
 
-### New dependency
+The current approach of cramming 30+ metric columns into a single horizontal row is unreadable. Replace with a vertical key-value layout grouped by category.
 
-- `jspdf` -- for programmatic PDF generation with text, tables, and image embedding
+### For Single Plan (already uses compact layout -- OK)
+No change needed; it already uses the 3-column `[Metric, Value, Unit]` format.
 
-### New files
+### For Batch/Cohort Per-Plan Table
+Replace the wide horizontal table with one **vertical table per plan** (same compact format as single-plan), or better: keep the summary statistics table (which is already readable at 9 columns) and **remove the per-plan wide table entirely** since the CSV export already provides that data in a spreadsheet-friendly format. The PDF should focus on what PDFs are good at: summary statistics and charts.
 
-`**src/lib/pdf-report.ts**` -- Core PDF generation logic:
+### For Batch/Cohort -- Simplified Approach
+- **Keep**: Summary statistics table (9 columns, fits well)
+- **Remove**: Per-plan metrics table (unreadable in PDF; CSV is the right format for this)
+- **Keep**: All chart pages
 
-- `generateSinglePlanPDF(plan, metrics, chartElements)` 
-- `generateBatchPDF(plans, stats, chartElements)`
-- `generateCohortPDF(plans, stats, clusters, chartElements)`
-- `generateComparePDF(planA, planB, diffs, chartElements)`
-- Shared helpers: `addCoverPage()`, `addMetricsTable()`, `addChartImage()`, `addCategoryHeader()`
+### For Compare Diff Table (already readable)
+Already uses 5 columns `[Metric, Plan A, Plan B, Diff, Diff%]` -- no change needed.
 
-Uses `jsPDF` API for text/rectangles/lines to build structured tables. Uses `html2canvas` to capture chart DOM elements as PNG images, then embeds them via `doc.addImage()`.
+### Increase base font sizes
+- Table header: 7pt to 8pt
+- Table body: 7pt to 7.5pt
+- Section titles: keep at 10-12pt
 
-### Modified files
+---
 
+## Files Changed
 
-| File                                          | Change                                                                                            |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `src/lib/demo-data.ts`                        | Add `encodeURIComponent` in `fetchDemoBuffer`                                                     |
-| `src/lib/pdf-report.ts`                       | **NEW** -- PDF generation engine                                                                  |
-| `src/components/viewer/MetricsPanel.tsx`      | Add "Export PDF" button that captures charts from InteractiveViewer and generates single-plan PDF |
-| `src/components/viewer/InteractiveViewer.tsx` | Add refs to chart containers so they can be captured for PDF; pass refs to MetricsPanel           |
-| `src/components/batch/BatchExportPanel.tsx`   | Add "PDF" option to format radio group                                                            |
-| `src/components/cohort/CohortExportPanel.tsx` | Add "PDF" option to format radio group                                                            |
-| `src/pages/ComparePlans.tsx`                  | Add "Export PDF" button in header; add refs to chart containers                                   |
+| File | Change |
+|------|--------|
+| `src/lib/pdf-report.ts` | (1) Fix `captureChart` to return actual aspect ratio and use JPEG at 0.85 quality; (2) Fix `addChartPage` to use actual ratio with max height cap; (3) Reduce scale from 2 to 1.5; (4) Remove unreadable per-plan wide table from batch/cohort PDFs; (5) Bump table font sizes slightly |
 
+Only one file needs changing. All fixes are in the PDF generator.
 
-### Chart Capture Strategy
+---
 
-Each chart component (MU chart, heatmap, polar chart, etc.) is wrapped in a `div` with a `ref`. When PDF export is triggered:
+## Summary of Changes in `pdf-report.ts`
 
-1. Collect all chart container refs
-2. Use `html2canvas` to render each to a canvas
-3. Convert to PNG data URLs
-4. Embed in the PDF at appropriate positions with proper scaling
+1. `captureChart()`: returns `{data, ratio}`, uses JPEG 0.85, scale 1.5
+2. `addChartPage()`: computes height from actual ratio, caps at 120mm
+3. `generateBatchPDF()` and `generateCohortPDF()`: remove the `buildMetricsRows` / per-plan wide table section; keep summary stats + charts
+4. All `doc.addImage` calls: use `'JPEG'` format
+5. Table font sizes: 7pt body to 7.5pt, 7pt header to 8pt
 
-### Table Rendering in PDF
-
-Rather than using the `jspdf-autotable` plugin (to avoid another dependency), tables are drawn manually using jsPDF primitives:
-
-- `doc.setFontSize()`, `doc.text()` for cell content
-- `doc.rect()` for cell borders
-- `doc.setFillColor()` + `doc.rect(..., 'F')` for category header backgrounds
-- Automatic page breaks when content exceeds page height
-
-### PDF Styling
-
-- A4 portrait (210 x 297 mm)
-- Font: Helvetica (built into jsPDF)
-- Category headers: colored background bars matching the app's category colors
-- Tables: alternating row shading for readability
-- Charts: centered, scaled to fit page width with margins
-- Footer: page numbers, tool URL
