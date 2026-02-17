@@ -143,10 +143,8 @@ def calculate_aperture_area(
     jaw_positions: JawPositions
 ) -> float:
     """
-    Calculate the aperture area for a given control point.
-    Area is calculated as the sum of individual leaf pair openings
-    weighted by their respective leaf widths.
-    If jaw X limits are both 0 (e.g., Monaco with no ASYMX), no X clipping is applied.
+    Calculate the aperture area for a given control point with full X+Y jaw clipping.
+    Matches ComplexityCalc's area calculation.
     
     Returns area in mm².
     """
@@ -157,59 +155,115 @@ def calculate_aperture_area(
         return 0.0
     
     total_area = 0.0
-    num_pairs = min(len(bank_a), len(bank_b), len(leaf_widths) if leaf_widths else len(bank_a))
-    
-    default_width = 5.0  # mm
+    n = min(len(bank_a), len(bank_b), len(leaf_widths) if leaf_widths else len(bank_a))
+    default_width = 5.0
     has_x_jaw = jaw_positions.x1 != 0 or jaw_positions.x2 != 0
+
+    # Compute leaf Y-boundaries (cumulative widths centered at 0)
+    total_width = sum(leaf_widths[i] if i < len(leaf_widths) else default_width for i in range(n))
+    y_pos = -total_width / 2.0
     
-    for i in range(num_pairs):
-        leaf_width = leaf_widths[i] if i < len(leaf_widths) else default_width
-        
-        # Leaf opening = bankB - bankA (bankB is positive side)
-        opening = bank_b[i] - bank_a[i]
-        
-        if opening > 0:
-            # Clip to X-jaw if present, otherwise use full opening
-            if has_x_jaw:
-                effective_opening = max(0, min(opening, jaw_positions.x2 - jaw_positions.x1))
-            else:
-                effective_opening = opening
-            total_area += effective_opening * leaf_width
+    for i in range(n):
+        w = leaf_widths[i] if i < len(leaf_widths) else default_width
+        leaf_top = y_pos
+        leaf_bot = y_pos + w
+        y_pos = leaf_bot
+
+        # Clip leaf width to Y-jaw
+        eff_width = max(0.0, min(leaf_bot, jaw_positions.y2) - max(leaf_top, jaw_positions.y1))
+        if eff_width <= 0:
+            continue
+
+        # Clip leaf opening to X-jaw
+        a = max(bank_a[i], jaw_positions.x1) if has_x_jaw else bank_a[i]
+        b = min(bank_b[i], jaw_positions.x2) if has_x_jaw else bank_b[i]
+        gap = b - a
+        if gap <= 0:
+            continue
+
+        total_area += gap * eff_width
     
     return total_area
 
 
 def calculate_aperture_perimeter(
     mlc_positions: MLCLeafPositions,
-    leaf_widths: List[float]
+    leaf_widths: List[float],
+    jaw_positions: JawPositions
 ) -> float:
-    """Calculate aperture perimeter (edge length) for Edge Metric."""
+    """
+    Calculate aperture perimeter using ComplexityCalc's side_perimeter algorithm.
+    Walks contiguous open leaf groups, adds horizontal edges at group boundaries,
+    vertical steps between adjacent open leaves, and left/right end-caps (effWidth×2).
+    Full X+Y jaw clipping on both leaf positions and effective widths.
+    """
     bank_a = mlc_positions.bank_a
     bank_b = mlc_positions.bank_b
-    
-    if len(bank_a) < 2 or len(bank_b) < 2:
+    n = min(len(bank_a), len(bank_b))
+    if n == 0:
         return 0.0
-    
-    num_pairs = min(len(bank_a), len(bank_b))
+
+    default_width = 5.0
+
+    # Compute leaf Y-boundaries (cumulative widths centered at 0)
+    total_width = sum(leaf_widths[i] if i < len(leaf_widths) else default_width for i in range(n))
+    leaf_bounds = []
+    y_pos = -total_width / 2.0
+    for i in range(n + 1):
+        leaf_bounds.append(y_pos)
+        if i < n:
+            y_pos += leaf_widths[i] if i < len(leaf_widths) else default_width
+
+    jaw_x1 = jaw_positions.x1
+    jaw_x2 = jaw_positions.x2
+    jaw_y1 = jaw_positions.y1
+    jaw_y2 = jaw_positions.y2
+
     perimeter = 0.0
-    
-    for i in range(num_pairs):
-        opening = bank_b[i] - bank_a[i]
-        leaf_width = leaf_widths[i] if i < len(leaf_widths) else 5.0
-        
-        if opening > 0:
-            # Add horizontal extent
-            perimeter += opening * 2
-            
-            # Add vertical edges between adjacent open leaves
-            if i > 0:
-                prev_opening_a = bank_a[i] - bank_a[i - 1]
-                prev_opening_b = bank_b[i] - bank_b[i - 1]
-                perimeter += abs(prev_opening_a) + abs(prev_opening_b)
-            
-            # Add leaf width contribution
-            perimeter += leaf_width * 2
-    
+    prev_open = False
+    prev_a = 0.0
+    prev_b = 0.0
+
+    for i in range(n):
+        # Clip leaf to Y-jaw
+        leaf_top = leaf_bounds[i]
+        leaf_bot = leaf_bounds[i + 1]
+        eff_width = max(0.0, min(leaf_bot, jaw_y2) - max(leaf_top, jaw_y1))
+        if eff_width <= 0:
+            if prev_open:
+                perimeter += (prev_b - prev_a)
+            prev_open = False
+            continue
+
+        # Clip leaf positions to X-jaw
+        a = max(bank_a[i], jaw_x1)
+        b = min(bank_b[i], jaw_x2)
+        gap = b - a
+
+        if gap <= 0:
+            if prev_open:
+                perimeter += (prev_b - prev_a)
+            prev_open = False
+            continue
+
+        # Leaf is open
+        if not prev_open:
+            perimeter += gap  # top horizontal
+        else:
+            perimeter += abs(a - prev_a)  # left bank step
+            perimeter += abs(b - prev_b)  # right bank step
+
+        # Left and right end-caps
+        perimeter += eff_width * 2
+
+        prev_open = True
+        prev_a = a
+        prev_b = b
+
+    # Close final group
+    if prev_open:
+        perimeter += (prev_b - prev_a)
+
     return perimeter
 
 
@@ -337,7 +391,7 @@ def calculate_aperture_irregularity(
     AI = perimeter² / (4π × area) = 1 for circle
     """
     area = calculate_aperture_area(mlc_positions, leaf_widths, jaw_positions)
-    perimeter = calculate_aperture_perimeter(mlc_positions, leaf_widths)
+    perimeter = calculate_aperture_perimeter(mlc_positions, leaf_widths, jaw_positions)
     
     if area <= 0:
         return 1.0
@@ -419,7 +473,7 @@ def calculate_control_point_metrics(
     )
     
     lsv = calculate_lsv(current_cp.mlc_positions, leaf_widths)
-    aperture_perimeter = calculate_aperture_perimeter(current_cp.mlc_positions, leaf_widths)
+    aperture_perimeter = calculate_aperture_perimeter(current_cp.mlc_positions, leaf_widths, current_cp.jaw_positions)
     small_aperture_flags = check_small_apertures(current_cp.mlc_positions)
     
     leaf_travel = 0.0
@@ -597,6 +651,7 @@ def calculate_beam_metrics(
     small_field_count = 0
     total_jaw_area = 0.0
     weighted_pi = 0.0
+    weighted_em = 0.0
     weighted_lg = 0.0
     weighted_mad = 0.0
     weighted_efs = 0.0
@@ -624,6 +679,10 @@ def calculate_beam_metrics(
                 cp.mlc_positions, beam.mlc_leaf_widths, cp.jaw_positions
             )
             weighted_pi += ai * weight
+            # Per-CP Edge Metric: P / (2A), ComplexityCalc definition
+            cp_area = cpm.aperture_area
+            cp_em = perimeter / (2 * cp_area) if cp_area > 0 else 0.0
+            weighted_em += cp_em * weight
         
         if cpm.aperture_area > 0:
             total_area += cpm.aperture_area
@@ -731,7 +790,7 @@ def calculate_beam_metrics(
     else:
         PM = 1 - MCS
     MFA = (total_area / area_count) / 100.0 if area_count > 0 else 0.0
-    EM = total_perimeter / total_area if total_area > 0 else 0.0
+    EM = weighted_em / total_meterset_weight if total_meterset_weight > 0 else 0.0
     PA = total_area / 100.0
     JA = total_jaw_area / area_count if area_count > 0 else 0.0
     
