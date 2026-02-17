@@ -133,60 +133,117 @@ function calculateApertureArea(
   if (bankA.length === 0 || bankB.length === 0) return 0;
   
   let totalArea = 0;
-  const numPairs = Math.min(bankA.length, bankB.length, leafWidths.length || bankA.length);
+  const n = Math.min(bankA.length, bankB.length, leafWidths.length || bankA.length);
   const defaultWidth = 5; // mm
   const hasXJaw = jawPositions.x1 !== 0 || jawPositions.x2 !== 0;
+
+  // Compute leaf Y-boundaries (cumulative widths centered at 0)
+  let totalWidth = 0;
+  for (let i = 0; i < n; i++) totalWidth += leafWidths[i] || defaultWidth;
+  let yPos = -totalWidth / 2;
   
-  for (let i = 0; i < numPairs; i++) {
-    const leafWidth = leafWidths[i] || defaultWidth;
-    const opening = bankB[i] - bankA[i];
-    
-    if (opening > 0) {
-      // Clip to X-jaw if present, otherwise use full opening
-      const effectiveOpening = hasXJaw
-        ? Math.max(0, Math.min(opening, jawPositions.x2 - jawPositions.x1))
-        : opening;
-      totalArea += effectiveOpening * leafWidth;
-    }
+  for (let i = 0; i < n; i++) {
+    const w = leafWidths[i] || defaultWidth;
+    const leafTop = yPos;
+    const leafBot = yPos + w;
+    yPos = leafBot;
+
+    // Clip leaf width to Y-jaw
+    const effWidth = Math.max(0, Math.min(leafBot, jawPositions.y2) - Math.max(leafTop, jawPositions.y1));
+    if (effWidth <= 0) continue;
+
+    // Clip leaf opening to X-jaw
+    const a = hasXJaw ? Math.max(bankA[i], jawPositions.x1) : bankA[i];
+    const b = hasXJaw ? Math.min(bankB[i], jawPositions.x2) : bankB[i];
+    const gap = b - a;
+    if (gap <= 0) continue;
+
+    totalArea += gap * effWidth;
   }
   
   return totalArea; // mm²
 }
 
 /**
- * Calculate aperture perimeter (edge length) for Edge Metric
+ * Calculate aperture perimeter using ComplexityCalc's side_perimeter algorithm.
+ * Walks contiguous open leaf groups, adds horizontal edges at group boundaries,
+ * vertical steps between adjacent open leaves, and left/right end-caps (effWidth×2).
+ * Full X+Y jaw clipping on both leaf positions and effective widths.
  */
 function calculateAperturePerimeter(
   mlcPositions: MLCLeafPositions,
-  leafWidths: number[]
+  leafWidths: number[],
+  jawPositions: { x1: number; x2: number; y1: number; y2: number }
 ): number {
   const { bankA, bankB } = mlcPositions;
-  
-  if (bankA.length < 2 || bankB.length < 2) return 0;
-  
-  const numPairs = Math.min(bankA.length, bankB.length);
-  let perimeter = 0;
-  
-  for (let i = 0; i < numPairs; i++) {
-    const opening = bankB[i] - bankA[i];
-    const leafWidth = leafWidths[i] || 5;
-    
-    if (opening > 0) {
-      // Add the horizontal extent (opening width * 2 for top and bottom of leaf)
-      perimeter += opening * 2;
-      
-      // Add vertical edges between adjacent open leaves
-      if (i > 0) {
-        const prevOpeningA = bankA[i] - bankA[i - 1];
-        const prevOpeningB = bankB[i] - bankB[i - 1];
-        perimeter += Math.abs(prevOpeningA) + Math.abs(prevOpeningB);
-      }
-      
-      // Add leaf width contribution
-      perimeter += leafWidth * 2;
-    }
+  const n = Math.min(bankA.length, bankB.length);
+  if (n === 0) return 0;
+
+  // Compute leaf Y-boundaries (cumulative widths centered at 0)
+  let totalWidth = 0;
+  for (let i = 0; i < n; i++) totalWidth += leafWidths[i] || 5;
+  const leafBounds: number[] = [];
+  let yPos = -totalWidth / 2;
+  for (let i = 0; i <= n; i++) {
+    leafBounds.push(yPos);
+    if (i < n) yPos += leafWidths[i] || 5;
   }
-  
+
+  const jawX1 = jawPositions.x1;
+  const jawX2 = jawPositions.x2;
+  const jawY1 = jawPositions.y1;
+  const jawY2 = jawPositions.y2;
+
+  let perimeter = 0;
+  let prevOpen = false;
+  let prevA = 0;
+  let prevB = 0;
+
+  for (let i = 0; i < n; i++) {
+    // Clip leaf to Y-jaw
+    const leafTop = leafBounds[i];
+    const leafBot = leafBounds[i + 1];
+    const effWidth = Math.max(0, Math.min(leafBot, jawY2) - Math.max(leafTop, jawY1));
+    if (effWidth <= 0) { prevOpen = false; continue; }
+
+    // Clip leaf positions to X-jaw
+    const a = Math.max(bankA[i], jawX1);
+    const b = Math.min(bankB[i], jawX2);
+    const gap = b - a;
+
+    if (gap <= 0) {
+      // Leaf is closed (or clipped shut)
+      if (prevOpen) {
+        // Close off previous group: bottom horizontal edge
+        perimeter += (prevB - prevA);
+      }
+      prevOpen = false;
+      continue;
+    }
+
+    // Leaf is open
+    if (!prevOpen) {
+      // Start of new open group: top horizontal edge
+      perimeter += gap;
+    } else {
+      // Continuation: vertical steps between this and previous leaf
+      perimeter += Math.abs(a - prevA); // left bank step
+      perimeter += Math.abs(b - prevB); // right bank step
+    }
+
+    // Left and right end-caps for this leaf (leaf width on each side)
+    perimeter += effWidth * 2;
+
+    prevOpen = true;
+    prevA = a;
+    prevB = b;
+  }
+
+  // Close final group
+  if (prevOpen) {
+    perimeter += (prevB - prevA); // bottom horizontal
+  }
+
   return perimeter;
 }
 
@@ -323,7 +380,7 @@ function calculateApertureIrregularity(
   jawPositions: { x1: number; x2: number; y1: number; y2: number }
 ): number {
   const area = calculateApertureArea(mlcPositions, leafWidths, jawPositions);
-  const perimeter = calculateAperturePerimeter(mlcPositions, leafWidths);
+  const perimeter = calculateAperturePerimeter(mlcPositions, leafWidths, jawPositions);
   
   if (area <= 0) return 1;
   
@@ -414,7 +471,7 @@ function calculateControlPointMetrics(
   );
   
   const lsv = calculateLSV(currentCP.mlcPositions, leafWidths);
-  const aperturePerimeter = calculateAperturePerimeter(currentCP.mlcPositions, leafWidths);
+  const aperturePerimeter = calculateAperturePerimeter(currentCP.mlcPositions, leafWidths, currentCP.jawPositions);
   const smallApertureFlags = checkSmallApertures(currentCP.mlcPositions);
   
   let leafTravel = 0;
@@ -602,6 +659,7 @@ function calculateBeamMetrics(
   let smallFieldCount = 0;
   let totalJawArea = 0;
   let weightedPI = 0;
+  let weightedEM = 0;
   let weightedLG = 0;
   let weightedMAD = 0;
   let weightedEFS = 0;
@@ -628,6 +686,10 @@ function calculateBeamMetrics(
       weightedTG += tg * weight;
       const ai = calculateApertureIrregularity(cp.mlcPositions, beam.mlcLeafWidths, cp.jawPositions);
       weightedPI += ai * weight;
+      // Per-CP Edge Metric: P / (2A), ComplexityCalc definition
+      const cpArea = cpm.apertureArea;
+      const cpEM = cpArea > 0 ? perimeter / (2 * cpArea) : 0;
+      weightedEM += cpEM * weight;
     }
     if (cpm.apertureArea > 0) {
       totalArea += cpm.apertureArea;
@@ -746,7 +808,7 @@ function calculateBeamMetrics(
     ? 1 - caAreas.reduce((s, a, i) => s + caDeltaMU[i] * a, 0) / (totalDeltaMU * aMaxUnion)
     : 1 - MCS;
   const MFA = areaCount > 0 ? (totalArea / areaCount) / 100 : 0;
-  const EM = totalArea > 0 ? totalPerimeter / totalArea : 0;
+  const EM = totalMetersetWeight > 0 ? weightedEM / totalMetersetWeight : 0;
   const PA = totalArea / 100;
   const JA = areaCount > 0 ? totalJawArea / areaCount : 0;
   
