@@ -236,7 +236,7 @@ def main():
     print("=" * 80)
     print("PER-METRIC SUMMARY (across all overlapping plans)")
     print("=" * 80)
-    print(f"{'TS Key':<16} {'UCoMx Key':<14} {'Match':>6} {'Mismatch':>9} {'Missing':>8} {'Max Rel Δ':>10}")
+    print(f"{'TS Key':<16} {'UCoMx Key':<14} {'Match':>6} {'Mismatch':>9} {'Missing':>8} {'Max Rel D':>10}")
     print("-" * 80)
 
     mismatch_details = []
@@ -245,7 +245,7 @@ def main():
         # Find corresponding UCoMx key
         ucomx_key = [k for k, v in COMPARABLE_METRICS.items() if v == ts_key][0]
         max_rel = max(s["deltas"]) * 100 if s["deltas"] else 0
-        status = "✓" if s["mismatch"] == 0 else "✗"
+        status = "PASS" if s["mismatch"] == 0 else "FAIL"
         print(f"{ts_key:<16} {ucomx_key:<14} {s['match']:>6} {s['mismatch']:>9} {s['missing']:>8} {max_rel:>9.2f}%  {status}")
 
         if s["mismatch"] > 0:
@@ -260,7 +260,7 @@ def main():
         print("=" * 80)
         for plan, ucomx_key, ts_key, u_val, t_val, match, delta, rel_delta in all_results:
             if match is False:
-                print(f"  {plan:<40} {ts_key:<12} UCoMx={u_val:<14.6f} TS={t_val:<14.6f} Δ={delta:<10.4f} rel={rel_delta*100:.2f}%")
+                print(f"  {plan:<40} {ts_key:<12} UCoMx={u_val:<14.6f} TS={t_val:<14.6f} D={delta:<10.4f} rel={rel_delta*100:.2f}%")
 
     # ========================================================================
     # Print metrics NOT in TS
@@ -303,7 +303,7 @@ def main():
         t_val = t_m.get(ts_key)
         if u_val is not None and t_val is not None:
             match, delta, rel_delta = compare_metric(u_val, t_val, ts_key)
-            status = "✓" if match else "✗"
+            status = "PASS" if match else "FAIL"
             print(f"{ts_key:<16} {ucomx_key:<14} {float(u_val):>14.6f} {float(t_val):>14.6f} {delta:>10.4f} {rel_delta*100:>7.2f}% {status:>8}")
         elif u_val is not None:
             print(f"{ts_key:<16} {ucomx_key:<14} {float(u_val):>14.6f} {'N/A':>14} {'':>10} {'':>8} {'MISSING':>8}")

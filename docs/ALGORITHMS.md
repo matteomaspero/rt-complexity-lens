@@ -202,6 +202,59 @@ LTMU = LT / total_MU
 
 - **Unit**: mm/MU
 
+### LTNLMU (Leaf Travel per Leaf and MU)
+
+MLC activity normalized by both number of active leaves and delivered dose.
+
+```
+LTNLMU = LT / (NL × total_MU)
+```
+
+- **Unit**: mm/(leaf·MU)
+- **Note**: Accounts for both modulation and aperture complexity
+
+### LNA (Leaf Travel per Leaf and Control Arc)
+
+MLC activity normalized by number of active leaves and control arcs.
+
+```
+LNA = LT / (NL × N_CA)
+```
+
+Where:
+- `NL` = mean number of active leaves
+- `N_CA` = number of control arcs (N_CP - 1)
+
+- **Unit**: mm/(leaf·CA)
+
+### NL (Number of active Leaves)
+
+Mean number of active leaves across all control arcs.
+
+```
+NL = 2 × (total_active_leaf_count / N_CA)
+```
+
+Where:
+- `total_active_leaf_count` = sum of active leaf pairs across all control arcs
+- Active leaf pair = leaf gap > min_gap threshold (0mm)
+- Factor of 2 converts from leaf pairs to individual leaves
+
+- **Unit**: leaves (dimensionless)
+- **Range**: 0–(2 × number_of_leaf_pairs)
+- **Interpretation**: Higher values indicate larger/more open apertures
+
+### LTAL (Leaf Travel per Arc Length)
+
+MLC activity normalized by gantry arc length (VMAT only).
+
+```
+LTAL = LT / arc_length
+```
+
+- **Unit**: mm/°
+- **Note**: Only applicable to rotational arcs (VMAT)
+
 ### GT (Gantry Time)
 
 Estimated time for gantry rotation based on arc and speed limits.
@@ -221,6 +274,21 @@ GS = std(gantry_speeds) / mean(gantry_speeds)
 ```
 
 - **Range**: 0–1 (lower = more constant speed)
+
+### mGSV (Mean Gantry Speed Variation)
+
+Mean absolute variation in gantry speed between consecutive segments.
+
+```
+mGSV = Σ|gantry_speed[i] - gantry_speed[i-1]| / (N_segments - 1)
+```
+
+Where:
+- `gantry_speed[i]` = gantry rotation rate at segment i
+- `N_segments` = number of control arcs
+
+- **Unit**: °/s
+- **Interpretation**: Higher values indicate more variable gantry speeds
 
 ### LS (Leaf Speed)
 
@@ -249,6 +317,109 @@ Potential for tongue-and-groove effect based on adjacent leaf staggering.
 ```
 TG = sum(|adjacent_leaf_gaps|) × weight_factor
 ```
+
+### PA (Plan Area)
+
+Mean aperture area across all control points in Beam's Eye View.
+
+```
+PA = mean(aperture_areas) / 100  # Result in cm²
+```
+
+- **Unit**: cm²
+- **Interpretation**: Average field size during delivery
+
+### JA (Jaw Area)
+
+Area defined by the jaw positions (X and Y collimators).
+
+```
+JA = |X2 - X1| × |Y2 - Y1| / 100  # Result in cm²
+```
+
+Where:
+- `X1, X2` = jaw positions along X axis (mm)
+- `Y1, Y2` = jaw positions along Y axis (mm)
+- Closed jaws (gap < 0.1mm) result in JA = 0
+
+- **Unit**: cm²
+- **Note**: Represents maximum possible aperture size as limited by jaws
+- **Electron beams**: JA preserved; MLC-based metrics cleared (electrons use fixed applicators)
+
+### mDRV (Mean Dose Rate Variation)
+
+Mean absolute variation in dose rate between consecutive control arcs.
+
+```
+mDRV = Σ|dose_rate[i] - dose_rate[i-1]| / (N_CA - 1)
+```
+
+Where:
+- `dose_rate[i]` = MU/min at control arc i
+- `N_CA` = number of control arcs
+
+- **Unit**: MU/min
+- **Interpretation**: Quantifies dose rate modulation during delivery
+
+### MD (Modulation Degree)
+
+Coefficient of variation of meterset weights across control points.
+
+```
+MD = std(meterset_weights) / mean(meterset_weights)
+```
+
+Where:
+- `meterset_weights` = cumulative MU weights at each control point
+
+- **Range**: ≥0 (higher = more variable MU distribution)
+- **Interpretation**: Measures uniformity of dose delivery across control points
+
+### MI (Modulation Index)
+
+Normalized leaf travel accounting for number of leaves and control points.
+
+```
+MI = LT / (N_leaves × N_CPs)
+```
+
+Where:
+- `LT` = total leaf travel (mm)
+- `N_leaves` = number of MLC leaves
+- `N_CPs` = number of control points
+
+- **Unit**: mm/leaf/CP
+- **Interpretation**: Average leaf movement per control point per leaf
+
+---
+
+## Beam Identification Fields
+
+These fields are extracted directly from DICOM RT Plan metadata for beam characterization.
+
+### Radiation Type
+
+DICOM tag `RadiationType` (300A,00C6). Common values:
+- `PHOTON` - High-energy X-rays (typical IMRT/VMAT)
+- `ELECTRON` - Electron beams (use applicators instead of MLC)
+- `PROTON` - Proton therapy
+- `NEUTRON` - Neutron therapy
+- `ION` - Heavy ion therapy
+
+### Nominal Beam Energy
+
+DICOM tag `NominalBeamEnergy` (300A,0114).
+- **Unit**: MeV (megaelectron volts)
+- **Example**: 6.0, 10.0, 15.0, 18.0 (photons); 6.0, 9.0, 12.0, 16.0 (electrons)
+
+### Energy Label
+
+DICOM tag `EnergyLabel` or derived from energy.
+- **Format**: Clinical designation (e.g., "6X", "10FFF", "6E", "9E")
+- **Suffix meanings**:
+  - `X` = Photon beam with flattening filter
+  - `FFF` = Flattening Filter Free photon beam
+  - `E` = Electron beam
 
 ---
 

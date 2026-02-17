@@ -179,6 +179,7 @@ export interface BeamMetrics {
   LTMU?: number; // Leaf Travel per MU (mm/MU)
   LTNLMU?: number; // Leaf Travel per Leaf and MU (mm/(leaf·MU))
   LNA?: number; // Leaf Travel per Leaf and CA (mm/(leaf·CP))
+  NL?: number; // Mean number of active leaves (2 × mean active leaf pairs)
   LTAL?: number; // Leaf Travel per Arc Length (mm/°)
   mDRV?: number; // Mean Dose Rate Variation (MU/min)
   GT?: number; // Gantry Travel (degrees)

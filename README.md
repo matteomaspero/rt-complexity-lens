@@ -73,20 +73,33 @@ Population-level statistical analysis with clustering:
 
 ---
 
-## Features
+## ⚠️ Status Notice
+
+**Current Version:** 1.0.1  
+**Known Issues:** Cross-validation testing reveals metric discrepancies with UCoMX v1.1 reference implementation. See [CROSS_VALIDATION_FINDINGS.md](CROSS_VALIDATION_FINDINGS.md) for details.
+
+### Supported Features
+
+| Feature | Status | Description |
+|---------|--------|--------------|
+| **Single Plan Analysis** | ✅ Working | Load DICOM RT Plans and calculate metrics |
+| **Batch Analysis** |✅ Working | Process  multiple plans with aggregate statistics |
+| **Plan Comparison** | ✅ Working | Side-by-side comparison of two treatment plans |
+| **Cohort Analysis** | ✅ Working | Population-level statistical analysis with clustering |
+| **PAM/BAM Metrics** | ✅ Working | Plan Aperture Modulation with RTSTRUCT support |
 
 ### Visualizations
 
-| Feature | Description |
-|---------|-------------|
-| **MLC Aperture Viewer** | SVG display of leaf positions with gap highlighting |
-| **Gantry Schematic** | Real-time gantry angle indicator with arc direction |
-| **Collimator Display** | Jaw positions and collimator rotation |
-| **Control Point Scrubber** | Interactive slider with playback controls |
-| **Delivery Timeline** | Segment duration, dose rate, gantry/MLC speed charts |
-| **Complexity Heatmaps** | Per-CP visualization of LSV, AAV, and aperture area |
-| **MU Distribution** | Polar chart showing MU per gantry angle |
-| **Angular Binning** | Distribution of complexity metrics by gantry sector |
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **MLC Aperture Viewer** | ✅ | SVG display of leaf positions with gap highlighting |
+| **Gantry Schematic** | ✅ | Real-time gantry angle indicator with arc direction |
+| **Collimator Display** | ✅ | Jaw positions and collimator rotation |
+| **Control Point Scrubber** | ✅ | Interactive slider with playback controls |
+| **Delivery Timeline** | ✅ | Segment duration, dose rate, gantry/MLC speed charts |
+| **Complexity Heatmaps** | ⚠️ | Per-CP visualization (values may not match UCoMX exactly) |
+| **MU Distribution** | ✅ | Polar chart showing MU per gantry angle |
+| **Angular Binning** | ✅ | Distribution of complexity metrics by gantry sector |
 
 ### Export Options
 
@@ -158,11 +171,21 @@ Metrics are inspired by published research including the UCoMX framework.
 |--------|------|-------------|
 | **MUCA** | MU per Control Arc | MU density for VMAT arcs |
 | **LTMU** | Leaf Travel per MU | MLC activity per unit dose |
-| **GT** | Gantry Time | Time for gantry rotation |
-| **GS** | Gantry Speed Variation | Coefficient of variation |
-| **LS** | Leaf Speed | Average MLC speed |
-| **LSV_del** | Leaf Speed Variation | MLC speed coefficient of variation |
-| **TG** | Tongue-and-Groove Index | Potential T&G effect |
+| **LTNLMU** | Leaf Travel per Leaf and MU | Leaf travel normalized by active leaves and MU |
+| **LNA** | Leaf Travel per Leaf and CA | Leaf travel normalized by active leaves and control arcs |
+| **NL** | Number of active Leaves | Mean number of active leaves (2 × active leaf pairs) |
+| **LTAL** | Leaf Travel per Arc Length | MLC activity per degree of arc (VMAT only) |
+| **GT** | Gantry Travel | Total gantry rotation (degrees) |
+| **GS** | Gantry Speed | Average gantry speed (deg/s) |
+| **mGSV** | Mean Gantry Speed Variation | Mean absolute gantry speed change between segments |
+| **LS** | Leaf Speed | Average MLC speed (mm/s) |
+| **mDRV** | Mean Dose Rate Variation | Mean absolute dose rate change between control arcs |
+| **PA** | Plan Area | Mean aperture area in BEV (cm²) |
+| **JA** | Jaw Area | Area defined by jaw collimators (cm²) |
+| **TG** | Tongue-and-Groove Index | Potential T&G effect from leaf staggering |
+| **MD** | Modulation Degree | Coefficient of variation of meterset weights |
+| **MI** | Modulation Index | Normalized leaf travel per leaf per control point |
+| **PM** | Plan Modulation | Area- and MU-weighted modulation (1 - MCS) |
 
 ### Delivery Parameters
 
@@ -172,6 +195,18 @@ Metrics are inspired by published research including the UCoMX framework.
 | **Est. Time** | Estimated Delivery Time | Based on machine parameters |
 | **MU/°** | MU per Degree | Modulation density for arcs |
 | **Dose Rate** | Average Dose Rate | MU/min during delivery |
+
+### Beam Identification
+
+DICOM metadata fields extracted for each beam:
+
+| Field | Description | Examples |
+|-------|-------------|----------|
+| **Radiation Type** | Type of radiation used | PHOTON, ELECTRON, PROTON |
+| **Nominal Beam Energy** | Energy in MeV | 6.0, 10.0, 15.0, 18.0 |
+| **Energy Label** | Clinical designation | 6X, 10FFF, 6E, 9E |
+
+**Note:** Electron beams use fixed applicators instead of MLCs, so MLC-based complexity metrics (MCS, LSV, AAV, LT, etc.) are not calculated for electron beams.
 
 ---
 

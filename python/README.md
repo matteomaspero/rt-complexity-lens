@@ -2,6 +2,18 @@
 
 Offline Python implementation of RTp-lens metrics, producing results identical to the web application.
 
+## ⚠️ Status Notice
+
+**Current Version:** 1.0.1  
+**Known Issues:** Cross-validation testing reveals metric discrepancies compared to UCoMX v1.1 reference MATLAB implementation. Key findings:
+
+- **Electron beam support**: ETH plans may return zero metrics (parsing issue)
+- **Metric accuracy**: Most metrics have <50% error vs UCoMX reference, but some have >80% errors
+- **Time estimation**: Cascading issues in speed-based metrics (GS, LS, mDRV, mGSV)
+- **Jaw area calculation**: Values differ from reference by up to 100×
+
+See [CROSS_VALIDATION_FINDINGS.md](../CROSS_VALIDATION_FINDINGS.md) for complete analysis.
+
 ## Installation
 
 ### Option 1: Install from PyPI (Recommended)
@@ -177,11 +189,12 @@ create_scatter_matrix(all_metrics, save_path="output/scatter_matrix.png")
 
 Analyze individual DICOM RT Plan files with full metric output:
 
-- **Primary Metrics**: MCS, LSV, AAV, MFA
-- **Secondary Metrics**: LT, LTMCS, SAS5, SAS10, EM, PI
+- **Primary Metrics**: MCS, LSV, AAV, MFA, LT, LTMCS
+- **Secondary Metrics**: SAS5, SAS10, EM, PI
 - **Target-Based Metrics** (optional): PAM, BAM (requires RTSTRUCT)
 - **Accuracy Metrics**: LG, MAD, EFS, psmall
-- **Deliverability Metrics**: MUCA, LTMU, GT, GS, LS, LSV_del, TG
+- **Deliverability Metrics**: MUCA, LTMU, LTNLMU, LNA, NL, LTAL, GT, GS, mGSV, LS, mDRV, PA, JA, TG, MD, MI, PM
+- **Beam Identification**: radiation_type, nominal_beam_energy, energy_label
 - Delivery time estimation
 - Per-beam breakdown
 
@@ -265,13 +278,31 @@ ClusterDimension.SITE           # Group by treatment site
 
 | Key | Name | Unit |
 |-----|------|------|
-| `MUCA` | MU per Control Arc | MU/deg |
+| `MUCA` | MU per Control Arc | MU/CA |
 | `LTMU` | Leaf Travel per MU | mm/MU |
-| `GT` | Gantry Time | s |
-| `GS` | Gantry Speed Variation | ratio |
+| `LTNLMU` | Leaf Travel per Leaf and MU | mm/(leaf·MU) |
+| `LNA` | Leaf Travel per Leaf and CA | mm/(leaf·CA) |
+| `NL` | Number of active Leaves | leaves |
+| `LTAL` | Leaf Travel per Arc Length | mm/° |
+| `GT` | Gantry Travel | ° |
+| `GS` | Gantry Speed | °/s |
+| `mGSV` | Mean Gantry Speed Variation | °/s |
 | `LS` | Leaf Speed | mm/s |
-| `LSV_del` | Leaf Speed Variation | ratio |
+| `mDRV` | Mean Dose Rate Variation | MU/min |
+| `PA` | Plan Area | cm² |
+| `JA` | Jaw Area | cm² |
 | `TG` | Tongue-and-Groove Index | — |
+| `MD` | Modulation Degree | ratio |
+| `MI` | Modulation Index | mm/leaf/CP |
+| `PM` | Plan Modulation | 0–1 |
+
+### Beam Identification
+
+| Key | Description | Example |
+|-----|-------------|---------|
+| `radiation_type` | Type of radiation | PHOTON, ELECTRON |
+| `nominal_beam_energy` | Energy in MeV | 6.0, 10.0, 18.0 |
+| `energy_label` | Clinical designation | 6X, 10FFF, 6E |
 
 ---
 

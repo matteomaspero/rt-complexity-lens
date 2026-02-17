@@ -215,17 +215,25 @@ class ControlPointMetrics:
 
 @dataclass
 class BeamMetrics:
-    """UCoMX metrics for a single beam."""
+    """
+    Comprehensive complexity metrics for a single beam.
+    
+    Includes UCoMX-based primary metrics, accuracy metrics, deliverability metrics,
+    and beam identification fields extracted from DICOM.
+    
+    Note: For electron beams, MLC-based metrics (MCS, LSV, AAV, LT, etc.) are set to None
+    as electrons use fixed applicators instead of multi-leaf collimators.
+    """
     beam_number: int
     beam_name: str
     
     # UCoMX Primary Metrics
-    MCS: float  # Modulation Complexity Score
-    LSV: float  # Leaf Sequence Variability
-    AAV: float  # Aperture Area Variability
+    MCS: float  # Modulation Complexity Score (0-1, higher = simpler)
+    LSV: float  # Leaf Sequence Variability (0-1, higher = more uniform)
+    AAV: float  # Aperture Area Variability (≥0, lower = more consistent)
     MFA: float  # Mean Field Area (cm²)
-    LT: float   # Leaf Travel (mm)
-    LTMCS: float  # Combined Leaf Travel + MCS
+    LT: float   # Leaf Travel (mm, normalized per leaf)
+    LTMCS: float  # Combined Leaf Travel + MCS (1/mm)
     
     # Basic metrics
     beam_mu: float
@@ -243,22 +251,23 @@ class BeamMetrics:
     psmall: Optional[float] = None  # Percentage of small fields
     
     # UCoMX Deliverability Metrics
-    MUCA: Optional[float] = None  # MU per Control Arc
-    LTMU: Optional[float] = None  # Leaf Travel per MU
-    LTNLMU: Optional[float] = None  # Leaf Travel per Leaf and MU
-    LNA: Optional[float] = None  # Leaf Travel per Leaf and CA
-    LTAL: Optional[float] = None  # Leaf Travel per Arc Length
-    mDRV: Optional[float] = None  # Mean Dose Rate Variation
+    MUCA: Optional[float] = None  # MU per Control Arc (MU/CA)
+    LTMU: Optional[float] = None  # Leaf Travel per MU (mm/MU)
+    LTNLMU: Optional[float] = None  # Leaf Travel per Leaf and MU (mm/(leaf·MU))
+    LNA: Optional[float] = None  # Leaf Travel per Leaf and CA (mm/(leaf·CA))
+    NL: Optional[float] = None  # Mean number of active leaves (2 × mean active leaf pairs)
+    LTAL: Optional[float] = None  # Leaf Travel per Arc Length (mm/°, VMAT only)
+    mDRV: Optional[float] = None  # Mean Dose Rate Variation (MU/min)
     GT: Optional[float] = None  # Gantry Travel (degrees)
     GS: Optional[float] = None  # Gantry Speed (deg/s)
-    mGSV: Optional[float] = None  # Mean Gantry Speed Variation
+    mGSV: Optional[float] = None  # Mean Gantry Speed Variation (deg/s)
     LS: Optional[float] = None  # Leaf Speed (mm/s)
-    PA: Optional[float] = None  # Plan Area (cm²)
-    JA: Optional[float] = None  # Jaw Area (cm²)
-    PM: Optional[float] = None  # Plan Modulation (1 - MCS)
-    TG: Optional[float] = None  # Tongue-and-Groove Index
-    MD: Optional[float] = None  # Modulation Degree
-    MI: Optional[float] = None  # Modulation Index
+    PA: Optional[float] = None  # Plan Area - mean aperture area in BEV (cm²)
+    JA: Optional[float] = None  # Jaw Area - area defined by collimator jaws (cm²)
+    PM: Optional[float] = None  # Plan Modulation - area & MU weighted (0-1)
+    TG: Optional[float] = None  # Tongue-and-Groove Index (ratio)
+    MD: Optional[float] = None  # Modulation Degree - CV of meterset weights
+    MI: Optional[float] = None  # Modulation Index - normalized leaf travel (mm/leaf/CP)
     
     # Additional metrics
     arc_length: Optional[float] = None  # degrees
@@ -286,16 +295,24 @@ class BeamMetrics:
 
 @dataclass
 class PlanMetrics:
-    """Aggregate UCoMX metrics for the entire plan."""
+    """
+    Aggregate complexity metrics for the entire treatment plan.
+    
+    Plan-level metrics are aggregated from beam metrics using MU-weighted averaging
+    (UCoMX Equation 2) for most metrics, with some exceptions like LT which are additive.
+    
+    Includes prescription information extracted from DICOM headers and optional
+    PAM (Plan Aperture Modulation) if a target structure is provided.
+    """
     plan_label: str
     
     # UCoMX Primary Metrics (MU-weighted)
-    MCS: float
-    LSV: float
-    AAV: float
-    MFA: float  # cm²
-    LT: float   # mm
-    LTMCS: float
+    MCS: float  # Modulation Complexity Score (0-1, higher = simpler)
+    LSV: float  # Leaf Sequence Variability (0-1, higher = more uniform)
+    AAV: float  # Aperture Area Variability (≥0, lower = more consistent)
+    MFA: float  # Mean Field Area (cm²)
+    LT: float   # Total Leaf Travel (mm, sum across all beams)
+    LTMCS: float  # Combined Leaf Travel + MCS (1/mm)
     
     # Plan-level metrics
     total_mu: float
@@ -310,23 +327,23 @@ class PlanMetrics:
     EFS: Optional[float] = None
     psmall: Optional[float] = None
     
-    # UCoMX Deliverability Metrics
-    MUCA: Optional[float] = None
-    LTMU: Optional[float] = None
-    LTNLMU: Optional[float] = None
-    LNA: Optional[float] = None
-    LTAL: Optional[float] = None
-    mDRV: Optional[float] = None
-    GT: Optional[float] = None
-    GS: Optional[float] = None
-    mGSV: Optional[float] = None
-    LS: Optional[float] = None
-    PA: Optional[float] = None
-    JA: Optional[float] = None
-    PM: Optional[float] = None
-    TG: Optional[float] = None
-    MD: Optional[float] = None
-    MI: Optional[float] = None
+    # UCoMX Deliverability Metrics (MU-weighted aggregates)
+    MUCA: Optional[float] = None  # MU per Control Arc (MU/CA)
+    LTMU: Optional[float] = None  # Leaf Travel per MU (mm/MU)
+    LTNLMU: Optional[float] = None  # Leaf Travel per Leaf and MU (mm/(leaf·MU))
+    LNA: Optional[float] = None  # Leaf Travel per Leaf and CA (mm/(leaf·CA))
+    LTAL: Optional[float] = None  # Leaf Travel per Arc Length (mm/°)
+    mDRV: Optional[float] = None  # Mean Dose Rate Variation (MU/min)
+    GT: Optional[float] = None  # Gantry Travel (degrees)
+    GS: Optional[float] = None  # Gantry Speed (deg/s)
+    mGSV: Optional[float] = None  # Mean Gantry Speed Variation (deg/s)
+    LS: Optional[float] = None  # Leaf Speed (mm/s)
+    PA: Optional[float] = None  # Plan Area - mean aperture area (cm²)
+    JA: Optional[float] = None  # Jaw Area - mean jaw-defined area (cm²)
+    PM: Optional[float] = None  # Plan Modulation (0-1)
+    TG: Optional[float] = None  # Tongue-and-Groove Index
+    MD: Optional[float] = None  # Modulation Degree
+    MI: Optional[float] = None  # Modulation Index (mm/leaf/CP)
     
     # Delivery time
     total_delivery_time: Optional[float] = None  # seconds

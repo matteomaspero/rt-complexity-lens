@@ -303,8 +303,15 @@ function calculateEFS(area: number, perimeter: number): number {
  * Calculate Jaw Area (JA)
  */
 function calculateJawArea(jawPositions: { x1: number; x2: number; y1: number; y2: number }): number {
-  const width = jawPositions.x2 - jawPositions.x1;
-  const height = jawPositions.y2 - jawPositions.y1;
+  // Calculate jaw opening dimensions using absolute values
+  const width = Math.abs(jawPositions.x2 - jawPositions.x1);
+  const height = Math.abs(jawPositions.y2 - jawPositions.y1);
+  
+  // Return 0 if jaws are effectively closed (non-zero difference required)
+  if (width < 0.1 || height < 0.1) {
+    return 0.0;
+  }
+  
   return (width * height) / 100; // mm² to cm²
 }
 
@@ -613,6 +620,9 @@ function calculateBeamMetrics(
   },
   structure?: Structure
 ): BeamMetrics {
+  // Check if this is an electron beam (uses fixed applicators/tubes, not MLCs)
+  const isElectron = beam.radiationType && beam.radiationType.toUpperCase().includes('ELECTRON');
+  
   const nPairs = beam.numberOfLeaves || beam.mlcLeafWidths.length || 60;
   const leafBounds = getEffectiveLeafBoundaries(beam);
   const nCPs = beam.controlPoints.length;
@@ -791,7 +801,9 @@ function calculateBeamMetrics(
     : LSV * AAV;
   
   // LT: total active leaf travel
-  const LT = totalActiveLeafTravel;
+  // Normalize by number of leaves to get per-leaf basis (average leaf travel distance per leaf pair)
+  const numLeaves = beam.numberOfLeaves || beam.mlcLeafWidths.length || 80;
+  const LT = numLeaves > 0 ? totalActiveLeafTravel / numLeaves : totalActiveLeafTravel;
   
   // NL: 2 × mean active leaf pairs per CA (both banks)
   const NL = nCA > 0 ? (2 * caActiveLeafCount) / nCA : 0;
@@ -810,7 +822,7 @@ function calculateBeamMetrics(
   const MFA = areaCount > 0 ? (totalArea / areaCount) / 100 : 0;
   const EM = totalMetersetWeight > 0 ? weightedEM / totalMetersetWeight : 0;
   const PA = totalArea / 100;
-  const JA = areaCount > 0 ? totalJawArea / areaCount : 0;
+  const JA = totalJawArea / 100;  // Convert mm² to cm² (sum across all CPs, not averaged)
   
   const totalCPs = controlPointMetrics.length;
   const SAS5 = totalCPs > 0 ? sas5Count / totalCPs : 0;
@@ -849,7 +861,7 @@ function calculateBeamMetrics(
   // Calculate UCoMX deliverability metrics
   const beamMU = beam.beamDose || 0;
   const numCPs = beam.numberOfControlPoints;
-  const numLeaves = beam.numberOfLeaves || 60;
+  // numLeaves already declared earlier in function (line 805)
   
   // MUCA - MU per Control Arc (NCA = NCP - 1)
   const MUCA = nCA > 0 ? beamMU / nCA : 0;
@@ -939,6 +951,31 @@ function calculateBeamMetrics(
     MI = normalizedLT;
   }
   
+  // For electron beams: Clear MLC-based metrics (electrons use fixed applicators, not MLCs)
+  if (isElectron) {
+    MCS = undefined;
+    LSV = undefined;
+    AAV = undefined;
+    MFA = undefined;
+    LT = undefined;
+    LTMCS = undefined;
+    LG = undefined;
+    MAD_val = undefined;
+    EFS = undefined;
+    psmall = undefined;
+    MUCA = undefined;
+    LTMU = undefined;
+    LTNLMU = undefined;
+    LNA = undefined;
+    NL = undefined;
+    LTAL = undefined;
+    mDRV = undefined;
+    GT = undefined;
+    GS = undefined;
+    mGSV = undefined;
+    LS = undefined;
+  }
+  
   return {
     beamNumber: beam.beamNumber,
     beamName: beam.beamName,
@@ -962,6 +999,7 @@ function calculateBeamMetrics(
     LTMU,
     LTNLMU,
     LNA,
+    NL,
     LTAL,
     mDRV,
     GT,
@@ -1156,7 +1194,7 @@ export function calculatePlanMetrics(
   const mGSV = countMGSV > 0 ? weightedMGSV / countMGSV : undefined;
   const LS = totalMU > 0 ? weightedLS / totalMU : undefined;
   const PA = totalPA > 0 ? totalPA : undefined;
-  const JA = totalMU > 0 ? totalJA / beamMetrics.length : undefined;
+  const JA = totalJA > 0 ? totalJA : undefined;  // Sum of beam JA values (not averaged)
   const PM = totalMU > 0 ? weightedPM / totalMU : undefined;
   const TG = totalMU > 0 ? weightedTG / totalMU : undefined;
   const MD = countMD > 0 ? weightedMD / countMD : undefined;

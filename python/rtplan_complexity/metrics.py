@@ -317,9 +317,18 @@ def calculate_efs(area: float, perimeter: float) -> float:
 
 
 def calculate_jaw_area(jaw_positions: JawPositions) -> float:
-    """Calculate Jaw Area (JA) in cm²."""
-    width = jaw_positions.x2 - jaw_positions.x1
-    height = jaw_positions.y2 - jaw_positions.y1
+    """Calculate Jaw Area (JA) in cm².
+    
+    Uses absolute values for jaw opening dimensions.
+    Only counts area when both jaws are actually open (non-zero difference).
+    """
+    width = abs(jaw_positions.x2 - jaw_positions.x1)
+    height = abs(jaw_positions.y2 - jaw_positions.y1)
+    
+    # Return 0 if jaws are effectively closed
+    if width < 0.1 or height < 0.1:
+        return 0.0
+    
     return (width * height) / 100  # mm² to cm²
 
 
@@ -428,7 +437,12 @@ def calculate_leaf_travel(
     prev_positions: MLCLeafPositions,
     curr_positions: MLCLeafPositions
 ) -> float:
-    """Calculate leaf travel between two control points in mm."""
+    """Calculate leaf travel between two control points in mm.
+    
+    Sums absolute position changes for both MLC banks across all leaves.
+    This is the raw per-CP leaf travel. Active leaf filtering happens
+    separately at the Control Arc level for UCoMX metrics.
+    """
     if len(prev_positions.bank_a) == 0 or len(curr_positions.bank_a) == 0:
         return 0.0
     
@@ -480,6 +494,7 @@ def calculate_control_point_metrics(
     aav = 0.0
     
     if previous_cp:
+        # Per-CP leaf travel (raw, no filtering)
         leaf_travel = calculate_leaf_travel(previous_cp.mlc_positions, current_cp.mlc_positions)
         
         prev_area = calculate_aperture_area(
@@ -590,7 +605,7 @@ def calculate_beam_metrics(
     couch_angle: float = 0.0,
 ) -> BeamMetrics:
     """
-    Calculate beam-level UCoMX metrics using CA midpoint interpolation.
+    Calculate comprehensive beam-level complexity metrics.
     
     Core UCoMx metrics (LSV, AAV, MCS, LT) use Control Arc (CA) midpoint
     interpolation with active leaf filtering per Cavinato et al. (Med Phys, 2024):
@@ -601,10 +616,34 @@ def calculate_beam_metrics(
     - AAV: A_ca / A_max_union (McNiven 2010)
     - MCS: LSV × AAV, aggregated with Eq. 2 (MU-weighted)
     
+    Additional metrics calculated:
+    - Deliverability: MUCA, LTMU, LTNLMU, LNA, NL, LTAL, mDRV, GT, GS, mGSV, LS
+    - Accuracy: LG, MAD, EFS, psmall
+    - Geometry: PA, JA, TG
+    - Modulation: PM, MD, MI
+    - Beam identification: radiation_type, nominal_beam_energy, energy_label
+    
+    Electron beam handling:
+    - Electrons use fixed applicators (not MLCs), so MLC-based metrics are set to None
+    - Preserved metrics: JA, PA, beam_mu, delivery estimates, beam identification
+    
     If structure is provided, also calculates BAM (Beam Aperture Modulation).
+    
+    Args:
+        beam: Beam object with control points and MLC data
+        machine_params: Machine delivery constraints (dose rate, gantry/MLC speeds)
+        structure: Optional target structure for BAM calculation
+        couch_angle: Patient support angle in degrees (default: 0.0)
+    
+    Returns:
+        BeamMetrics object with all calculated metrics
     """
     if machine_params is None:
         machine_params = DEFAULT_MACHINE_PARAMS
+    
+    # Check if this is an electron beam
+    # Electron beams use fixed applicators/tubes, not MLCs (no modulation complexity metrics)
+    is_electron = beam.radiation_type and "ELECTRON" in beam.radiation_type.upper()
     
     n_pairs = beam.number_of_leaves or len(beam.mlc_leaf_widths) or 60
     leaf_bounds = get_effective_leaf_boundaries(beam)
@@ -620,35 +659,80 @@ def calculate_beam_metrics(
         )
     
     # ===== CA-based UCoMx metrics =====
-    # Pass 1: Find min_gap across ALL CPs
-    plan_min_gap = float('inf')
-    for i in range(n_cps):
-        bank_a = beam.control_points[i].mlc_positions.bank_a
-        bank_b = beam.control_points[i].mlc_positions.bank_b
-        n = min(len(bank_a), len(bank_b), n_pairs)
-        for k in range(n):
-            gap = bank_b[k] - bank_a[k]
-            if gap < plan_min_gap:
-                plan_min_gap = gap
-    if not math.isfinite(plan_min_gap) or plan_min_gap < 0:
+    # For electron beams: Initialize MLC-based metrics as None (electrons use fixed applicators, not MLCs)
+    if is_electron:
+        # Electron beams don't have MLC-based modulation complexity metrics
+        MCS = None
+        LSV = None
+        AAV = None
+        MFA = None
+        LT = None
+        LTMCS = None
+        LG = None
+        MAD_val = None
+        EFS = None
+        psmall = None
+        MUCA = None
+        LTMU = None
+        LTNLMU = None
+        LNA = None
+        LTAL = None
+        mDRV = None
+        GT = None
+        GS = None
+        mGSV = None
+        LS = None
+        
+        # Initialize NL for later use
+        NL = None
+        
+        # Initialize lists for non-MLC metrics
         plan_min_gap = 0.0
-    
-    # Pass 2: Compute per-CA metrics with midpoint interpolation
-    ca_areas: List[float] = []
-    ca_lsvs: List[float] = []
-    ca_lts: List[float] = []
-    ca_delta_mu: List[float] = []
-    per_leaf_max_contrib = [0.0] * n_pairs  # for union A_max
-    total_active_leaf_travel = 0.0
-    ca_active_leaf_count = 0  # for NL computation
-    
-    # Also accumulate per-CP-like metrics for secondary computations
-    total_area = 0.0
-    total_perimeter = 0.0
-    area_count = 0
-    sas5_count = 0
-    sas10_count = 0
-    small_field_count = 0
+        ca_areas = []
+        ca_lsvs = []
+        ca_lts = []
+        ca_delta_mu = []
+        ca_aavs = []
+        ca_mcss = []
+        per_leaf_max_contrib = []
+        total_active_leaf_travel = 0.0
+        ca_active_leaf_count = 0
+        total_area = 0.0
+        total_perimeter = 0.0
+        area_count = 0
+        sas5_count = 0
+        sas10_count = 0
+        small_field_count = 0
+    else:
+        # Pass 1: Find min_gap across ALL CPs
+        plan_min_gap = float('inf')
+        for i in range(n_cps):
+            bank_a = beam.control_points[i].mlc_positions.bank_a
+            bank_b = beam.control_points[i].mlc_positions.bank_b
+            n = min(len(bank_a), len(bank_b), n_pairs)
+            for k in range(n):
+                gap = bank_b[k] - bank_a[k]
+                if gap < plan_min_gap:
+                    plan_min_gap = gap
+        if not math.isfinite(plan_min_gap) or plan_min_gap < 0:
+            plan_min_gap = 0.0
+        
+        # Pass 2: Compute per-CA metrics with midpoint interpolation
+        ca_areas: List[float] = []
+        ca_lsvs: List[float] = []
+        ca_lts: List[float] = []
+        ca_delta_mu: List[float] = []
+        per_leaf_max_contrib = [0.0] * n_pairs  # for union A_max
+        total_active_leaf_travel = 0.0
+        ca_active_leaf_count = 0  # for NL computation
+        
+        # Also accumulate per-CP-like metrics for secondary computations
+        total_area = 0.0
+        total_perimeter = 0.0
+        area_count = 0
+        sas5_count = 0
+        sas10_count = 0
+        small_field_count = 0
     total_jaw_area = 0.0
     weighted_pi = 0.0
     weighted_em = 0.0
@@ -699,7 +783,8 @@ def calculate_beam_metrics(
             if cpm.small_aperture_flags.below_10mm:
                 sas10_count += 1
     
-    if n_ca > 0:
+    # ===== CA-based UCoMX metrics calculation - only for photon beams (electrons have no MLCs) =====
+    if not is_electron and n_ca > 0:
         for j in range(n_ca):
             cp1 = beam.control_points[j]
             cp2 = beam.control_points[j + 1]
@@ -738,10 +823,12 @@ def calculate_beam_metrics(
             ca_lsvs.append(lsv_a * lsv_b)
             
             # Active leaf travel (between actual CPs)
+            # Sum movements of active leaves only (both banks)
             lt = 0.0
             active_count = 0
             for k in range(n):
                 if active[k]:
+                    # Both banks contribute to leaf travel
                     lt += abs(a2[k] - a1[k])
                     lt += abs(b2[k] - b1[k])
                     active_count += 1
@@ -754,7 +841,7 @@ def calculate_beam_metrics(
             ca_delta_mu.append(max(0.0, delta_mu))
     
     # ===== Union aperture A_max =====
-    a_max_union = sum(per_leaf_max_contrib)
+    a_max_union = sum(per_leaf_max_contrib) if not is_electron else 0.0
     
     # ===== Compute AAV and MCS per CA =====
     ca_aavs = [a / a_max_union if a_max_union > 0 else 0.0 for a in ca_areas]
@@ -762,20 +849,24 @@ def calculate_beam_metrics(
     
     # ===== Aggregate: Eq. (2) MU-weighted for LSV, AAV, MCS per UCoMx manual =====
     total_delta_mu = sum(ca_delta_mu)
-    if total_delta_mu > 0:
-        LSV = sum(ca_lsvs[i] * ca_delta_mu[i] for i in range(len(ca_lsvs))) / total_delta_mu
-        AAV = sum(ca_aavs[i] * ca_delta_mu[i] for i in range(len(ca_aavs))) / total_delta_mu
-        MCS = sum(ca_mcss[i] * ca_delta_mu[i] for i in range(len(ca_mcss))) / total_delta_mu
-    else:
-        LSV = sum(ca_lsvs) / n_ca if n_ca > 0 else 0.0
-        AAV = sum(ca_aavs) / n_ca if n_ca > 0 else 0.0
-        MCS = LSV * AAV
-    
-    # LT: total active leaf travel
-    LT = total_active_leaf_travel
-    
-    # NL: 2 × mean active leaf pairs per CA (both banks)
-    NL = (2.0 * ca_active_leaf_count) / n_ca if n_ca > 0 else 0.0
+    if not is_electron:
+        if total_delta_mu > 0:
+            LSV = sum(ca_lsvs[i] * ca_delta_mu[i] for i in range(len(ca_lsvs))) / total_delta_mu
+            AAV = sum(ca_aavs[i] * ca_delta_mu[i] for i in range(len(ca_aavs))) / total_delta_mu
+            MCS = sum(ca_mcss[i] * ca_delta_mu[i] for i in range(len(ca_mcss))) / total_delta_mu
+        else:
+            LSV = sum(ca_lsvs) / n_ca if n_ca > 0 else 0.0
+            AAV = sum(ca_aavs) / n_ca if n_ca > 0 else 0.0
+            MCS = LSV * AAV
+        
+        # LT: total active leaf travel from Control Arc midpoints (active leaves only)
+        # Normalize by number of leaves to get per-leaf basis
+        # This represents average leaf travel distance per leaf pair
+        n_leaves = beam.number_of_leaves or len(beam.mlc_leaf_widths) or 80
+        LT = total_active_leaf_travel / n_leaves if n_leaves > 0 else total_active_leaf_travel
+        
+        # NL: 2 × mean active leaf pairs per CA (both banks)
+        NL = (2.0 * ca_active_leaf_count) / n_ca if n_ca > 0 else 0.0
     
     # Secondary metrics from per-CP data
     PI = weighted_pi / total_meterset_weight if total_meterset_weight > 0 else 1.0
@@ -785,14 +876,19 @@ def calculate_beam_metrics(
     TG = weighted_tg / total_meterset_weight if total_meterset_weight > 0 else 0.0
     
     # PM (Plan Modulation) per UCoMx Eq. (38): 1 - Σ(MU_j × A_j) / (MU_beam × A^tot)
-    if a_max_union > 0 and total_delta_mu > 0:
-        PM = 1 - sum(ca_delta_mu[i] * ca_areas[i] for i in range(len(ca_areas))) / (total_delta_mu * a_max_union)
+    if not is_electron:
+        if a_max_union > 0 and total_delta_mu > 0:
+            PM = 1 - sum(ca_delta_mu[i] * ca_areas[i] for i in range(len(ca_areas))) / (total_delta_mu * a_max_union)
+        else:
+            PM = 1 - MCS
+        MFA = (total_area / area_count) / 100.0 if area_count > 0 else 0.0
     else:
-        PM = 1 - MCS
-    MFA = (total_area / area_count) / 100.0 if area_count > 0 else 0.0
+        PM = None
+        MFA = None
+    
     EM = weighted_em / total_meterset_weight if total_meterset_weight > 0 else 0.0
     PA = total_area / 100.0
-    JA = total_jaw_area / area_count if area_count > 0 else 0.0
+    JA = total_jaw_area / 100.0  # Convert mm² to cm² (same as PA conversion)
     
     total_cps = len(control_point_metrics)
     SAS5 = sas5_count / total_cps if total_cps > 0 else 0.0
@@ -824,7 +920,7 @@ def calculate_beam_metrics(
     # Calculate UCoMX deliverability metrics
     beam_mu = beam.beam_dose or 0
     num_cps = beam.number_of_control_points
-    num_leaves = beam.number_of_leaves or 60
+    num_leaves = beam.number_of_leaves or len(beam.mlc_leaf_widths) or 60
     
     # MUCA - MU per Control Arc (NCA = NCP - 1)
     MUCA = beam_mu / n_ca if n_ca > 0 else 0
@@ -833,9 +929,12 @@ def calculate_beam_metrics(
     LNA = LT / (num_leaves * num_cps) if num_leaves > 0 and num_cps > 0 else 0
     LTAL = LT / arc_length if arc_length and arc_length > 0 else None
     
-    GT = arc_length
-    GS = arc_length / delivery_time if arc_length and delivery_time > 0 else None
-    LS = avg_mlc_speed
+    # GT, GS, LS only for photon beams (electrons don't have MLCs)
+    if not is_electron:
+        GT = arc_length
+        GS = arc_length / delivery_time if arc_length and delivery_time > 0 else None
+        LS = avg_mlc_speed
+
     
     # Calculate dose rate and gantry speed variations
     mDRV: Optional[float] = None
@@ -903,6 +1002,10 @@ def calculate_beam_metrics(
         MFA=MFA,
         LT=LT,
         LTMCS=LTMCS,
+        # Radiation type and energy (DICOM standard nomenclature)
+        radiation_type=beam.radiation_type,
+        nominal_beam_energy=beam.nominal_beam_energy,
+        energy_label=beam.energy_label,
         LG=LG,
         MAD=MAD_val,
         EFS=EFS,
@@ -911,6 +1014,7 @@ def calculate_beam_metrics(
         LTMU=LTMU,
         LTNLMU=LTNLMU,
         LNA=LNA,
+        NL=NL,
         LTAL=LTAL,
         mDRV=mDRV,
         GT=GT,
@@ -949,11 +1053,25 @@ def calculate_plan_metrics(
     structure: Optional[Structure] = None,
 ) -> PlanMetrics:
     """
-    Calculate plan-level UCoMX metrics.
+    Calculate plan-level complexity metrics aggregated from all beams.
     
-    Aggregation:
-    - UCoMx Eq. (2): MU-weighted for all metrics per UCoMx manual
-    - PAM: Plan Aperture Modulation (if structure provided)
+    Aggregation Methods:
+    - Primary metrics (MCS, LSV, AAV, MFA): MU-weighted average (UCoMx Eq. 2)
+    - LT: Additive (sum of all beam leaf travel)
+    - Deliverability metrics: MU-weighted average where applicable
+    - PAM: MU-weighted average of beam BAM values (if structure provided)
+    
+    Prescription Information:
+    - Extracted from DICOM DoseReferenceSequence and FractionGroupSequence
+    - Calculates MU/Gy ratio if prescribed dose available
+    
+    Args:
+        plan: RTPlan object with beam data
+        machine_params: Machine delivery constraints
+        structure: Optional target structure for PAM calculation
+    
+    Returns:
+        PlanMetrics object with aggregated metrics and beam-level breakdown
     """
     beam_metrics = [
         calculate_beam_metrics(beam, machine_params, structure)
