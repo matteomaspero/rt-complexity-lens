@@ -22,6 +22,27 @@ export function CollimatorViewer({ collimatorAngle, jawPositions, size = 160 }: 
   const maxFieldSize = 200; // mm reference for scaling
   const scale = (size - 40) / maxFieldSize;
 
+  // Validate jaw positions
+  const hasValidJaws = 
+    jawPositions.x2 > jawPositions.x1 && 
+    jawPositions.y2 > jawPositions.y1;
+  
+  if (!hasValidJaws) {
+    return (
+      <div className="flex flex-col items-center">
+        <div className="mb-2 flex items-center gap-1">
+          <span className="text-xs font-medium text-muted-foreground">Collimator</span>
+        </div>
+        <div 
+          className="flex items-center justify-center rounded-md border bg-muted/30"
+          style={{ width: size, height: size }}
+        >
+          <span className="text-xs text-muted-foreground">No jaw data</span>
+        </div>
+      </div>
+    );
+  }
+
   // Convert collimator angle to radians (IEC 61217: 0° = leaves perpendicular to gantry axis)
   const angleRad = (collimatorAngle * Math.PI) / 180;
 

@@ -179,29 +179,33 @@ export function MLCDifferenceViewer({
           className="fill-muted/30"
         />
 
-        {/* Jaw outlines for both plans */}
-        <rect
-          x={jawPositionsA.x1}
-          y={jawPositionsA.y1}
-          width={jawPositionsA.x2 - jawPositionsA.x1}
-          height={jawPositionsA.y2 - jawPositionsA.y1}
-          fill="none"
-          stroke="hsl(var(--chart-comparison-a))"
-          strokeWidth="1"
-          strokeDasharray="4 2"
-          opacity="0.5"
-        />
-        <rect
-          x={jawPositionsB.x1}
-          y={jawPositionsB.y1}
-          width={jawPositionsB.x2 - jawPositionsB.x1}
-          height={jawPositionsB.y2 - jawPositionsB.y1}
-          fill="none"
-          stroke="hsl(var(--chart-comparison-b))"
-          strokeWidth="1"
-          strokeDasharray="4 2"
-          opacity="0.5"
-        />
+        {/* Jaw outlines for both plans - only render if valid */}
+        {jawPositionsA.x2 > jawPositionsA.x1 && jawPositionsA.y2 > jawPositionsA.y1 && (
+          <rect
+            x={jawPositionsA.x1}
+            y={jawPositionsA.y1}
+            width={jawPositionsA.x2 - jawPositionsA.x1}
+            height={jawPositionsA.y2 - jawPositionsA.y1}
+            fill="none"
+            stroke="hsl(var(--chart-comparison-a))"
+            strokeWidth="1"
+            strokeDasharray="4 2"
+            opacity="0.5"
+          />
+        )}
+        {jawPositionsB.x2 > jawPositionsB.x1 && jawPositionsB.y2 > jawPositionsB.y1 && (
+          <rect
+            x={jawPositionsB.x1}
+            y={jawPositionsB.y1}
+            width={jawPositionsB.x2 - jawPositionsB.x1}
+            height={jawPositionsB.y2 - jawPositionsB.y1}
+            fill="none"
+            stroke="hsl(var(--chart-comparison-b))"
+            strokeWidth="1"
+            strokeDasharray="4 2"
+            opacity="0.5"
+          />
+        )}
 
         {/* Leaf differences */}
         {leafDifferences.map((leaf) => (

@@ -18,24 +18,36 @@ export function MLCApertureViewer({
 }: MLCApertureViewerProps) {
   const { bankA, bankB } = mlcPositions;
 
+  // Validate jaw positions
+  const hasValidJaws = 
+    jawPositions.x2 > jawPositions.x1 && 
+    jawPositions.y2 > jawPositions.y1;
+
   // Calculate visualization parameters
   const viewBox = useMemo(() => {
     if (bankA.length === 0 || bankB.length === 0) {
       return { minX: -200, maxX: 200, minY: -200, maxY: 200 };
     }
 
-    // Find the extent of leaf positions
-    const allPositions = [...bankA, ...bankB];
-    const minX = Math.min(...allPositions, jawPositions.x1) - 20;
-    const maxX = Math.max(...allPositions, jawPositions.x2) + 20;
+    // Find the extent of leaf positions (only if jaws are valid)
+    let minX = -200;
+    let maxX = 200;
+    let minY = -200;
+    let maxY = 200;
 
-    // Calculate Y extent based on leaf widths
-    const totalHeight = leafWidths.reduce((sum, w) => sum + w, 0) || bankA.length * 5;
-    const minY = -totalHeight / 2 - 20;
-    const maxY = totalHeight / 2 + 20;
+    if (hasValidJaws) {
+      const allPositions = [...bankA, ...bankB];
+      minX = Math.min(...allPositions, jawPositions.x1) - 20;
+      maxX = Math.max(...allPositions, jawPositions.x2) + 20;
+
+      // Calculate Y extent based on leaf widths
+      const totalHeight = leafWidths.reduce((sum, w) => sum + w, 0) || bankA.length * 5;
+      minY = -totalHeight / 2 - 20;
+      maxY = totalHeight / 2 + 20;
+    }
 
     return { minX, maxX, minY, maxY };
-  }, [bankA, bankB, leafWidths, jawPositions]);
+  }, [bankA, bankB, leafWidths, jawPositions, hasValidJaws]);
 
   // Generate leaf pair rectangles
   const leafPairs = useMemo(() => {
@@ -74,13 +86,15 @@ export function MLCApertureViewer({
 
   const viewBoxStr = `${viewBox.minX} ${viewBox.minY} ${viewBox.maxX - viewBox.minX} ${viewBox.maxY - viewBox.minY}`;
 
-  if (bankA.length === 0 || bankB.length === 0) {
+  if (bankA.length === 0 || bankB.length === 0 || !hasValidJaws) {
     return (
       <div 
         className="flex items-center justify-center rounded-md border bg-muted/50"
         style={{ width, height }}
       >
-        <p className="text-sm text-muted-foreground">No MLC data available</p>
+        <p className="text-sm text-muted-foreground">
+          {bankA.length === 0 || bankB.length === 0 ? 'No MLC data available' : 'No jaw data available'}
+        </p>
       </div>
     );
   }

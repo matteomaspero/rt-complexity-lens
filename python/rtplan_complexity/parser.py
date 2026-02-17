@@ -124,6 +124,73 @@ def _parse_jaw_positions(cp_ds: Dataset) -> JawPositions:
     return result
 
 
+def _derive_jaw_positions_from_mlc(
+    mlc_positions: MLCLeafPositions,
+    beam_ds: Dataset
+) -> Optional[JawPositions]:
+    """
+    Derive jaw positions from MLC and beam limiting device for Elekta Monaco plans.
+    
+    Monaco plans often lack explicit ASYMX/ASYMY jaw positions. This function:
+    1. Derives X jaw extent from open MLC leaf positions (filtering out closed leaves)
+    2. Derives Y jaw extent from active leaf boundaries
+    
+    Returns: JawPositions if derivation successful, None otherwise
+    """
+    if len(mlc_positions.bank_a) == 0 or len(mlc_positions.bank_b) == 0:
+        return None
+    
+    OPEN_LEAF_THRESHOLD = 0.5  # mm - minimum opening to consider leaf "open"
+    
+    # Step 1: Derive X extent from open leaf pairs
+    open_leaf_pairs = [
+        (mlc_positions.bank_a[i], mlc_positions.bank_b[i])
+        for i in range(len(mlc_positions.bank_a))
+        if mlc_positions.bank_b[i] - mlc_positions.bank_a[i] > OPEN_LEAF_THRESHOLD
+    ]
+    
+    if len(open_leaf_pairs) < 2:
+        return None  # Need at least 2 open leaves for reasonable derivation
+    
+    mlc_min = min(pair[0] for pair in open_leaf_pairs)
+    mlc_max = max(pair[1] for pair in open_leaf_pairs)
+    
+    if mlc_max - mlc_min <= 1:
+        return None  # Field too small or invalid
+    
+    result = JawPositions(x1=mlc_min, x2=mlc_max)
+    
+    # Step 2: Derive Y extent from leaf position boundaries
+    open_leaf_indices = [
+        i for i in range(len(mlc_positions.bank_a))
+        if mlc_positions.bank_b[i] - mlc_positions.bank_a[i] > OPEN_LEAF_THRESHOLD
+    ]
+    
+    if len(open_leaf_indices) >= 2:
+        try:
+            bld_seq = getattr(beam_ds, "BeamLimitingDeviceSequence", None)
+            if bld_seq:
+                for item in bld_seq:
+                    device_type = _get_string(item, "RTBeamLimitingDeviceType")
+                    if device_type in ("MLCX", "MLCY"):
+                        boundaries = _get_float_array(item, "LeafPositionBoundaries")
+                        # LeafPositionBoundaries has length = numLeaves + 1
+                        if len(boundaries) > 1:
+                            min_leaf_idx = min(open_leaf_indices)
+                            max_leaf_idx = max(open_leaf_indices)
+                            # Boundary[i] separates leaf i-1 and leaf i
+                            y1 = boundaries[min_leaf_idx]
+                            y2 = boundaries[max_leaf_idx + 1]
+                            if y2 - y1 > 1:
+                                result.y1 = y1
+                                result.y2 = y2
+                        break
+        except Exception:
+            pass
+    
+    return result
+
+
 def _parse_control_point(
     cp_ds: Dataset,
     beam_ds: Dataset,
@@ -163,6 +230,19 @@ def _parse_control_point(
     jaw_positions = _parse_jaw_positions(cp_ds)
     if jaw_positions.x1 == 0 and jaw_positions.x2 == 0 and previous_cp:
         jaw_positions = previous_cp.jaw_positions
+    
+    # For Elekta/Monaco plans that lack X jaws, derive X from MLC positions
+    # Only derive if X jaws are still zero after parsing and inheritance
+    if jaw_positions.x1 == 0 and jaw_positions.x2 == 0 and len(mlc_positions.bank_a) > 0:
+        derived_jaws = _derive_jaw_positions_from_mlc(mlc_positions, beam_ds)
+        if derived_jaws:
+            # Override ONLY the X jaws, preserve Y jaws from parsed/inherited values
+            jaw_positions.x1 = derived_jaws.x1
+            jaw_positions.x2 = derived_jaws.x2
+            # Also override Y if derived successfully (only when Y still at default 0)
+            if jaw_positions.y1 == 0 and jaw_positions.y2 == 0 and derived_jaws.y1 != 0:
+                jaw_positions.y1 = derived_jaws.y1
+                jaw_positions.y2 = derived_jaws.y2
     
     # Isocenter position
     isocenter: Optional[Tuple[float, float, float]] = None

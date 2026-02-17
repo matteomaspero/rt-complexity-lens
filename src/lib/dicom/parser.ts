@@ -222,27 +222,52 @@ function parseControlPoint(
   // For Elekta/Monaco plans that lack X jaws (ASYMX), derive X extent from MLC positions
   // so that the collimator viewer can display a meaningful field rectangle
   if (jawPositions.x1 === 0 && jawPositions.x2 === 0 && mlcPositions.bankA.length > 0) {
-    const mlcMin = Math.min(...mlcPositions.bankA);
-    const mlcMax = Math.max(...mlcPositions.bankB);
-    // Only apply if MLC has a meaningful opening (not all leaves closed)
-    if (mlcMax - mlcMin > 1) {
-      jawPositions = { ...jawPositions, x1: mlcMin, x2: mlcMax };
+    // Filter to only OPEN leaf pairs (where bankB[i] - bankA[i] > threshold)
+    // to avoid using closed leaves at field periphery
+    const OPEN_LEAF_THRESHOLD = 0.5; // mm - minimum opening to consider leaf "open"
+    const openLeafPairs = mlcPositions.bankA
+      .map((a, i) => ({ a, b: mlcPositions.bankB[i] }))
+      .filter(pair => pair.b - pair.a > OPEN_LEAF_THRESHOLD);
+    
+    // Only apply derivation if at least 2 leaves are open
+    if (openLeafPairs.length >= 2) {
+      const mlcMin = Math.min(...openLeafPairs.map(p => p.a));
+      const mlcMax = Math.max(...openLeafPairs.map(p => p.b));
+      // Additional safety check: field opening should be > 1mm
+      if (mlcMax - mlcMin > 1) {
+        jawPositions = { ...jawPositions, x1: mlcMin, x2: mlcMax };
+      }
     }
   }
   
   // Similarly, if Y jaws are missing, derive from MLC leaf boundaries via beam definition
   if (jawPositions.y1 === 0 && jawPositions.y2 === 0 && mlcPositions.bankA.length > 0) {
-    // Use beam-level leaf boundaries to estimate Y extent
-    const bldSeq = beamDataSet.elements[TAGS.BeamLimitingDeviceSequence];
-    if (bldSeq && bldSeq.items) {
-      for (const item of bldSeq.items) {
-        const itemDS = item.dataSet;
-        if (!itemDS) continue;
-        const deviceType = getString(itemDS, TAGS.RTBeamLimitingDeviceType);
-        if (deviceType === 'MLCX' || deviceType === 'MLCY') {
-          const boundaries = getFloatArray(itemDS, TAGS.LeafPositionBoundaries);
-          if (boundaries.length > 1) {
-            jawPositions = { ...jawPositions, y1: boundaries[0], y2: boundaries[boundaries.length - 1] };
+    // Use beam-level leaf boundaries indexed by open leaves to estimate Y extent
+    const OPEN_LEAF_THRESHOLD = 0.5;
+    const openLeafIndices = mlcPositions.bankA
+      .map((a, i) => i)
+      .filter(i => mlcPositions.bankB[i] - mlcPositions.bankA[i] > OPEN_LEAF_THRESHOLD);
+    
+    if (openLeafIndices.length >= 2) {
+      const bldSeq = beamDataSet.elements[TAGS.BeamLimitingDeviceSequence];
+      if (bldSeq && bldSeq.items) {
+        for (const item of bldSeq.items) {
+          const itemDS = item.dataSet;
+          if (!itemDS) continue;
+          const deviceType = getString(itemDS, TAGS.RTBeamLimitingDeviceType);
+          if (deviceType === 'MLCX' || deviceType === 'MLCY') {
+            const boundaries = getFloatArray(itemDS, TAGS.LeafPositionBoundaries);
+            // LeafPositionBoundaries has length = numLeaves + 1 (each boundary between leaf pairs)
+            if (boundaries.length > 1 && openLeafIndices.length > 0) {
+              const minLeafIdx = Math.min(...openLeafIndices);
+              const maxLeafIdx = Math.max(...openLeafIndices);
+              // Boundary i separates leaf i-1 and leaf i
+              const y1 = boundaries[minLeafIdx];
+              const y2 = boundaries[maxLeafIdx + 1];
+              if (y2 - y1 > 1) {
+                jawPositions = { ...jawPositions, y1, y2 };
+              }
+            }
           }
         }
       }
