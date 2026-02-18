@@ -215,28 +215,43 @@ describe('EM & PI Cross-Validation: RTp-lens vs ComplexityCalc', () => {
       expect(typeof metrics.EM).toBe('number');
       expect(typeof metrics.PI).toBe('number');
 
-      // Now compute ComplexityCalc-style EM/AI per beam, per CP
-      const ccEMs: number[] = [];
-      const ccAIs: number[] = [];
+      // Compute ComplexityCalc-style EM/AI using MU-weighted averaging to match production logic.
+      // Production code weights each CP by its delta cumulativeMetersetWeight — we mirror that here
+      // so the divergence reflects only genuine algorithmic differences, not aggregation method.
+      let ccWeightedEM = 0;
+      let ccWeightedAI = 0;
+      let ccTotalWeight = 0;
 
       for (const beam of plan.beams) {
-        for (const cp of beam.controlPoints) {
+        const cps = beam.controlPoints;
+        for (let idx = 0; idx < cps.length; idx++) {
+          const cp = cps[idx];
           if (!cp.mlcPositions) continue;
           const { bankA, bankB } = cp.mlcPositions;
           const jaw = cp.jawPositions;
           const lw = beam.mlcLeafWidths;
 
+          // Delta meterset weight: same convention as production metrics.ts
+          const prevWeight = idx > 0 ? (cps[idx - 1].cumulativeMetersetWeight ?? 0) : 0;
+          const currWeight = cp.cumulativeMetersetWeight ?? 0;
+          const weight = Math.max(0, currWeight - prevWeight);
+
           const em = complexityCalcEM(bankA, bankB, lw, jaw.x1, jaw.x2, jaw.y1, jaw.y2);
           const ai = complexityCalcAI(bankA, bankB, lw, jaw.x1, jaw.x2, jaw.y1, jaw.y2);
 
-          if (em > 0) ccEMs.push(em);
-          if (ai > 0) ccAIs.push(ai);
+          if (em > 0 && weight > 0) {
+            ccWeightedEM += em * weight;
+            ccTotalWeight += weight;
+          }
+          if (ai > 0 && weight > 0) {
+            ccWeightedAI += ai * weight;
+          }
         }
       }
 
-      // Compute averages from ComplexityCalc reference
-      const ccEMavg = ccEMs.length > 0 ? ccEMs.reduce((a, b) => a + b, 0) / ccEMs.length : 0;
-      const ccAIavg = ccAIs.length > 0 ? ccAIs.reduce((a, b) => a + b, 0) / ccAIs.length : 0;
+      // MU-weighted averages matching production aggregation
+      const ccEMavg = ccTotalWeight > 0 ? ccWeightedEM / ccTotalWeight : 0;
+      const ccAIavg = ccTotalWeight > 0 ? ccWeightedAI / ccTotalWeight : 0;
 
       // Log divergence for analysis (visible in test output with --reporter=verbose)
       const emDelta = metrics.EM! - ccEMavg;
@@ -330,25 +345,39 @@ describe('EM & PI Cross-Validation: RTp-lens vs ComplexityCalc', () => {
 
         if (metrics.EM == null || metrics.PI == null) continue;
 
-        const ccEMs: number[] = [];
-        const ccAIs: number[] = [];
+        // MU-weighted averaging to match production aggregation logic
+        let ccWeightedEM = 0;
+        let ccWeightedAI = 0;
+        let ccTotalWeight = 0;
 
         for (const beam of plan.beams) {
-          for (const cp of beam.controlPoints) {
+          const cps = beam.controlPoints;
+          for (let idx = 0; idx < cps.length; idx++) {
+            const cp = cps[idx];
             if (!cp.mlcPositions) continue;
             const { bankA, bankB } = cp.mlcPositions;
             const jaw = cp.jawPositions;
             const lw = beam.mlcLeafWidths;
 
+            const prevWeight = idx > 0 ? (cps[idx - 1].cumulativeMetersetWeight ?? 0) : 0;
+            const currWeight = cp.cumulativeMetersetWeight ?? 0;
+            const weight = Math.max(0, currWeight - prevWeight);
+
             const em = complexityCalcEM(bankA, bankB, lw, jaw.x1, jaw.x2, jaw.y1, jaw.y2);
             const ai = complexityCalcAI(bankA, bankB, lw, jaw.x1, jaw.x2, jaw.y1, jaw.y2);
-            if (em > 0) ccEMs.push(em);
-            if (ai > 0) ccAIs.push(ai);
+
+            if (em > 0 && weight > 0) {
+              ccWeightedEM += em * weight;
+              ccTotalWeight += weight;
+            }
+            if (ai > 0 && weight > 0) {
+              ccWeightedAI += ai * weight;
+            }
           }
         }
 
-        const ccEMavg = ccEMs.length > 0 ? ccEMs.reduce((a, b) => a + b, 0) / ccEMs.length : 0;
-        const ccAIavg = ccAIs.length > 0 ? ccAIs.reduce((a, b) => a + b, 0) / ccAIs.length : 0;
+        const ccEMavg = ccTotalWeight > 0 ? ccWeightedEM / ccTotalWeight : 0;
+        const ccAIavg = ccTotalWeight > 0 ? ccWeightedAI / ccTotalWeight : 0;
 
         if (ccEMavg > 0) emDeltas.push((metrics.EM - ccEMavg) / ccEMavg);
         if (ccAIavg > 0) piDeltas.push((metrics.PI - ccAIavg) / ccAIavg);
