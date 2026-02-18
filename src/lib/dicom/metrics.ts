@@ -790,36 +790,36 @@ function calculateBeamMetrics(
   
   // ===== Aggregate: Eq. (2) MU-weighted for LSV, AAV, MCS per UCoMx manual =====
   const totalDeltaMU = caDeltaMU.reduce((s, v) => s + v, 0);
-  const LSV = totalDeltaMU > 0
+  let LSV = totalDeltaMU > 0
     ? caLSVs.reduce((s, v, i) => s + v * caDeltaMU[i], 0) / totalDeltaMU
     : (nCA > 0 ? caLSVs.reduce((s, v) => s + v, 0) / nCA : 0);
-  const AAV = totalDeltaMU > 0
+  let AAV = totalDeltaMU > 0
     ? caAAVs.reduce((s, v, i) => s + v * caDeltaMU[i], 0) / totalDeltaMU
     : (nCA > 0 ? caAAVs.reduce((s, v) => s + v, 0) / nCA : 0);
-  const MCS = totalDeltaMU > 0
+  let MCS = totalDeltaMU > 0
     ? caMCSs.reduce((s, v, i) => s + v * caDeltaMU[i], 0) / totalDeltaMU
     : LSV * AAV;
   
   // LT: total active leaf travel
   // Normalize by number of leaves to get per-leaf basis (average leaf travel distance per leaf pair)
   const numLeaves = beam.numberOfLeaves || beam.mlcLeafWidths.length || 80;
-  const LT = numLeaves > 0 ? totalActiveLeafTravel / numLeaves : totalActiveLeafTravel;
+  let LT = numLeaves > 0 ? totalActiveLeafTravel / numLeaves : totalActiveLeafTravel;
   
   // NL: 2 × mean active leaf pairs per CA (both banks)
-  const NL = nCA > 0 ? (2 * caActiveLeafCount) / nCA : 0;
+  let NL = nCA > 0 ? (2 * caActiveLeafCount) / nCA : 0;
   
   // Secondary metrics from per-CP data
   const PI = totalMetersetWeight > 0 ? weightedPI / totalMetersetWeight : 1;
-  const LG = totalMetersetWeight > 0 ? weightedLG / totalMetersetWeight : 0;
-  const MAD_val = totalMetersetWeight > 0 ? weightedMAD / totalMetersetWeight : 0;
-  const EFS = totalMetersetWeight > 0 ? weightedEFS / totalMetersetWeight : 0;
+  let LG = totalMetersetWeight > 0 ? weightedLG / totalMetersetWeight : 0;
+  let MAD_val = totalMetersetWeight > 0 ? weightedMAD / totalMetersetWeight : 0;
+  let EFS = totalMetersetWeight > 0 ? weightedEFS / totalMetersetWeight : 0;
   const TG = totalMetersetWeight > 0 ? weightedTG / totalMetersetWeight : 0;
   
   // PM (Plan Modulation) per UCoMx Eq. (38): 1 - Σ(MU_j × A_j) / (MU_beam × A^tot)
   const PM = aMaxUnion > 0 && totalDeltaMU > 0
     ? 1 - caAreas.reduce((s, a, i) => s + caDeltaMU[i] * a, 0) / (totalDeltaMU * aMaxUnion)
     : 1 - MCS;
-  const MFA = areaCount > 0 ? (totalArea / areaCount) / 100 : 0;
+  let MFA = areaCount > 0 ? (totalArea / areaCount) / 100 : 0;
   const EM = totalMetersetWeight > 0 ? weightedEM / totalMetersetWeight : 0;
   const PA = totalArea / 100;
   const JA = totalJawArea / 100;  // Convert mm² to cm² (sum across all CPs, not averaged)
@@ -827,9 +827,9 @@ function calculateBeamMetrics(
   const totalCPs = controlPointMetrics.length;
   const SAS5 = totalCPs > 0 ? sas5Count / totalCPs : 0;
   const SAS10 = totalCPs > 0 ? sas10Count / totalCPs : 0;
-  const psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
+  let psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
   
-  const LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
+  let LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
   
   // Calculate arc length via CP-by-CP gantry angle summation (fixes full-arc GT=0 bug)
   let totalGantryTravel = 0;
@@ -864,30 +864,30 @@ function calculateBeamMetrics(
   // numLeaves already declared earlier in function (line 805)
   
   // MUCA - MU per Control Arc (NCA = NCP - 1)
-  const MUCA = nCA > 0 ? beamMU / nCA : 0;
+  let MUCA = nCA > 0 ? beamMU / nCA : 0;
   
   // LTMU - Leaf Travel per MU
-  const LTMU = beamMU > 0 ? LT / beamMU : 0;
+  let LTMU = beamMU > 0 ? LT / beamMU : 0;
   
   // LTNLMU - Leaf Travel per Leaf and MU
-  const LTNLMU = (numLeaves > 0 && beamMU > 0) ? LT / (numLeaves * beamMU) : 0;
+  let LTNLMU = (numLeaves > 0 && beamMU > 0) ? LT / (numLeaves * beamMU) : 0;
   
   // LNA - Leaf Travel per Leaf and CA
-  const LNA = (numLeaves > 0 && numCPs > 0) ? LT / (numLeaves * numCPs) : 0;
+  let LNA = (numLeaves > 0 && numCPs > 0) ? LT / (numLeaves * numCPs) : 0;
   
   // LTAL - Leaf Travel per Arc Length
-  const LTAL = (arcLength && arcLength > 0) ? LT / arcLength : undefined;
+  let LTAL: number | undefined = (arcLength && arcLength > 0) ? LT / arcLength : undefined;
   
   // GT - Gantry Travel (total angle traversed across all CPs)
-  const GT = totalGantryTravel > 0 ? totalGantryTravel : undefined;
+  let GT: number | undefined = totalGantryTravel > 0 ? totalGantryTravel : undefined;
   
   // GS - Gantry Speed
-  const GS = (arcLength && deliveryEstimate.deliveryTime > 0) 
+  let GS: number | undefined = (arcLength && deliveryEstimate.deliveryTime > 0) 
     ? arcLength / deliveryEstimate.deliveryTime 
     : undefined;
   
   // LS - Leaf Speed (alias for avgMLCSpeed)
-  const LS = deliveryEstimate.avgMLCSpeed;
+  let LS: number | undefined = deliveryEstimate.avgMLCSpeed;
   
   // Calculate dose rate and gantry speed variations
   let mDRV: number | undefined;
