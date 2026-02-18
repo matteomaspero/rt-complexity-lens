@@ -355,6 +355,10 @@ class PlanMetrics:
     PI: Optional[float] = None
     PAM: Optional[float] = None  # Plan Aperture Modulation (target-specific)
     
+    # Plan-level delivery metrics (aggregated)
+    mu_per_degree: Optional[float] = None  # Total MU / total gantry travel (MU/°)
+    avg_dose_rate: Optional[float] = None  # Total MU / total delivery time (MU/min)
+    
     # Per-beam breakdown
     beam_metrics: List[BeamMetrics] = field(default_factory=list)
     

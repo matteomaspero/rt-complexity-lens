@@ -25,3 +25,6 @@ dist-ssr
 
 # Test data
 testdata/
+# Testing and debugging artifacts
+_testing/
+_reports/

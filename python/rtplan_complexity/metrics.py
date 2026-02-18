@@ -371,7 +371,10 @@ def calculate_tongue_and_groove(
 
 
 def check_small_apertures(mlc_positions: MLCLeafPositions) -> SmallApertureFlags:
-    """Check for small apertures (for SAS calculation)."""
+    """
+    Check for small apertures (for SAS calculation).
+    Returns whether this control point has any gaps below each threshold.
+    """
     bank_a = mlc_positions.bank_a
     bank_b = mlc_positions.bank_b
     
@@ -388,6 +391,24 @@ def check_small_apertures(mlc_positions: MLCLeafPositions) -> SmallApertureFlags
         below_10mm=min_gap < 10,
         below_20mm=min_gap < 20,
     )
+
+
+def calculate_leaf_pair_fraction_below_threshold(mlc_positions: MLCLeafPositions, threshold_mm: float) -> float:
+    """Calculate fraction of leaf pairs with gap below threshold."""
+    bank_a =mlc_positions.bank_a
+    bank_b = mlc_positions.bank_b
+    
+    if not bank_a or not bank_b:
+        return 0.0
+    
+    count_below = 0
+    for i in range(min(len(bank_a), len(bank_b))):
+        gap = bank_b[i] - bank_a[i]
+        if 0 < gap < threshold_mm:
+            count_below += 1
+    
+    total_pairs = min(len(bank_a), len(bank_b))
+    return count_below / total_pairs if total_pairs > 0 else 0.0
 
 
 def calculate_aperture_irregularity(
@@ -531,6 +552,9 @@ def _estimate_beam_delivery_time(
     """
     Estimate delivery time for a beam.
     
+    For arcs: gantry moves continuously; time = max(MU_time, arc_time, mlc_time)
+    For static: gantry doesn't move; time = max(MU_time, mlc_time)
+    
     Returns tuple of:
         - delivery_time (seconds)
         - limiting_factor ('doseRate', 'gantrySpeed', 'mlcSpeed')
@@ -538,64 +562,54 @@ def _estimate_beam_delivery_time(
         - avg_mlc_speed (mm/s)
         - MU_per_degree (optional)
     """
-    total_time = 0.0
-    dose_rate_limited_time = 0.0
-    gantry_limited_time = 0.0
-    mlc_limited_time = 0.0
-    
     beam_mu = beam.beam_dose or 100.0
     
+    # Calculate total delivery dose time (MU / dose rate for entire beam)
+    total_dose_time = beam_mu / (machine_params.max_dose_rate / 60)  # seconds
+    
+    # Calculate total gantry arc time (if arc)
+    total_gantry_time = 0.0
+    if beam.is_arc and len(beam.control_points) > 1:
+        # Arc length: absolute difference, with wrap-around correction
+        arc_length = abs(beam.gantry_angle_end - beam.gantry_angle_start)
+        if arc_length > 180:
+            arc_length = 360 - arc_length
+        total_gantry_time = arc_length / machine_params.max_gantry_speed
+    
+    # Calculate total MLC travel time (max leaf travel across all segments)
+    total_mlc_travel = 0.0
     for i in range(1, len(beam.control_points)):
         cp = beam.control_points[i]
         prev_cp = beam.control_points[i - 1]
-        cpm = control_point_metrics[i]
-        
-        # MU for this segment
-        segment_mu = cpm.meterset_weight * beam_mu
-        
-        # Time limited by dose rate
-        dose_rate_time = segment_mu / (machine_params.max_dose_rate / 60)
-        
-        # Time limited by gantry speed (for arcs)
-        gantry_angle_diff = abs(cp.gantry_angle - prev_cp.gantry_angle)
-        gantry_time = gantry_angle_diff / machine_params.max_gantry_speed if beam.is_arc else 0
-        
-        # Time limited by MLC speed
         max_leaf_travel = get_max_leaf_travel(prev_cp.mlc_positions, cp.mlc_positions)
-        mlc_time = max_leaf_travel / machine_params.max_mlc_speed
-        
-        # The limiting factor determines actual time
-        segment_time = max(dose_rate_time, gantry_time, mlc_time)
-        total_time += segment_time
-        
-        if dose_rate_time >= gantry_time and dose_rate_time >= mlc_time:
-            dose_rate_limited_time += segment_time
-        elif gantry_time >= mlc_time:
-            gantry_limited_time += segment_time
-        else:
-            mlc_limited_time += segment_time
+        total_mlc_travel += max_leaf_travel
+    total_mlc_time = total_mlc_travel / machine_params.max_mlc_speed if total_mlc_travel > 0 else 0
     
-    # Determine overall limiting factor
-    if dose_rate_limited_time >= gantry_limited_time and dose_rate_limited_time >= mlc_limited_time:
+    # Delivery time is limited by the slowest factor
+    delivery_time = max(total_dose_time, total_gantry_time, total_mlc_time)
+    
+    # Determine limiting factor
+    if total_dose_time >= total_gantry_time and total_dose_time >= total_mlc_time:
         limiting_factor = "doseRate"
-    elif gantry_limited_time >= mlc_limited_time:
+    elif total_gantry_time >= total_mlc_time:
         limiting_factor = "gantrySpeed"
     else:
         limiting_factor = "mlcSpeed"
     
     # Calculate average rates
-    avg_dose_rate = (beam_mu / total_time) * 60 if total_time > 0 else 0
-    total_leaf_travel = sum(cpm.leaf_travel for cpm in control_point_metrics)
-    avg_mlc_speed = total_leaf_travel / total_time / beam.number_of_leaves if total_time > 0 else 0
+    avg_dose_rate = (beam_mu / delivery_time) * 60 if delivery_time > 0 else 0
+    avg_mlc_speed = total_mlc_travel / delivery_time if delivery_time > 0 else 0
     
     # MU per degree for arcs
     mu_per_degree: Optional[float] = None
     if beam.is_arc:
         arc_length = abs(beam.gantry_angle_end - beam.gantry_angle_start)
+        if arc_length > 180:
+            arc_length = 360 - arc_length
         if arc_length > 0:
             mu_per_degree = beam_mu / arc_length
     
-    return (total_time, limiting_factor, avg_dose_rate, avg_mlc_speed, mu_per_degree)
+    return (delivery_time, limiting_factor, avg_dose_rate, avg_mlc_speed, mu_per_degree)
 
 
 def calculate_beam_metrics(
@@ -740,6 +754,8 @@ def calculate_beam_metrics(
     weighted_mad = 0.0
     weighted_efs = 0.0
     weighted_tg = 0.0
+    weighted_sas5 = 0.0
+    weighted_sas10 = 0.0
     total_meterset_weight = 0.0
     
     for i, cpm in enumerate(control_point_metrics):
@@ -777,11 +793,12 @@ def calculate_beam_metrics(
         
         total_jaw_area += jaw_area
         
-        if cpm.small_aperture_flags:
-            if cpm.small_aperture_flags.below_5mm:
-                sas5_count += 1
-            if cpm.small_aperture_flags.below_10mm:
-                sas10_count += 1
+        # SAS: accumulate fraction of leaf pairs with gap < threshold, weighted by MU
+        if weight > 0:
+            sas5_frac = calculate_leaf_pair_fraction_below_threshold(cp.mlc_positions, 5.0)
+            sas10_frac = calculate_leaf_pair_fraction_below_threshold(cp.mlc_positions, 10.0)
+            weighted_sas5 += sas5_frac * weight
+            weighted_sas10 += sas10_frac * weight
     
     # ===== CA-based UCoMX metrics calculation - only for photon beams (electrons have no MLCs) =====
     if not is_electron and n_ca > 0:
@@ -891,8 +908,9 @@ def calculate_beam_metrics(
     JA = total_jaw_area / 100.0  # Convert mm² to cm² (same as PA conversion)
     
     total_cps = len(control_point_metrics)
-    SAS5 = sas5_count / total_cps if total_cps > 0 else 0.0
-    SAS10 = sas10_count / total_cps if total_cps > 0 else 0.0
+    # SAS: MU-weighted average fraction of leaf pairs (not CP count!)
+    SAS5 = weighted_sas5 / total_meterset_weight if total_meterset_weight > 0 else 0.0
+    SAS10 = weighted_sas10 / total_meterset_weight if total_meterset_weight > 0 else 0.0
     psmall = small_field_count / total_cps if total_cps > 0 else 0.0
     
     LTMCS = MCS / (1 + math.log10(1 + LT / 1000)) if LT > 0 else MCS
@@ -1147,6 +1165,16 @@ def calculate_plan_metrics(
     # LTMCS for plan
     LTMCS = MCS / (1 + math.log10(1 + total_lt / 1000)) if total_lt > 0 else MCS
     
+    # Plan-level MUperDegree = total MU / total gantry travel
+    mu_per_degree = (
+        total_mu / total_gt if total_gt > 0 else None
+    )
+    
+    # Plan-level avgDoseRate = total MU / total delivery time (MU/min)
+    avg_dose_rate = (
+        (total_mu / total_delivery_time * 60) if total_delivery_time > 0 else None
+    )
+    
     return PlanMetrics(
         plan_label=plan.plan_label,
         MCS=MCS,
@@ -1187,6 +1215,8 @@ def calculate_plan_metrics(
         EM=EM,
         PI=PI,
         PAM=PAM,
+        mu_per_degree=mu_per_degree,
+        avg_dose_rate=avg_dose_rate,
         beam_metrics=beam_metrics,
     )
 

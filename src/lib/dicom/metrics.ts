@@ -353,6 +353,30 @@ function calculateTongueAndGroove(mlcPositions: MLCLeafPositions, leafWidths: nu
 }
 
 /**
+ * Calculate fraction of leaf pairs with gap below threshold
+ */
+function calculateLeafPairFractionBelowThreshold(
+  mlcPositions: MLCLeafPositions,
+  thresholdMM: number
+): number {
+  const { bankA, bankB } = mlcPositions;
+  
+  if (bankA.length === 0 || bankB.length === 0) return 0;
+  
+  let countBelow = 0;
+  const n = Math.min(bankA.length, bankB.length);
+  
+  for (let i = 0; i < n; i++) {
+    const gap = bankB[i] - bankA[i];
+    if (0 < gap && gap < thresholdMM) {
+      countBelow++;
+    }
+  }
+  
+  return n > 0 ? countBelow / n : 0;
+}
+
+/**
  * Check for small apertures (for SAS calculation)
  */
 function checkSmallApertures(
@@ -515,7 +539,10 @@ function calculateControlPointMetrics(
 }
 
 /**
- * Estimate delivery time for a beam based on machine parameters
+ * Estimate delivery time for a beam based on machine parameters.
+ * 
+ * For arcs: gantry moves continuously; time = max(MU_time, arc_time, mlc_time)
+ * For static: gantry doesn't move; time = max(MU_time, mlc_time)
  */
 function estimateBeamDeliveryTime(
   beam: Beam,
@@ -528,69 +555,63 @@ function estimateBeamDeliveryTime(
   avgMLCSpeed: number;
   MUperDegree?: number;
 } {
-  let totalTime = 0;
-  let limitingFactor: 'doseRate' | 'gantrySpeed' | 'mlcSpeed' = 'doseRate';
-  let doseRateLimitedTime = 0;
-  let gantryLimitedTime = 0;
-  let mlcLimitedTime = 0;
-  
   const beamMU = beam.beamDose || 100;
   
+  // Calculate total delivery dose time (MU / dose rate for entire beam)
+  const totalDoseTime = beamMU / (machineParams.maxDoseRate / 60); // seconds
+  
+  // Calculate total gantry arc time (if arc)
+  let totalGantryTime = 0;
+  if (beam.isArc && beam.controlPoints.length > 1) {
+    // Arc length: absolute difference, with wrap-around correction
+    let arcLength = Math.abs(beam.gantryAngleEnd - beam.gantryAngleStart);
+    if (arcLength > 180) {
+      arcLength = 360 - arcLength;
+    }
+    totalGantryTime = arcLength / machineParams.maxGantrySpeed;
+  }
+  
+  // Calculate total MLC travel time (sum of all segment leaf movement)
+  let totalMLCTravel = 0;
   for (let i = 1; i < beam.controlPoints.length; i++) {
     const cp = beam.controlPoints[i];
     const prevCP = beam.controlPoints[i - 1];
-    const cpm = controlPointMetrics[i];
-    
-    // MU for this segment
-    const segmentMU = cpm.metersetWeight * beamMU;
-    
-    // Time limited by dose rate
-    const doseRateTime = segmentMU / (machineParams.maxDoseRate / 60); // seconds
-    
-    // Time limited by gantry speed (for arcs)
-    const gantryAngleDiff = Math.abs(cp.gantryAngle - prevCP.gantryAngle);
-    const gantryTime = beam.isArc ? gantryAngleDiff / machineParams.maxGantrySpeed : 0;
-    
-    // Time limited by MLC speed
     const maxLeafTravel = getMaxLeafTravel(prevCP.mlcPositions, cp.mlcPositions);
-    const mlcTime = maxLeafTravel / machineParams.maxMLCSpeed;
-    
-    // The limiting factor determines actual time
-    const segmentTime = Math.max(doseRateTime, gantryTime, mlcTime);
-    totalTime += segmentTime;
-    
-    if (doseRateTime >= gantryTime && doseRateTime >= mlcTime) {
-      doseRateLimitedTime += segmentTime;
-    } else if (gantryTime >= mlcTime) {
-      gantryLimitedTime += segmentTime;
-    } else {
-      mlcLimitedTime += segmentTime;
-    }
+    totalMLCTravel += maxLeafTravel;
   }
+  const totalMLCTime = totalMLCTravel / machineParams.maxMLCSpeed;
   
-  // Determine overall limiting factor
-  if (doseRateLimitedTime >= gantryLimitedTime && doseRateLimitedTime >= mlcLimitedTime) {
+  // Delivery time is limited by the slowest factor
+  const deliveryTime = Math.max(totalDoseTime, totalGantryTime, totalMLCTime);
+  
+  // Determine limiting factor
+  let limitingFactor: 'doseRate' | 'gantrySpeed' | 'mlcSpeed' = 'doseRate';
+  if (totalDoseTime >= totalGantryTime && totalDoseTime >= totalMLCTime) {
     limitingFactor = 'doseRate';
-  } else if (gantryLimitedTime >= mlcLimitedTime) {
+  } else if (totalGantryTime >= totalMLCTime) {
     limitingFactor = 'gantrySpeed';
   } else {
     limitingFactor = 'mlcSpeed';
   }
   
   // Calculate average rates
-  const avgDoseRate = totalTime > 0 ? (beamMU / totalTime) * 60 : 0; // MU/min
-  const totalLeafTravel = controlPointMetrics.reduce((sum, cpm) => sum + cpm.leafTravel, 0);
-  const avgMLCSpeed = totalTime > 0 ? totalLeafTravel / totalTime / beam.numberOfLeaves : 0;
+  const avgDoseRate = deliveryTime > 0 ? (beamMU / deliveryTime) * 60 : 0; // MU/min
+  const avgMLCSpeed = deliveryTime > 0 ? totalMLCTravel / deliveryTime : 0;
   
   // MU per degree for arcs
   let MUperDegree: number | undefined;
-  const arcLengthForCalc = beam.isArc ? Math.abs(beam.gantryAngleEnd - beam.gantryAngleStart) : undefined;
-  if (beam.isArc && arcLengthForCalc) {
-    MUperDegree = beamMU / arcLengthForCalc;
+  if (beam.isArc && beam.controlPoints.length > 1) {
+    let arcLength = Math.abs(beam.gantryAngleEnd - beam.gantryAngleStart);
+    if (arcLength > 180) {
+      arcLength = 360 - arcLength;
+    }
+    if (arcLength > 0) {
+      MUperDegree = beamMU / arcLength;
+    }
   }
   
   return {
-    deliveryTime: totalTime,
+    deliveryTime,
     limitingFactor,
     avgDoseRate,
     avgMLCSpeed,
@@ -664,8 +685,6 @@ function calculateBeamMetrics(
   let totalArea = 0;
   let totalPerimeter = 0;
   let areaCount = 0;
-  let sas5Count = 0;
-  let sas10Count = 0;
   let smallFieldCount = 0;
   let totalJawArea = 0;
   let weightedPI = 0;
@@ -674,6 +693,8 @@ function calculateBeamMetrics(
   let weightedMAD = 0;
   let weightedEFS = 0;
   let weightedTG = 0;
+  let weightedSAS5 = 0;
+  let weightedSAS10 = 0;
   let totalMetersetWeight = 0;
   
   for (let i = 0; i < controlPointMetrics.length; i++) {
@@ -700,6 +721,11 @@ function calculateBeamMetrics(
       const cpArea = cpm.apertureArea;
       const cpEM = cpArea > 0 ? perimeter / (2 * cpArea) : 0;
       weightedEM += cpEM * weight;
+      // SAS: fraction of leaf pairs with gap < threshold, weighted by MU
+      const sas5Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 5);
+      const sas10Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 10);
+      weightedSAS5 += sas5Frac * weight;
+      weightedSAS10 += sas10Frac * weight;
     }
     if (cpm.apertureArea > 0) {
       totalArea += cpm.apertureArea;
@@ -708,8 +734,6 @@ function calculateBeamMetrics(
       if (cpm.apertureArea < 400) smallFieldCount++;
     }
     totalJawArea += jawArea;
-    if (cpm.smallApertureFlags?.below5mm) sas5Count++;
-    if (cpm.smallApertureFlags?.below10mm) sas10Count++;
   }
   
   if (nCA > 0) {
@@ -825,8 +849,8 @@ function calculateBeamMetrics(
   const JA = totalJawArea / 100;  // Convert mm² to cm² (sum across all CPs, not averaged)
   
   const totalCPs = controlPointMetrics.length;
-  const SAS5 = totalCPs > 0 ? sas5Count / totalCPs : 0;
-  const SAS10 = totalCPs > 0 ? sas10Count / totalCPs : 0;
+  const SAS5 = totalMetersetWeight > 0 ? weightedSAS5 / totalMetersetWeight : 0;
+  const SAS10 = totalMetersetWeight > 0 ? weightedSAS10 / totalMetersetWeight : 0;
   let psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
   
   let LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
