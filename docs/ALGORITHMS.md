@@ -110,28 +110,65 @@ SAS10 = fraction of leaf pairs with gap < 10mm
 
 ### EM (Edge Metric)
 
-Measures aperture edge irregularity/jaggedness.
+Measures aperture edge irregularity as the ratio of perimeter to twice the area (ComplexityCalc-aligned).
 
 ```
-EM = sum(edge_weights × leaf_differences) / total_edge_length
+EM_j = P_j / (2 × A_j)
 ```
 
-- **Reference**: Younge KC, et al. J Appl Clin Med Phys. 2016
+Where `P_j` and `A_j` are the jaw-clipped perimeter and area at control point j.
 
-### PI (Plan Irregularity)
+**Perimeter algorithm (`side_perimeter`):**
 
-Deviation of aperture shape from a circular reference.
+The perimeter is computed by walking leaf pairs from one jaw boundary to the other, grouping contiguous open leaves:
 
 ```
-PI = perimeter / (2 × sqrt(π × area))
+for each leaf i (within Y-jaw range):
+  clip leaf width to Y-jaw boundaries → effWidth
+  clip leaf positions to X-jaw boundaries → a, b
+  gap = b - a
+  if gap ≤ 0:
+    if previous leaf was open: add bottom horizontal edge (prevB - prevA)
+    mark closed
+  else:
+    if previous leaf was closed: add top horizontal edge (gap)
+    else: add vertical steps |a - prevA| + |b - prevB|
+    add end-caps: effWidth × 2
+    mark open
+if last leaf was open: add bottom horizontal edge
 ```
 
-Where:
-- `perimeter` = total aperture edge length
-- `area` = aperture area
+**Area** is computed as the sum of `gap × effWidth` for all open leaves within the jaw boundaries.
 
-- **Range**: ≥1 (1 = perfect circle)
-- **Reference**: Du W, et al. Med Phys. 2014
+**Beam-level aggregation**: MU-weighted mean of per-CP values (not ratio of totals):
+```
+beam_EM = Σ(EM_j × ΔMU_j) / Σ(ΔMU_j)
+```
+
+MU-weighted averaging is physically necessary for VMAT plans where control points have non-uniform meterset weights due to dose-rate modulation. Control points delivering more MU contribute proportionally more to the aggregate metric.
+
+- **Unit**: 1/mm
+- **Range**: ≥0 (higher = more irregular/jagged aperture edge)
+- **Reference**: Younge KC, et al. J Appl Clin Med Phys. 2016;17(4):124-131; ComplexityCalc (Jothy/ComplexityCalc, GitHub)
+
+### PI (Plan Irregularity / Aperture Irregularity)
+
+Deviation of aperture shape from a circular reference, using the ComplexityCalc-aligned perimeter.
+
+```
+PI_j = P_j² / (4 × π × A_j)
+```
+
+Where `P_j` and `A_j` use the same jaw-clipped `side_perimeter` algorithm as EM.
+
+**Beam-level aggregation**: MU-weighted mean of per-CP values:
+```
+beam_PI = Σ(PI_j × ΔMU_j) / Σ(ΔMU_j)
+```
+
+- **Range**: ≥1 (1 = perfect circle; higher = more irregular)
+- **Note**: The squared perimeter term amplifies any differences in perimeter computation between implementations
+- **Reference**: Du W, et al. Med Phys. 2014;41(2):021716
 
 ---
 
@@ -638,7 +675,35 @@ Where:
 
 ---
 
+## Known Differences from Reference Implementations
+
+### Differences from UCoMx (Cavinato et al., Med Phys 2024)
+
+- **LSV y_max scope**: RTp-lens computes `y_max` per bank across all control points in the beam (matching UCoMx Eq. 31–32), not per control point
+- **AAV union area**: RTp-lens computes `A_max_union` as the maximum per-leaf-pair gap across all CPs in the beam, matching UCoMx Eq. 29–30
+- **EM and PI**: Not part of the UCoMx framework; they originate from Du et al. 2014 (PI) and Younge et al. 2016 (EM). RTp-lens aligns EM/PI to the ComplexityCalc reference implementation
+
+### Differences from ComplexityCalc (Du et al., Med Phys 2014)
+
+- **Aggregation**: ComplexityCalc uses trapezoidal interpolation of meterset weights; RTp-lens uses control-arc midpoint delta-MU weighting (consistent with UCoMx Eq. 2)
+- **Perimeter algorithm**: Now aligned — both use the `side_perimeter` group-walking approach with full X+Y jaw clipping
+- **Area calculation**: Now aligned — both apply full X+Y jaw clipping to aperture area
+
+### Residual Divergence (from cross-validation testing)
+
+| TPS Vendor | EM Divergence | PI Divergence | Notes |
+|---|---|---|---|
+| Eclipse, Monaco, Pinnacle | 1–3% | 1–3% | Uniform CP spacing minimises interpolation differences |
+| RayStation, Elements | up to 5% | up to 5% | Non-uniform meterset weights; attributed to trapezoidal vs. delta-MU interpolation |
+| MRIdian | ~5% | ~35% | Non-standard double-stacked MLC (0.415 cm leaf width, 138 leaf pairs); amplifies perimeter end-cap and boundary differences |
+
+The MRIdian PI divergence is a known limitation caused by the unique leaf geometry and does not indicate an error in either algorithm. The squared perimeter in the PI formula (`P²/4πA`) amplifies small absolute perimeter differences into larger relative divergences.
+
+---
+
 ## Cross-Validation Workflow
+
+### TypeScript ↔ Python (all metrics)
 
 To ensure TypeScript and Python implementations produce identical results:
 
@@ -656,6 +721,14 @@ To ensure TypeScript and Python implementations produce identical results:
 
 3. **Tolerance**: All metrics should match within `1e-4`
 
+### EM/PI ↔ ComplexityCalc
+
+The cross-validation test (`src/test/em-pi-cross-validation.test.ts`) compares RTp-lens EM and PI values against ComplexityCalc reference data using MU-weighted averaging:
+
+- Eclipse/Monaco/Pinnacle plans: expected within 3%
+- RayStation/Elements plans: expected within 5%
+- MRIdian plans: PI may diverge up to ~35% (see Residual Divergence table above)
+
 ---
 
 ## References
@@ -671,4 +744,8 @@ To ensure TypeScript and Python implementations produce identical results:
 5. Du W, et al. "Quantification of beam complexity in IMRT treatment plans." *Med Phys.* 2014;41(2):021716. [DOI: 10.1118/1.4861821](https://doi.org/10.1118/1.4861821)
 
 6. Muralidhar V, et al. "Plan aperture modulation: a new metric for assessing 3D geometry of aperture modulation in radiotherapy." *Med Phys.* 2024. [DOI: 10.1002/mp.70144](https://doi.org/10.1002/mp.70144)
+
+7. Cavinato S, et al. "UCoMX: A unified complexity metric framework for VMAT plan evaluation." *Med Phys.* 2024. [DOI: 10.1002/mp.17457](https://doi.org/10.1002/mp.17457)
+
+8. Jothy/ComplexityCalc. "Complexity metrics for radiotherapy treatment plans." GitHub. [https://github.com/Jothy/ComplexityCalc](https://github.com/Jothy/ComplexityCalc)
 
