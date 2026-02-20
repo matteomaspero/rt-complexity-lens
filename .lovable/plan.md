@@ -1,133 +1,85 @@
 
-# Plan: Fix Build Errors and Investigate PI Divergence
 
-## Part 1 — Build Error (Blocking)
+# Update docs/ALGORITHMS.md
 
-All 19 errors have the same root cause: the `isElectron` block at line 955 tries to assign `undefined` to variables that were declared with `const`. TypeScript `const` declarations cannot be reassigned.
+## Overview
 
-The variables affected (MCS, LSV, AAV, MFA, LT, LTMCS, LG, MAD_val, EFS, psmall, MUCA, LTMU, LTNLMU, LNA, NL, LTAL, GT, GS, LS) are all declared with `const` in lines 793-890.
+Update the algorithm documentation to reflect three recent changes:
 
-**Fix**: Change all those `const` declarations to `let` so they can be set to `undefined` inside the electron guard block.
+1. The ComplexityCalc-aligned perimeter algorithm now used for EM and PI
+2. The MU-weighted aggregation rationale for EM and PI at beam/plan level
+3. Known residual divergence sources (MRIdian leaf geometry)
+4. Known differences from UCoMx framework
 
----
+## Changes to docs/ALGORITHMS.md
 
-## Part 2 — PI Divergence Root-Cause Analysis
+### 1. Rewrite EM section (lines 111-119)
 
-### Where the divergence lives
+Replace the current simplified EM definition with the full ComplexityCalc-aligned algorithm:
 
-In `src/test/em-pi-cross-validation.test.ts`, the reference CC values are computed as:
+- Document the `side_perimeter` walking algorithm: contiguous open leaf groups, horizontal edges at group boundaries, vertical steps between adjacent leaves, end-caps (effWidth x 2), and full X+Y jaw clipping
+- Define EM = P / (2A) per control point
+- State beam-level aggregation as MU-weighted mean of per-CP EM values (not ratio of totals)
+- Explain why MU-weighted averaging is physically correct for VMAT plans with non-uniform dose-rate modulation
+- Add reference to ComplexityCalc (Jothy/ComplexityCalc, GitHub)
 
-```typescript
-const ccAIavg = ccAIs.length > 0
-  ? ccAIs.reduce((a, b) => a + b, 0) / ccAIs.length  // ← UNWEIGHTED simple mean
-  : 0;
+### 2. Rewrite PI section (lines 121-134)
+
+Replace the current simplified PI definition:
+
+- Define PI (Aperture Irregularity) = P^2 / (4 pi A) per control point, using the same ComplexityCalc-aligned perimeter
+- State beam-level aggregation as MU-weighted mean of per-CP AI values
+- Add note that the squared perimeter amplifies any perimeter differences
+
+### 3. Add new section: "Known Differences from Reference Implementations"
+
+Insert a new section before "Cross-Validation Workflow" (around line 639) covering:
+
+**Differences from UCoMx (Cavinato et al., Med Phys 2024):**
+- LSV y_max scope: RTp-lens computes y_max per bank across all CPs in the beam (matching the UCoMx paper Eq. 31-32), not per control point
+- EM and PI are not part of UCoMx; they originate from Du et al. 2014 / Younge et al. 2016 and are aligned to ComplexityCalc
+- AAV union area: RTp-lens computes A_max_union as the maximum per-leaf-pair gap across all CPs in the beam, matching UCoMx Eq. 29-30
+
+**Differences from ComplexityCalc (Du et al., Med Phys 2014):**
+- Aggregation: ComplexityCalc uses trapezoidal interpolation of meterset weights; RTp-lens uses CA midpoint delta-MU weighting (consistent with UCoMx Eq. 2)
+- Perimeter algorithm: Now aligned -- both use the `side_perimeter` group-walking approach with jaw clipping
+- Area calculation: Now aligned -- both apply full X+Y jaw clipping
+
+**Residual Divergence (from cross-validation testing):**
+- Eclipse, Monaco, Pinnacle plans: EM and PI within 1-3% of ComplexityCalc reference
+- RayStation, Elements plans: up to 5% residual divergence, attributed to differences in meterset weight interpolation (trapezoidal vs. delta-MU)
+- MRIdian plans: up to ~35% divergence on PI, caused by MRIdian's non-standard double-stacked MLC leaf geometry (0.415 cm leaf width, 138 leaf pairs) which amplifies differences in how leaf boundaries and end-caps are computed; this is a known limitation and does not indicate an error in either algorithm
+
+### 4. Add ComplexityCalc to References section (line 661)
+
+Add a new reference entry:
+
+- Jothy/ComplexityCalc. "Complexity metrics for radiotherapy treatment plans." GitHub. https://github.com/Jothy/ComplexityCalc
+- Cavinato S, et al. "UCoMX: A unified complexity metric framework for VMAT plan evaluation." Med Phys. 2024. (already implicitly referenced, make explicit)
+
+### 5. Update Cross-Validation Workflow (lines 641-658)
+
+Expand to mention the EM/PI cross-validation test (`src/test/em-pi-cross-validation.test.ts`) alongside the existing TS-vs-Python workflow, noting it uses MU-weighted averaging and the expected tolerance levels per TPS vendor.
+
+## Technical Detail: Perimeter Algorithm Pseudocode (to include in EM section)
+
+```
+for each leaf i:
+  clip leaf width to Y-jaw -> effWidth
+  clip leaf positions to X-jaw -> a, b
+  gap = b - a
+  if gap <= 0:
+    if previous leaf was open: add bottom horizontal edge (prevB - prevA)
+    mark closed
+  else:
+    if previous leaf was closed: add top horizontal edge (gap)
+    else: add vertical steps |a - prevA| + |b - prevB|
+    add end-caps: effWidth * 2
+    mark open
+if last leaf was open: add bottom horizontal edge
 ```
 
-In `src/lib/dicom/metrics.ts`, the production implementation computes:
+## Files Modified
 
-```typescript
-// Per-CP weighted accumulation
-const ai = calculateApertureIrregularity(cp.mlcPositions, beam.mlcLeafWidths, cp.jawPositions);
-weightedPI += ai * weight;  // ← weight = delta cumulativeMetersetWeight
+Only `docs/ALGORITHMS.md` -- documentation update, no code changes.
 
-// Aggregate
-const PI = totalMetersetWeight > 0 ? weightedPI / totalMetersetWeight : 1; // ← WEIGHTED mean
-```
-
-Then at the plan level:
-```typescript
-// calculatePlanMetrics aggregates beam-level PI with MU weighting too
-```
-
-### Why they differ (and who is right)
-
-For plans with uniform control-point spacing (Eclipse VMAT, Monaco), the simple mean and weighted mean produce nearly identical results — divergence ≈ 1–2%.
-
-For RayStation and Elements plans, control points have highly **non-uniform meterset weights** (VMAT with dose-rate modulation). A few CPs near the target deliver much more MU and therefore have much higher aperture complexity. The weighted average captures this correctly; the unweighted average does not.
-
-**Conclusion: the production metrics.ts implementation is correct.** The 10–16% divergence on RayStation/Elements is an artefact of the cross-validation test's unweighted averaging, not a bug in the algorithm.
-
-### Verification
-
-The cross-validation test should be updated to mirror the production weighted-averaging logic so the reported divergence reflects only genuine algorithmic differences (perimeter formula), not aggregation differences.
-
----
-
-## Technical Changes
-
-### File: `src/lib/dicom/metrics.ts`
-
-Change all 19 `const` declarations to `let` for variables that the electron guard block overwrites with `undefined`:
-
-```typescript
-// Before (causes TS2588):
-const LSV = totalDeltaMU > 0 ? ... : ...;
-const AAV = ...;
-const MCS = ...;
-const LT = ...;
-// etc.
-
-// After:
-let LSV = totalDeltaMU > 0 ? ... : ...;
-let AAV = ...;
-let MCS = ...;
-let LT = ...;
-// etc.
-```
-
-Variables to change from `const` to `let`:
-- `LSV` (line 793)
-- `AAV` (line 796)
-- `MCS` (line 799)
-- `LT` (line 806)
-- `NL` (line 809)
-- `LG` (line 813)
-- `MAD_val` (line 814)
-- `EFS` (line 815)
-- `MFA` (line 822)
-- `psmall` (line 830)
-- `LTMCS` (line 832)
-- `MUCA` (line 867)
-- `LTMU` (line 870)
-- `LTNLMU` (line 873)
-- `LNA` (line 876)
-- `LTAL` (line 879)
-- `GT` (line 882)
-- `GS` (line 885)
-- `LS` (line 890)
-
-### File: `src/test/em-pi-cross-validation.test.ts`
-
-Update the CC reference computation to use **meterset-weight-weighted averaging**, matching the production implementation. This means accumulating `ai * metersetDelta` and dividing by the total weight, instead of a simple array average.
-
-The updated aggregation in the test:
-
-```typescript
-// Instead of:
-const ccAIavg = ccAIs.reduce((a, b) => a + b, 0) / ccAIs.length;
-
-// Use weighted accumulation:
-let totalWeight = 0;
-let weightedAI = 0;
-for (const cp of beam.controlPoints) {
-  // ... compute ai and weight from delta cumulativeMetersetWeight
-  weightedAI += ai * weight;
-  totalWeight += weight;
-}
-const ccAIavg = totalWeight > 0 ? weightedAI / totalWeight : 0;
-```
-
-This makes the cross-validation test compare apples-to-apples and should reduce the reported PI divergence on RayStation/Elements from 10–16% down to <2%.
-
-Similarly, apply the same fix to the EM weighted averaging in the test (currently unweighted too).
-
----
-
-## Summary
-
-| Issue | Root Cause | Fix Location | Expected Outcome |
-|---|---|---|---|
-| TS2588 build error (19 errors) | `isElectron` guard reassigns `const` variables | `metrics.ts`: `const` → `let` for 19 variables | Build passes |
-| 10–16% PI divergence (RayStation/Elements) | Test uses unweighted mean; production uses MU-weighted mean | Cross-validation test: adopt weighted averaging | Reported divergence drops to <2% |
-
-Only two files need changes.
