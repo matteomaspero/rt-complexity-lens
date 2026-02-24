@@ -25,6 +25,8 @@ import {
 } from '@/components/comparison';
 import { matchBeams } from '@/lib/comparison/beam-matcher';
 import { generateComparePDF, type PDFChartRef } from '@/lib/pdf-report';
+import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAllPresetIds } from '@/lib/machine-mapping';
+import { toast } from 'sonner';
 
 export default function ComparePlans() {
   const [planA, setPlanA] = useState<SessionPlan | null>(null);
@@ -40,6 +42,25 @@ export default function ComparePlans() {
   const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
 
   const bothLoaded = planA && planB;
+
+  // Auto-select preset when Plan A is loaded
+  const autoMatchAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!planA) { autoMatchAppliedRef.current = null; return; }
+    const machine = planA.plan.treatmentMachineName;
+    if (!machine || autoMatchAppliedRef.current === machine) return;
+    const autoSelectEnabled = loadAutoSelectEnabled();
+    if (!autoSelectEnabled) return;
+    autoMatchAppliedRef.current = machine;
+    const mappings = loadMachineMappings();
+    const allPresetIds = getAllPresetIds(userPresets.map(p => p.id));
+    const matched = matchMachineToPreset(machine, planA.plan.manufacturer, mappings, allPresetIds);
+    if (matched) {
+      setPreset(matched);
+      const presetName = BUILTIN_PRESETS[matched]?.name ?? matched;
+      toast.success(`Machine detected: ${machine}`, { description: `Switched to "${presetName}" preset` });
+    }
+  }, [planA, setPreset, userPresets]);
 
   const beamMatches = useMemo(() => {
     if (!bothLoaded) return null;

@@ -28,6 +28,10 @@ import { Logo } from '@/components/ui/logo';
 import { HelpCircle, ChevronDown, Home, Github } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculatePlanMetrics } from '@/lib/dicom';
+import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
+import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAllPresetIds } from '@/lib/machine-mapping';
+import { BUILTIN_PRESETS } from '@/lib/threshold-definitions';
+import { toast } from 'sonner';
 
 export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   function InteractiveViewer(_props, ref) {
@@ -39,6 +43,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   const [selectedStructureIndex, setSelectedStructureIndex] = useState<number | null>(null);
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const { setPreset, setEnabled, userPresets, getPresetName: _getPresetName } = useThresholdConfig();
 
   // Get current beam and control point
   const currentBeam: Beam | null = sessionPlan?.plan.beams[selectedBeamIndex] ?? null;
@@ -53,13 +58,36 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     return refBeam?.beamMeterset ?? currentBeam.beamDose ?? 0;
   }, [sessionPlan, currentBeam]);
 
-  // Handle plan loaded
+  // Handle plan loaded — auto-match machine preset from DICOM metadata
   const handlePlanLoaded = useCallback((plan: SessionPlan) => {
     setSessionPlan(plan);
     setSelectedBeamIndex(0);
     setCurrentCPIndex(0);
     setIsPlaying(false);
-  }, []);
+
+    // Auto-select machine preset based on DICOM machine name
+    const autoSelectEnabled = loadAutoSelectEnabled();
+    if (autoSelectEnabled && plan.plan.treatmentMachineName) {
+      const mappings = loadMachineMappings();
+      const allPresetIds = getAllPresetIds(userPresets.map(p => p.id));
+      const matchedPresetId = matchMachineToPreset(
+        plan.plan.treatmentMachineName,
+        plan.plan.manufacturer,
+        mappings,
+        allPresetIds
+      );
+      if (matchedPresetId) {
+        setPreset(matchedPresetId);
+        setEnabled(true);
+        const presetName = BUILTIN_PRESETS[matchedPresetId]?.name
+          ?? userPresets.find(p => p.id === matchedPresetId)?.name
+          ?? matchedPresetId;
+        toast.success(`Machine detected: ${plan.plan.treatmentMachineName}`, {
+          description: `Switched to "${presetName}" preset`,
+        });
+      }
+    }
+  }, [setPreset, setEnabled, userPresets]);
 
   // Handle beam change
   const handleBeamChange = useCallback((index: number) => {

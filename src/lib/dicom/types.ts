@@ -64,6 +64,7 @@ export interface Beam {
   // Energy fields (DICOM 300A,0114)
   nominalBeamEnergy?: number; // Energy in MeV (e.g., 6, 10, 15 for photons)
   energyLabel?: string; // Clinical label (e.g., '6X', '10FFF', '9E')
+  treatmentMachineName?: string; // Treatment machine name per beam (DICOM 300A,00B2)
 }
 
 export interface FractionGroup {

@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Trash2, HelpCircle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,8 @@ import {
 import { OutlierReport } from '@/components/batch/OutlierReport';
 import { type OutlierConfig, DEFAULT_OUTLIER_CONFIG } from '@/components/batch/OutlierSettings';
 import { detectOutliers } from '@/lib/outlier-detection';
+import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAllPresetIds } from '@/lib/machine-mapping';
+import { toast } from 'sonner';
 
 export default function BatchDashboard() {
   const { plans, clearAll, isProcessing } = useBatch();
@@ -40,6 +42,49 @@ export default function BatchDashboard() {
     if (plans.length < outlierConfig.minPlans) return [];
     return detectOutliers(plans, outlierConfig);
   }, [plans, outlierConfig]);
+
+  // Auto-select machine preset when batch plans are loaded
+  const autoMatchAppliedRef = useRef<string | null>(null);
+  const successfulPlans = useMemo(() => plans.filter(p => p.status === 'success'), [plans]);
+
+  useEffect(() => {
+    if (successfulPlans.length === 0 || isProcessing) {
+      autoMatchAppliedRef.current = null;
+      return;
+    }
+    const firstMachine = successfulPlans[0]?.plan.treatmentMachineName;
+    // Only auto-match once per unique first machine
+    if (!firstMachine || autoMatchAppliedRef.current === firstMachine) return;
+
+    const autoSelectEnabled = loadAutoSelectEnabled();
+    if (!autoSelectEnabled) return;
+
+    autoMatchAppliedRef.current = firstMachine;
+    const mappings = loadMachineMappings();
+    const allPresetIds = getAllPresetIds(userPresets.map(p => p.id));
+    const matched = matchMachineToPreset(
+      firstMachine,
+      successfulPlans[0]?.plan.manufacturer,
+      mappings,
+      allPresetIds
+    );
+    if (matched) {
+      setPreset(matched);
+      const presetName = BUILTIN_PRESETS[matched]?.name ?? matched;
+
+      // Check for mixed machines
+      const machineNames = new Set(successfulPlans.map(p => p.plan.treatmentMachineName).filter(Boolean));
+      if (machineNames.size > 1) {
+        toast.info(`Mixed machines detected`, {
+          description: `Using preset for "${firstMachine}". Found: ${[...machineNames].join(', ')}`,
+        });
+      } else {
+        toast.success(`Machine detected: ${firstMachine}`, {
+          description: `Switched to "${presetName}" preset`,
+        });
+      }
+    }
+  }, [successfulPlans, isProcessing, setPreset, userPresets]);
 
   return (
     <div className="min-h-screen bg-background">

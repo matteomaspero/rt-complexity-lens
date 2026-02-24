@@ -394,6 +394,7 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
   const numCPs = getInt(beamDataSet, TAGS.NumberOfControlPoints);
   const finalMW = getFloat(beamDataSet, TAGS.FinalCumulativeMetersetWeight);
   const radiationType = getString(beamDataSet, TAGS.RadiationType) || 'PHOTON';
+  const treatmentMachineName = getString(beamDataSet, TAGS.TreatmentMachineName) || undefined;
   
   const { widths, boundaries, numLeaves } = getLeafWidths(beamDataSet);
   
@@ -451,6 +452,7 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     numberOfLeaves: numLeaves,
     nominalBeamEnergy,
     energyLabel,
+    treatmentMachineName,
   };
 }
 

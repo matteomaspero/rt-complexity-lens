@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { useBatch, type BatchPlan } from '@/contexts/BatchContext';
 import { cn } from '@/lib/utils';
 
-type SortKey = 'fileName' | 'technique' | 'MCS' | 'LSV' | 'AAV' | 'totalMU' | 'deliveryTime';
+type SortKey = 'fileName' | 'technique' | 'machine' | 'MCS' | 'LSV' | 'AAV' | 'totalMU' | 'deliveryTime';
 type SortDirection = 'asc' | 'desc';
 
 export function BatchResultsTable() {
@@ -72,6 +72,10 @@ export function BatchResultsTable() {
         case 'technique':
           aVal = a.plan.technique || '';
           bVal = b.plan.technique || '';
+          break;
+        case 'machine':
+          aVal = a.plan.treatmentMachineName || '';
+          bVal = b.plan.treatmentMachineName || '';
           break;
         case 'MCS':
           aVal = a.metrics?.MCS ?? 0;
@@ -211,6 +215,7 @@ export function BatchResultsTable() {
               <TableHead className="w-[40px]"></TableHead>
               <TableHead><SortableHeader label="File" sortKeyName="fileName" /></TableHead>
               <TableHead><SortableHeader label="Technique" sortKeyName="technique" /></TableHead>
+              <TableHead><SortableHeader label="Machine" sortKeyName="machine" /></TableHead>
               <TableHead className="text-right"><SortableHeader label="MCS" sortKeyName="MCS" /></TableHead>
               <TableHead className="text-right"><SortableHeader label="LSV" sortKeyName="LSV" /></TableHead>
               <TableHead className="text-right"><SortableHeader label="AAV" sortKeyName="AAV" /></TableHead>
@@ -246,6 +251,9 @@ export function BatchResultsTable() {
                   {plan.status === 'error' && (
                     <span className="text-xs text-destructive">{plan.error}</span>
                   )}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {plan.status === 'success' ? (plan.plan.treatmentMachineName || '—') : '—'}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm">
                   {plan.status === 'success' ? plan.metrics.MCS?.toFixed(3) : '—'}
