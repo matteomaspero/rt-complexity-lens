@@ -1,57 +1,87 @@
 
 
-# Fix: Implement Outlier Export Report Button
+# Asynchronous Control Point and MLC Comparison Mode
 
-## Problem
+## What This Adds
 
-The "Export Report" button in the Batch Analysis Outlier Report section is non-functional. When clicked, it only runs `console.log('Export outliers:', outliers)` with a `// TODO: Implement CSV export of outliers` comment. No file is downloaded.
+Currently, the CP comparison viewer locks both plans to the **same control point index**. This works when plans have identical CP counts and sampling, but is misleading when:
+- Plans have different CP counts (e.g., 178 vs 90 CPs)
+- Plans use different gantry sampling rates
+- A user wants to compare specific apertures at different delivery points (e.g., "what does Plan A look like at CP 50 vs Plan B at CP 120?")
 
-All other buttons in the batch dashboard work correctly.
+This enhancement adds an **Independent Navigation** toggle that decouples the two CP sliders, letting users freely browse each plan's control points and MLC segments independently.
 
-## Solution
+## User Experience
 
-Implement the outlier export as a CSV download, consistent with the existing batch export pattern.
+1. A new **Switch toggle** labeled "Independent Navigation" appears in the CP Comparison Viewer card header
+2. **Toggle OFF (default)**: Current behavior -- single slider controls both plans (synchronized)
+3. **Toggle ON**: Two separate sliders appear, one for Plan A and one for Plan B, each with its own range (0 to that plan's max CPs). The MLC aperture viewers, CP details, and difference overlay all update independently
+4. When in independent mode, the difference overlay still works but now compares the two independently-selected control points
+5. Charts (MU, Delivery, Polar) show **two reference lines** in independent mode -- one for each plan's current CP position
 
-## Technical Details
+## Technical Changes
 
-### File: `src/pages/BatchDashboard.tsx`
+### 1. `src/pages/ComparePlans.tsx`
+- Add state: `const [independentNav, setIndependentNav] = useState(false)`
+- Add state: `const [cpIndexB, setCpIndexB] = useState(0)` (Plan B's independent CP index)
+- Pass `independentNav`, `cpIndexB`, `setCpIndexB` down to `CPComparisonViewer`
+- Pass `cpIndexB` (or `currentCPIndex` when synced) to chart components
+- Reset `cpIndexB` to 0 when beam match or toggle changes
 
-Replace the inline TODO callback with a proper CSV export function:
+### 2. `src/components/comparison/CPComparisonViewer.tsx` (main changes)
+- Add props: `independentNav`, `onIndependentNavChange`, `cpIndexB`, `onCPIndexBChange`
+- Add the Switch toggle in the card header area
+- When `independentNav` is true:
+  - Render **two sliders** (one for Plan A, one for Plan B) with separate ranges (`0..beamA.controlPoints.length-1` and `0..beamB.controlPoints.length-1`)
+  - Use `currentCPIndex` for Plan A's CP selection
+  - Use `cpIndexB` for Plan B's CP selection
+  - Update badge to show both: "CP 12/178 | CP 45/90"
+  - The difference overlay compares `beamA.controlPoints[currentCPIndex]` vs `beamB.controlPoints[cpIndexB]`
+  - The gantry/meterset deltas compare the independently-selected CPs
+- When `independentNav` is false:
+  - Current behavior unchanged (single slider, clamped to min CP count)
 
-```typescript
-onExport={() => {
-  // Build CSV content from outlier detection results
-  const headers = ['Plan', 'File', 'Severity', 'Metric', 'Metric Name', 'Value', 'Z-Score', 'Percentile', 'Complexity Score', 'Recommendation'];
-  const rows = outliers.flatMap(o =>
-    o.outlierMetrics.map(m => [
-      o.planId,
-      o.fileName,
-      m.severity,
-      m.metricKey,
-      m.metricName,
-      m.value.toFixed(4),
-      m.zScore.toFixed(2),
-      m.percentile.toFixed(1),
-      o.overallComplexityScore.toFixed(1),
-      `"${o.recommendation}"`,
-    ].join(','))
-  );
-  const csv = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'rtplens-outlier-report.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}}
+### 3. `src/components/comparison/ComparisonMUChart.tsx`
+- Add optional prop: `cpIndexB?: number`
+- When `cpIndexB` is provided and differs from `currentCPIndex`, render a **second ReferenceLine** for Plan B's position using `hsl(var(--chart-comparison-b))` color
+
+### 4. `src/components/comparison/ComparisonDeliveryChart.tsx`
+- Same pattern: add optional `cpIndexB` prop, render second reference line when in independent mode
+
+### 5. `src/components/comparison/index.ts`
+- No changes needed (no new components)
+
+## Layout Detail (Independent Mode)
+
+```text
++--------------------------------------------------+
+| Control Point Comparison    [Independent Nav: ON] |
+| CP A: 12/178  |  CP B: 45/90                     |
++--------------------------------------------------+
+| Plan A Slider: [====|===========]  CP 12          |
+| Plan B Slider: [==================|===]  CP 45    |
++--------------------------------------------------+
+| [Side-by-Side] [Difference Overlay]               |
+|                                                   |
+|  Plan A (CP 12)       Plan B (CP 45)              |
+|  +----------+         +----------+                |
+|  | MLC A    |         | MLC B    |                |
+|  +----------+         +----------+                |
+|  Gantry: 120.5        Gantry: 278.3               |
+|  Meterset: 23.1%      Meterset: 67.2%             |
++--------------------------------------------------+
+| Gantry Delta: 157.8   Meterset Delta: 44.1%       |
++--------------------------------------------------+
 ```
 
-This requires checking the `OutlierDetectionResult` type to confirm it has `fileName` alongside `planId` (it does, based on the console log output).
+## Files Modified
 
-### Scope
+| File | Change |
+|---|---|
+| `src/pages/ComparePlans.tsx` | Add `independentNav`, `cpIndexB` state; pass to children |
+| `src/components/comparison/CPComparisonViewer.tsx` | Add toggle, dual sliders, independent CP selection |
+| `src/components/comparison/ComparisonMUChart.tsx` | Add optional second reference line |
+| `src/components/comparison/ComparisonDeliveryChart.tsx` | Add optional second reference line |
 
-- Single file change: `src/pages/BatchDashboard.tsx` (lines 149-152)
-- No new dependencies
-- Pattern matches existing CSV export logic in `src/lib/export-utils.ts`
+No new files, no new dependencies.
 
