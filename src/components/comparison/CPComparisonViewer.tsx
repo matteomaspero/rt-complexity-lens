@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Crosshair } from 'lucide-react';
+import { Crosshair, Link2 } from 'lucide-react';
 import { MLCApertureViewer } from '@/components/viewer/MLCApertureViewer';
 import { MLCDifferenceViewer } from './MLCDifferenceViewer';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
@@ -22,6 +22,8 @@ interface CPComparisonViewerProps {
   onIndependentNavChange: (value: boolean) => void;
   cpIndexB: number;
   onCPIndexBChange: (index: number) => void;
+  gantrySync: boolean;
+  onGantrySyncChange: (value: boolean) => void;
 }
 
 function CPDetails({ cp, label }: { cp: ControlPoint; label: string }) {
@@ -52,6 +54,8 @@ export function CPComparisonViewer({
   onIndependentNavChange,
   cpIndexB,
   onCPIndexBChange,
+  gantrySync,
+  onGantrySyncChange,
 }: CPComparisonViewerProps) {
   const maxCPsA = beamA.controlPoints.length;
   const maxCPsB = beamB.controlPoints.length;
@@ -110,6 +114,26 @@ export function CPComparisonViewer({
                 Independent
               </Label>
             </div>
+            {independentNav && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={gantrySync ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className={cn('h-6 gap-1 px-2 text-xs', gantrySync && 'bg-accent')}
+                      onClick={() => onGantrySyncChange(!gantrySync)}
+                    >
+                      <Link2 className="h-3 w-3" />
+                      Gantry Sync
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Auto-track Plan B to nearest matching gantry angle</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {independentNav ? (
               <div className="flex gap-1">
                 <Badge variant="outline" className="text-[hsl(var(--chart-comparison-a))]">

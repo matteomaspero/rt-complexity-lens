@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, HelpCircle, Settings, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,7 @@ export default function ComparePlans() {
   const [currentCPIndex, setCurrentCPIndex] = useState(0);
   const [independentNav, setIndependentNav] = useState(false);
   const [cpIndexB, setCpIndexB] = useState(0);
+  const [gantrySync, setGantrySync] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const compareContentRef = useRef<HTMLDivElement>(null);
   
@@ -64,7 +65,28 @@ export default function ComparePlans() {
   const handleIndependentNavChange = useCallback((value: boolean) => {
     setIndependentNav(value);
     setCpIndexB(currentCPIndex);
+    if (!value) setGantrySync(false);
   }, [currentCPIndex]);
+
+  // Auto-sync Plan B to nearest gantry match when Plan A changes
+  useEffect(() => {
+    if (!gantrySync || !independentNav || !selectedBeams) return;
+    const { beamA, beamB } = selectedBeams;
+    const cpA = beamA.controlPoints[currentCPIndex];
+    if (!cpA) return;
+    const targetAngle = cpA.gantryAngle;
+    let bestIdx = 0;
+    let bestDiff = Infinity;
+    for (let i = 0; i < beamB.controlPoints.length; i++) {
+      const diff = Math.abs(beamB.controlPoints[i].gantryAngle - targetAngle);
+      const wrappedDiff = Math.min(diff, 360 - diff);
+      if (wrappedDiff < bestDiff) {
+        bestDiff = wrappedDiff;
+        bestIdx = i;
+      }
+    }
+    setCpIndexB(bestIdx);
+  }, [gantrySync, independentNav, currentCPIndex, selectedBeams]);
 
   const handlePlanARemoved = useCallback(() => {
     setPlanA(null);
@@ -215,6 +237,8 @@ export default function ComparePlans() {
                     onIndependentNavChange={handleIndependentNavChange}
                     cpIndexB={cpIndexB}
                     onCPIndexBChange={setCpIndexB}
+                    gantrySync={gantrySync}
+                    onGantrySyncChange={setGantrySync}
                   />
                   
                    {/* Comparison Charts */}
