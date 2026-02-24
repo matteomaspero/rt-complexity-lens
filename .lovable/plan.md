@@ -1,101 +1,67 @@
 
 
-# Configurable Statistical Analysis + Visible Linac Characteristics
+# Auto-Match Machine Preset from DICOM Metadata
 
-## Overview
+## What This Solves
 
-Two improvements to make the app more configurable and transparent:
+The DICOM RT Plan file already contains the treatment machine name (tag 300A,00B2) and manufacturer (0008,0070). The app has a complete machine mapping system (`findPresetForMachine`) that can match these to presets, but it is **never called** -- the user must always manually select a preset. This change wires up the auto-detection so that:
 
-1. **Configurable Outlier Detection Parameters** -- currently the z-score thresholds and minimum plan count are hardcoded in `BatchDashboard.tsx`. These should be user-adjustable via a settings popover.
+1. **Single Plan Viewer**: After loading a plan, the machine preset auto-switches to match the DICOM machine name (with a toast notification)
+2. **Batch Analysis**: Each plan's machine name is displayed in the results table, and the global preset auto-switches to match the first loaded plan's machine (or shows a warning if plans have mixed machines)
+3. **Machine name is read per-beam** (DICOM standard), stored on the `Beam` type, and the plan-level name uses the first beam's value
 
-2. **Visible Linac Characteristics Panel** -- the currently selected machine preset's delivery parameters and thresholds are buried in the Preset Manager dialog. A compact, always-visible summary card should show the active machine's key specs (dose rate, gantry speed, MLC speed/type, thresholds) with a quick-edit button.
+## Technical Changes
 
-## Changes
+### 1. Parse Machine Name Per-Beam (DICOM Standard Fix)
 
-### 1. Configurable Outlier Detection Settings
+**`src/lib/dicom/types.ts`**
+- Add `treatmentMachineName?: string` to the `Beam` interface
 
-**New component: `src/components/batch/OutlierSettings.tsx`**
+**`src/lib/dicom/parser.ts`**
+- In `parseBeam()`: read `TreatmentMachineName` from `beamDataSet` and include it in the returned `Beam` object
+- Plan-level `treatmentMachineName` remains as-is (first beam's value) for backward compatibility
 
-A popover triggered from the Outlier Report section header with controls for:
-- **Z-Score Warning Threshold** (default: 2.0) -- slider or number input, range 1.0-4.0
-- **Z-Score Critical Threshold** (default: 3.0) -- slider or number input, range 2.0-5.0
-- **Minimum Plans Required** (default: 5) -- number input, range 3-20
-- Reset to defaults button
+### 2. Auto-Select Preset on Single Plan Load
 
-**File: `src/pages/BatchDashboard.tsx`**
+**`src/components/viewer/InteractiveViewer.tsx`**
+- Import `useThresholdConfig`
+- In `handlePlanLoaded`, call `findPresetForMachine(plan.treatmentMachineName, plan.manufacturer)`
+- If a match is found, call `setPreset(matchedPresetId)` and `setEnabled(true)`
+- Show a toast: "Machine detected: TrueBeam -- switched to Varian TrueBeam preset"
+- Only auto-switch if `autoSelectEnabled` is true (respects user setting)
 
-- Add state for outlier config: `outlierConfig` with `{ zScoreThreshold, criticalZScoreThreshold, minPlans }`
-- Pass config to `detectOutliers()` call (currently hardcoded `{ zScoreThreshold: 2.0, criticalZScoreThreshold: 3.0 }`)
-- Pass config + setter to `OutlierReport` and render the settings popover in its header
-- Update the `plans.length >= 5` guard to use `minPlans` from config
+### 3. Show Machine Name in Batch Results + Auto-Select
 
-**File: `src/components/batch/OutlierReport.tsx`**
+**`src/components/batch/BatchResultsTable.tsx`**
+- Add a "Machine" column showing `plan.treatmentMachineName` (or "---" if absent)
+- Add machine name to the filter/sort options
 
-- Add optional `outlierConfig` and `onOutlierConfigChange` props
-- Render a Settings gear icon button in the summary alert bar that opens `OutlierSettings`
+**`src/pages/BatchDashboard.tsx`**
+- After batch processing completes, check the first successful plan's `treatmentMachineName`
+- Call `findPresetForMachine()` and auto-switch the global preset if a match is found
+- If multiple distinct machine names exist in the batch, show an info toast: "Mixed machines detected -- using preset for [first machine]"
 
-### 2. Active Machine Characteristics Card
+### 4. Show Detected Machine in Plan Info Areas
 
-**New component: `src/components/settings/MachineCharacteristicsCard.tsx`**
+**`src/components/viewer/BeamSummaryCard.tsx`**
+- Display the per-beam `treatmentMachineName` if present (useful when different beams are planned on different machines, which is rare but valid)
 
-A compact card/badge strip that displays the active preset's key specs at a glance:
-- Preset name (e.g., "Varian TrueBeam")
-- Max Dose Rate, Gantry Speed, MLC Speed, MLC Model
-- Threshold summary (warning/critical counts or key values)
-- Click-to-edit: clicking the card opens the `PresetEditor` for user presets, or prompts to duplicate for built-in presets
-- Shown in the sidebar/settings area of Single Plan Viewer and in the header area of Batch/Cohort dashboards
+### 5. Comparison Mode Auto-Match
 
-**File: `src/components/viewer/ThresholdSettings.tsx`**
+**`src/pages/ComparePlans.tsx`**
+- When Plan A is loaded, auto-switch preset to match its machine (same logic as single plan)
 
-- Replace the read-only delivery params display (currently only for user presets) with the new `MachineCharacteristicsCard` for ALL preset types (built-in and user)
-- Show delivery params and threshold summary for built-in presets too (currently hidden)
-- Add an "Edit" or "Duplicate & Edit" button depending on preset type
+## Files Modified
 
-**File: `src/components/settings/index.ts`**
+| File | Change |
+|---|---|
+| `src/lib/dicom/types.ts` | Add `treatmentMachineName` to `Beam` interface |
+| `src/lib/dicom/parser.ts` | Read machine name per-beam in `parseBeam()` |
+| `src/components/viewer/InteractiveViewer.tsx` | Auto-select preset on plan load via `findPresetForMachine` |
+| `src/pages/BatchDashboard.tsx` | Auto-select preset from first plan's machine; mixed-machine warning |
+| `src/components/batch/BatchResultsTable.tsx` | Add Machine column |
+| `src/components/viewer/BeamSummaryCard.tsx` | Show per-beam machine name |
+| `src/pages/ComparePlans.tsx` | Auto-select preset on Plan A load |
 
-- Export the new `MachineCharacteristicsCard`
-
-### 3. Summary of All Files
-
-| File | Action | Description |
-|---|---|---|
-| `src/components/batch/OutlierSettings.tsx` | Create | Popover with z-score and min-plans controls |
-| `src/components/batch/OutlierReport.tsx` | Modify | Add settings trigger in header, accept config props |
-| `src/pages/BatchDashboard.tsx` | Modify | Add outlier config state, pass to detection + report |
-| `src/components/settings/MachineCharacteristicsCard.tsx` | Create | Compact read-only display of active preset specs |
-| `src/components/viewer/ThresholdSettings.tsx` | Modify | Show characteristics card for all presets (not just user) |
-| `src/components/settings/index.ts` | Modify | Export new component |
-| `src/components/batch/index.ts` | Modify | Export OutlierSettings |
-
-### Technical Details
-
-**OutlierSettings popover layout:**
-```text
-+----------------------------------+
-| Outlier Detection Settings       |
-+----------------------------------+
-| Warning Z-Score    [===|===] 2.0 |
-| Critical Z-Score   [=====|=] 3.0 |
-| Min Plans Required [  5  ]       |
-|                                  |
-| [Reset to Defaults]              |
-+----------------------------------+
-```
-
-**MachineCharacteristicsCard layout:**
-```text
-+------------------------------------------+
-| Varian TrueBeam              [Edit/Dup]  |
-| Millennium 120 | MLCX                     |
-+------------------------------------------+
-| Dose Rate: 600 MU/min  | Gantry: 6.0 d/s|
-| MLC Speed: 25 mm/s     | FFF: 1400 MU/m |
-+------------------------------------------+
-| Thresholds: MCS<0.30w/0.20c  LT>15000w  |
-+------------------------------------------+
-```
-
-The characteristics card will read from `useThresholdConfig()` using `getCurrentDeliveryParams()` and `getCurrentThresholds()` to always show the active preset's values, whether built-in, user, or custom.
-
-No new dependencies required.
+No new files, no new dependencies.
 
