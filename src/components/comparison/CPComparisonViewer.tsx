@@ -1,12 +1,15 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Crosshair } from 'lucide-react';
 import { MLCApertureViewer } from '@/components/viewer/MLCApertureViewer';
 import { MLCDifferenceViewer } from './MLCDifferenceViewer';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { Beam, ControlPoint } from '@/lib/dicom/types';
 import { cn } from '@/lib/utils';
 
@@ -64,6 +67,24 @@ export function CPComparisonViewer({
 
   const cpA = beamA.controlPoints[safeIndexA];
   const cpB = beamB.controlPoints[safeIndexB];
+
+  // Find nearest CP in Plan B matching Plan A's current gantry angle
+  const handleGantrySnap = useCallback(() => {
+    if (!cpA) return;
+    const targetAngle = cpA.gantryAngle;
+    let bestIdx = 0;
+    let bestDiff = Infinity;
+    for (let i = 0; i < maxCPsB; i++) {
+      const diff = Math.abs(beamB.controlPoints[i].gantryAngle - targetAngle);
+      // Handle 360° wraparound
+      const wrappedDiff = Math.min(diff, 360 - diff);
+      if (wrappedDiff < bestDiff) {
+        bestDiff = wrappedDiff;
+        bestIdx = i;
+      }
+    }
+    onCPIndexBChange(bestIdx);
+  }, [cpA, beamB.controlPoints, maxCPsB, onCPIndexBChange]);
 
   // Calculate differences
   const gantryDiff = cpA && cpB ? Math.abs(cpA.gantryAngle - cpB.gantryAngle) : 0;
@@ -129,9 +150,28 @@ export function CPComparisonViewer({
               />
             </div>
             <div className="space-y-1">
-              <div className="flex justify-between text-xs">
+              <div className="flex justify-between items-center text-xs">
                 <span className="text-[hsl(var(--chart-comparison-b))] font-medium">Plan B</span>
-                <span className="text-muted-foreground font-mono">CP {safeIndexB + 1}</span>
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={handleGantrySnap}
+                        >
+                          <Crosshair className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="text-xs">Snap to nearest gantry match ({cpA?.gantryAngle.toFixed(1)}°)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <span className="text-muted-foreground font-mono">CP {safeIndexB + 1}</span>
+                </div>
               </div>
               <Slider
                 value={[safeIndexB]}
