@@ -35,16 +35,19 @@ export function MLCApertureViewer({
     let minY = -200;
     let maxY = 200;
 
+    const allPositions = [...bankA, ...bankB];
     if (hasValidJaws) {
-      const allPositions = [...bankA, ...bankB];
       minX = Math.min(...allPositions, jawPositions.x1) - 20;
       maxX = Math.max(...allPositions, jawPositions.x2) + 20;
-
-      // Calculate Y extent based on leaf widths
-      const totalHeight = leafWidths.reduce((sum, w) => sum + w, 0) || bankA.length * 5;
-      minY = -totalHeight / 2 - 20;
-      maxY = totalHeight / 2 + 20;
+    } else {
+      minX = Math.min(...allPositions) - 20;
+      maxX = Math.max(...allPositions) + 20;
     }
+
+    // Calculate Y extent based on leaf widths
+    const totalHeight = leafWidths.reduce((sum, w) => sum + w, 0) || bankA.length * 5;
+    minY = -totalHeight / 2 - 20;
+    maxY = totalHeight / 2 + 20;
 
     return { minX, maxX, minY, maxY };
   }, [bankA, bankB, leafWidths, jawPositions, hasValidJaws]);
@@ -86,15 +89,13 @@ export function MLCApertureViewer({
 
   const viewBoxStr = `${viewBox.minX} ${viewBox.minY} ${viewBox.maxX - viewBox.minX} ${viewBox.maxY - viewBox.minY}`;
 
-  if (bankA.length === 0 || bankB.length === 0 || !hasValidJaws) {
+  if (bankA.length === 0 || bankB.length === 0) {
     return (
       <div 
         className="flex items-center justify-center rounded-md border bg-muted/50"
         style={{ width, height }}
       >
-        <p className="text-sm text-muted-foreground">
-          {bankA.length === 0 || bankB.length === 0 ? 'No MLC data available' : 'No jaw data available'}
-        </p>
+        <p className="text-sm text-muted-foreground">No MLC data available</p>
       </div>
     );
   }
@@ -115,18 +116,20 @@ export function MLCApertureViewer({
         className="fill-muted/30"
       />
 
-      {/* Jaw outline */}
-      <rect
-        x={jawPositions.x1}
-        y={jawPositions.y1}
-        width={jawPositions.x2 - jawPositions.x1}
-        height={jawPositions.y2 - jawPositions.y1}
-        fill="none"
-        stroke="hsl(var(--foreground))"
-        strokeWidth="1"
-        strokeDasharray="4 2"
-        opacity="0.3"
-      />
+      {/* Jaw outline (only when jaw data is available) */}
+      {hasValidJaws && (
+        <rect
+          x={jawPositions.x1}
+          y={jawPositions.y1}
+          width={jawPositions.x2 - jawPositions.x1}
+          height={jawPositions.y2 - jawPositions.y1}
+          fill="none"
+          stroke="hsl(var(--foreground))"
+          strokeWidth="1"
+          strokeDasharray="4 2"
+          opacity="0.3"
+        />
+      )}
 
       {/* Leaf pairs */}
       {leafPairs.map((pair) => (

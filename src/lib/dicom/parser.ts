@@ -427,11 +427,29 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
   // Generate clinical energy label
   const energyLabel = generateEnergyLabel(radiationType, nominalBeamEnergy, beamName);
   
-  // Determine if arc based on control point gantry angles
+  // Determine if arc based on gantry rotation direction and angle span
   const gantryAngles = controlPoints.map(cp => cp.gantryAngle);
   const gantryStart = gantryAngles[0] ?? 0;
   const gantryEnd = gantryAngles[gantryAngles.length - 1] ?? 0;
-  const isArc = Math.abs(gantryEnd - gantryStart) > 5 || beamType === 'DYNAMIC';
+  
+  // Primary indicator: rotation direction from first control point
+  const hasGantryRotation = controlPoints.length > 0 &&
+    (controlPoints[0].gantryRotationDirection === 'CW' ||
+     controlPoints[0].gantryRotationDirection === 'CCW');
+  
+  // Fallback: cumulative gantry span across all control points
+  const gantrySpan = (() => {
+    if (controlPoints.length < 2) return 0;
+    let totalSpan = 0;
+    for (let i = 1; i < gantryAngles.length; i++) {
+      let d = Math.abs(gantryAngles[i] - gantryAngles[i - 1]);
+      if (d > 180) d = 360 - d;
+      totalSpan += d;
+    }
+    return totalSpan;
+  })();
+  
+  const isArc = hasGantryRotation || gantrySpan > 5;
   
   return {
     beamNumber,
