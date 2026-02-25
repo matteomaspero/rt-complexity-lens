@@ -22,6 +22,12 @@ describe('Export TS metrics to JSON', () => {
       const plan = parseTestPlan(filename);
       const metrics = calculatePlanMetrics(plan);
 
+      // Build a map of beamNumber -> treatmentMachineName from parsed beam data
+      const machineByBeam = new Map<number, string | undefined>();
+      for (const beam of plan.beams) {
+        machineByBeam.set(beam.beamNumber, beam.treatmentMachineName);
+      }
+
       // Extract the flat plan-level metrics (exclude beamMetrics array)
       const flat: Record<string, unknown> = {
         MCS: metrics.MCS,
@@ -61,6 +67,7 @@ describe('Export TS metrics to JSON', () => {
         radiationType: b.radiationType,
         nominalBeamEnergy: b.nominalBeamEnergy,
         energyLabel: b.energyLabel,
+        treatmentMachineName: machineByBeam.get(b.beamNumber) ?? null,
         MCS: b.MCS,
         LSV: b.LSV,
         AAV: b.AAV,

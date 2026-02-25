@@ -106,6 +106,30 @@ export const UCOMX_BENCHMARK = {
   ] as UCoMXBenchmarkEntry[],
 } as const;
 
+// ---------- GitHub source file links ----------
+
+export const GITHUB_BASE_URL =
+  "https://github.com/matteomaspero/rt-complexity-lens/blob/main/";
+
+export const SOURCE_FILES = [
+  {
+    label: "Cross-validation script",
+    path: "python/tests/cross_validate.py",
+  },
+  {
+    label: "TS reference data generator",
+    path: "src/test/export-metrics-json.test.ts",
+  },
+  {
+    label: "Tolerance definitions",
+    path: "src/lib/validation-data.ts",
+  },
+  {
+    label: "Reference data (JSON)",
+    path: "python/tests/reference_data/reference_metrics_ts.json",
+  },
+] as const;
+
 // ---------- Shared algorithmic details ----------
 
 export const SHARED_ALGORITHMS = [
