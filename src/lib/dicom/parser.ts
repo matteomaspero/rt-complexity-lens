@@ -301,11 +301,19 @@ function parseControlPoint(
     ? getFloat(cpDataSet, TAGS.TableTopLateralPosition)
     : previousCP?.tableTopLateral;
   
+  // Map DICOM rotation direction to internal representation
+  // DICOM uses "CC" for counter-clockwise, we use "CCW" internally
+  const mapRotationDirection = (dir: string): 'CW' | 'CCW' | 'NONE' => {
+    if (dir === 'CW') return 'CW';
+    if (dir === 'CC' || dir === 'CCW') return 'CCW';
+    return 'NONE';
+  };
+
   return {
     index,
     gantryAngle: hasGantryAngle ? gantryAngle : (previousCP?.gantryAngle ?? 0),
     gantryRotationDirection: hasRotDir 
-      ? (gantryRotDir as 'CW' | 'CCW' | 'NONE') 
+      ? mapRotationDirection(gantryRotDir) 
       : (previousCP?.gantryRotationDirection ?? 'NONE'),
     beamLimitingDeviceAngle: hasCollAngle ? collAngle : (previousCP?.beamLimitingDeviceAngle ?? 0),
     cumulativeMetersetWeight: cumulativeMW,
