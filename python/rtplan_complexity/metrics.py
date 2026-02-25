@@ -915,7 +915,9 @@ def calculate_beam_metrics(
     
     LTMCS = MCS / (1 + math.log10(1 + LT / 1000)) if LT > 0 else MCS
     
-    # Arc length and collimator angles
+    # Calculate arc length and gantry travel via CP-by-CP summation
+    # (fixes full-arc GT=0 bug, matches TS implementation)
+    total_gantry_travel = 0.0
     arc_length: Optional[float] = None
     collimator_angle_start: Optional[float] = None
     collimator_angle_end: Optional[float] = None
@@ -924,10 +926,14 @@ def calculate_beam_metrics(
         collimator_angle_start = beam.control_points[0].beam_limiting_device_angle
         collimator_angle_end = beam.control_points[-1].beam_limiting_device_angle
     
-    if beam.is_arc and len(beam.control_points) > 1:
-        arc_length = abs(beam.gantry_angle_end - beam.gantry_angle_start)
-        if arc_length > 180:
-            arc_length = 360 - arc_length
+    if len(beam.control_points) > 1:
+        for i in range(1, len(beam.control_points)):
+            delta = abs(beam.control_points[i].gantry_angle - beam.control_points[i - 1].gantry_angle)
+            if delta > 180:
+                delta = 360 - delta
+            total_gantry_travel += delta
+    
+    arc_length = total_gantry_travel if beam.is_arc and total_gantry_travel > 0 else None
     
     # Estimate delivery time
     delivery_time, limiting_factor, avg_dose_rate, avg_mlc_speed, mu_per_degree = \
@@ -947,9 +953,10 @@ def calculate_beam_metrics(
     LNA = LT / (num_leaves * num_cps) if num_leaves > 0 and num_cps > 0 else 0
     LTAL = LT / arc_length if arc_length and arc_length > 0 else None
     
-    # GT, GS, LS only for photon beams (electrons don't have MLCs)
+    # GT - Gantry Travel (total angle traversed across all CPs)
+    # GS, LS only for photon beams (electrons don't have MLCs)
     if not is_electron:
-        GT = arc_length
+        GT = total_gantry_travel if total_gantry_travel > 0 else None
         GS = arc_length / delivery_time if arc_length and delivery_time > 0 else None
         LS = avg_mlc_speed
 
@@ -1056,6 +1063,14 @@ def calculate_beam_metrics(
         limiting_factor=limiting_factor,
         collimator_angle_start=collimator_angle_start,
         collimator_angle_end=collimator_angle_end,
+        # Beam geometry (from first control point)
+        gantry_angle_start=beam.gantry_angle_start,
+        gantry_angle_end=beam.gantry_angle_end,
+        patient_support_angle=beam.control_points[0].patient_support_angle if beam.control_points else None,
+        isocenter_position=beam.control_points[0].isocenter_position if beam.control_points else None,
+        table_top_vertical=beam.control_points[0].table_top_vertical if beam.control_points else None,
+        table_top_longitudinal=beam.control_points[0].table_top_longitudinal if beam.control_points else None,
+        table_top_lateral=beam.control_points[0].table_top_lateral if beam.control_points else None,
         SAS5=SAS5,
         SAS10=SAS10,
         EM=EM,
@@ -1157,7 +1172,7 @@ def calculate_plan_metrics(
     total_delivery_time = sum(bm.estimated_delivery_time or 0 for bm in beam_metrics)
     total_gt = sum(bm.GT or 0 for bm in beam_metrics)
     total_pa = sum(bm.PA or 0 for bm in beam_metrics)
-    total_ja = sum(bm.JA or 0 for bm in beam_metrics) / n_beams if beam_metrics else 0
+    total_ja = sum(bm.JA or 0 for bm in beam_metrics) if beam_metrics else 0
     
     # Plan-level LTMU = total LT / total MU
     LTMU_plan = total_lt / total_mu if total_mu > 0 else None

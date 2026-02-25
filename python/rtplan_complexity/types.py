@@ -115,6 +115,7 @@ class Beam:
     # Energy fields (DICOM 300A,0114)
     nominal_beam_energy: Optional[float] = None  # Energy in MeV
     energy_label: Optional[str] = None  # Clinical label (e.g., '6X', '10FFF', '9E')
+    treatment_machine_name: Optional[str] = None  # Treatment machine name per beam (DICOM 300A,00B2)
 
 
 @dataclass
@@ -281,6 +282,15 @@ class BeamMetrics:
     # Collimator info
     collimator_angle_start: Optional[float] = None
     collimator_angle_end: Optional[float] = None
+    
+    # Beam geometry (from first control point)
+    gantry_angle_start: Optional[float] = None
+    gantry_angle_end: Optional[float] = None
+    patient_support_angle: Optional[float] = None
+    isocenter_position: Optional[Tuple[float, float, float]] = None
+    table_top_vertical: Optional[float] = None  # mm
+    table_top_longitudinal: Optional[float] = None  # mm
+    table_top_lateral: Optional[float] = None  # mm
     
     # Additional complexity metrics
     SAS5: Optional[float] = None  # Small Aperture Score (5mm)

@@ -76,6 +76,25 @@ describe('Export TS metrics to JSON', () => {
         LTMCS: b.LTMCS,
         beamMU: b.beamMU,
         numberOfControlPoints: b.numberOfControlPoints,
+        // Beam geometry
+        gantryAngleStart: b.gantryAngleStart,
+        gantryAngleEnd: b.gantryAngleEnd,
+        collimatorAngleStart: b.collimatorAngleStart,
+        collimatorAngleEnd: b.collimatorAngleEnd,
+        patientSupportAngle: b.patientSupportAngle ?? null,
+        isocenterPosition: b.isocenterPosition ?? null,
+        tableTopVertical: b.tableTopVertical ?? null,
+        tableTopLongitudinal: b.tableTopLongitudinal ?? null,
+        tableTopLateral: b.tableTopLateral ?? null,
+        // Deliverability
+        GT: b.GT ?? null,
+        arcLength: b.arcLength ?? null,
+        estimatedDeliveryTime: b.estimatedDeliveryTime ?? null,
+        avgDoseRate: b.avgDoseRate ?? null,
+        MUCA: b.MUCA ?? null,
+        LTMU: b.LTMU ?? null,
+        PA: b.PA ?? null,
+        JA: b.JA ?? null,
       }));
 
       results[filename] = flat;

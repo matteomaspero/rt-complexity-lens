@@ -206,10 +206,20 @@ def _parse_control_point(
         gantry_angle = previous_cp.gantry_angle
     
     # Gantry rotation direction
-    gantry_dir = _get_string(cp_ds, "GantryRotationDirection", "NONE")
+    # Map DICOM "CC" to internal "CCW" (DICOM uses "CC" for counter-clockwise)
+    raw_gantry_dir = _get_string(cp_ds, "GantryRotationDirection", "NONE")
     has_gantry_dir = hasattr(cp_ds, "GantryRotationDirection")
-    if not has_gantry_dir and previous_cp:
+    if has_gantry_dir:
+        if raw_gantry_dir == "CW":
+            gantry_dir = "CW"
+        elif raw_gantry_dir in ("CC", "CCW"):
+            gantry_dir = "CCW"
+        else:
+            gantry_dir = "NONE"
+    elif previous_cp:
         gantry_dir = previous_cp.gantry_rotation_direction
+    else:
+        gantry_dir = "NONE"
     
     # Collimator angle
     coll_angle = _get_float(cp_ds, "BeamLimitingDeviceAngle")
@@ -396,8 +406,19 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
     gantry_start = gantry_angles[0] if gantry_angles else 0
     gantry_end = gantry_angles[-1] if gantry_angles else 0
     
-    # Determine if arc based on gantry angle change
-    is_arc = abs(gantry_end - gantry_start) > 5 or beam_type == "DYNAMIC"
+    # Determine if arc: check rotation direction first (CW/CCW), then gantry span fallback
+    # Matches TS logic: explicit rotation direction OR gantry span > 5°
+    has_rotation = any(
+        cp.gantry_rotation_direction in ("CW", "CCW")
+        for cp in control_points
+    )
+    gantry_span = abs(gantry_end - gantry_start)
+    if gantry_span > 180:
+        gantry_span = 360 - gantry_span
+    is_arc = has_rotation or gantry_span > 5
+    
+    # Per-beam treatment machine name
+    beam_machine_name = _get_string(beam_ds, "TreatmentMachineName") or None
     
     return Beam(
         beam_number=beam_number,
@@ -418,6 +439,7 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
         number_of_leaves=num_leaves,
         nominal_beam_energy=nominal_beam_energy,
         energy_label=energy_label,
+        treatment_machine_name=beam_machine_name,
     )
 
 
