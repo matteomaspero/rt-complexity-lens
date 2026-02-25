@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, Package, Scale, TrendingUp, BookOpen, Calculator, Wrench, Terminal, HelpCircle } from 'lucide-react';
+import { BarChart3, Package, Scale, TrendingUp, BookOpen, Calculator, Wrench, Terminal, HelpCircle, ShieldCheck } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const InteractiveViewer = lazy(() => import('@/components/viewer').then(
@@ -25,6 +25,7 @@ const NAV_LINKS = [
   { label: 'Help & FAQ', icon: HelpCircle, path: '/help' },
   { label: 'Technical Docs', icon: Wrench, path: '/technical' },
   { label: 'Python Toolkit', icon: Terminal, path: '/python-docs' },
+  { label: 'Validation Report', icon: ShieldCheck, path: '/validation' },
 ] as const;
 
 const Index = () => {

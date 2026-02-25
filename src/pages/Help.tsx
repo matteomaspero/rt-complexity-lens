@@ -130,6 +130,8 @@ export default function Help() {
                     'Calculate complexity metrics at plan, beam, and control point levels',
                     'Compare plans side-by-side with automated beam matching',
                     'Perform cohort analysis with statistical clustering',
+                    'Automatic machine preset detection from DICOM metadata',
+                    'Configurable outlier detection parameters',
                     'Export metrics to CSV and charts as PNG',
                   ].map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -202,7 +204,7 @@ export default function Help() {
                       'Cluster by technique, complexity, MU level, etc.',
                       'Extended statistics (IQR, percentiles, skewness)',
                       'Box plots, scatter matrix, correlation heatmap',
-                      'Automatic outlier detection',
+                    'Automatic outlier detection with configurable z-score thresholds',
                       'Cohort CSV/JSON export',
                     ]}
                     linkTo="/cohort"
@@ -380,6 +382,38 @@ export default function Help() {
                   <strong>Threshold direction matters:</strong> Some metrics alert when values are too <em>low</em> (e.g., MCS &lt; 0.2), 
                   while others alert when too <em>high</em> (e.g., Leaf Travel &gt; 50,000mm).
                 </NoteBox>
+
+                <Separator />
+
+                <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-primary rounded-full" />
+                  Automatic Machine Detection
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  RTp-lens reads the DICOM tag <code className="font-mono bg-muted px-1 py-0.5 rounded text-xs">(300A,00B2) TreatmentMachineName</code> from each beam and automatically matches it to the appropriate machine preset.
+                </p>
+                <ul className="space-y-2">
+                  {[
+                    'Auto-matching to presets on plan load (single, batch, comparison modes)',
+                    'Machine name shown in header badge, beam summary cards, batch results table, and PDF reports',
+                    'Mixed machine warning in batch mode when plans use different machines',
+                  ].map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Separator />
+
+                <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="w-1 h-5 bg-primary rounded-full" />
+                  Machine Characteristics Card
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  A compact card displays the active preset specifications at a glance (MLC type, max dose rate, gantry/MLC speeds, supported energies). Built-in presets can be duplicated and edited to create custom configurations.
+                </p>
 
                 <Separator />
 
@@ -748,6 +782,8 @@ export default function Help() {
                 <p className="text-muted-foreground leading-relaxed">
                   The <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">rtplan-complexity</code> Python 
                   package provides identical metric calculations for offline analysis on your local workstation.
+                  Algorithmic parity is verified by continuous cross-validation (see{' '}
+                  <Link to="/validation" className="text-primary hover:underline">Validation Report</Link>).
                 </p>
 
                 <Separator className="my-4" />
@@ -970,6 +1006,7 @@ print(f"LSV: {metrics.LSV:.4f}")`}</code>
                     { label: 'Version', value: '1.0.0' },
                     { label: 'Privacy', value: 'All processing occurs locally in your browser — no data is uploaded to servers' },
                     { label: 'Metrics', value: 'Complexity metrics inspired by published research (see References)' },
+                    { label: 'Validation', value: 'TS/Python parity verified by cross-validation' },
                   ].map((item, idx) => (
                     <div key={idx} className="flex items-start gap-3">
                       <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -979,6 +1016,11 @@ print(f"LSV: {metrics.LSV:.4f}")`}</code>
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="pt-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/validation">View Validation Report</Link>
+                  </Button>
                 </div>
                 <NoteBox>
                   This tool is intended for research and educational purposes. Clinical use should 

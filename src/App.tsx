@@ -21,6 +21,7 @@ const BatchDashboard = lazy(() => import("./pages/BatchDashboard"));
 const ComparePlans = lazy(() => import("./pages/ComparePlans"));
 const CohortAnalysis = lazy(() => import("./pages/CohortAnalysis"));
 const PythonDocs = lazy(() => import("./pages/PythonDocs"));
+const ValidationReport = lazy(() => import("./pages/ValidationReport"));
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
                   <Route path="/compare" element={<Suspense fallback={<PageLoader />}><ComparePlans /></Suspense>} />
                   <Route path="/cohort" element={<Suspense fallback={<PageLoader />}><CohortAnalysis /></Suspense>} />
                   <Route path="/python-docs" element={<Suspense fallback={<PageLoader />}><PythonDocs /></Suspense>} />
+                  <Route path="/validation" element={<Suspense fallback={<PageLoader />}><ValidationReport /></Suspense>} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
