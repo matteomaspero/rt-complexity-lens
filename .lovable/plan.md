@@ -1,62 +1,80 @@
 
 
-# Fix DICOM Gantry Rotation Direction Parsing (CC vs CCW)
+# Application Audit Report
 
-## Problem
+## Overall Assessment
 
-The DICOM standard defines Gantry Rotation Direction values as `"CW"`, `"CC"`, and `"NONE"`. However, the codebase uses `"CCW"` instead of `"CC"` throughout. The parser casts the raw DICOM string directly without mapping `"CC"` to `"CCW"`, causing:
+The application is **largely correct** with solid algorithmic foundations. The core UCoMx metrics (MCS, LSV, AAV) use proper CA midpoint interpolation, active leaf filtering, and union aperture computation consistent with the UCoMx v1.1 paper. The cross-validation framework confirms TS-Python parity at tight tolerances (25/25 plans passing).
 
-1. **Counter-clockwise arcs show "Static" rotation label** -- the `BeamSummaryCard` checks for `'CCW'` which never matches the DICOM value `'CC'`
-2. **`isArc` detection partially broken for CC beams** -- the `hasGantryRotation` check looks for `'CCW'`, missing `'CC'` arcs (saved only by the `gantrySpan > 5` fallback)
-3. **Wrong rotation icon** -- CC arcs get the `Minus` icon (static) instead of `RotateCcw`
+However, I found **3 correctness issues** and **2 minor inconsistencies** worth addressing.
 
-This affects the CS_RS_UN_2A plan (RayStation VMAT) where beams are correctly identified as "VMAT Arc" via the gantry span fallback, but the rotation direction label incorrectly shows "Static".
+---
 
-## Root Cause
+## Issues Found
 
-In `src/lib/dicom/parser.ts` line 308, the raw DICOM string is cast directly:
+### 1. CRITICAL: Python `is_arc` gantry span uses wrong calculation
+
+**TS** computes cumulative CP-by-CP gantry span (correct for full/near-full arcs):
 ```typescript
-gantryRotationDirection: hasRotDir 
-  ? (gantryRotDir as 'CW' | 'CCW' | 'NONE') 
-  : (previousCP?.gantryRotationDirection ?? 'NONE'),
+let totalSpan = 0;
+for (let i = 1; i < gantryAngles.length; i++) {
+  let d = Math.abs(gantryAngles[i] - gantryAngles[i - 1]);
+  if (d > 180) d = 360 - d;
+  totalSpan += d;
+}
 ```
 
-When DICOM provides `"CC"`, this gets stored as `"CC"` but the TypeScript type says `'CW' | 'CCW' | 'NONE'`, so no check ever matches it.
-
-## Fix
-
-### 1. Map DICOM `"CC"` to internal `"CCW"` in `src/lib/dicom/parser.ts` (line 307-309)
-
-Add a mapping function that normalizes the DICOM rotation direction values:
-
-```typescript
-// Map DICOM rotation direction to internal representation
-// DICOM uses "CC" for counter-clockwise, we use "CCW" internally
-const mapRotationDirection = (dir: string): 'CW' | 'CCW' | 'NONE' => {
-  if (dir === 'CW') return 'CW';
-  if (dir === 'CC' || dir === 'CCW') return 'CCW';
-  return 'NONE';
-};
+**Python** uses simple endpoint difference (incorrect for full arcs):
+```python
+gantry_span = abs(gantry_end - gantry_start)
+if gantry_span > 180:
+    gantry_span = 360 - gantry_span
 ```
 
-Then use it in the control point parsing:
-```typescript
-gantryRotationDirection: hasRotDir 
-  ? mapRotationDirection(gantryRotDir)
-  : (previousCP?.gantryRotationDirection ?? 'NONE'),
-```
+For a 358° arc (e.g., start=181°, end=179°), TS correctly computes ~358° but Python computes 2°. This means Python would miss detecting full-circle arcs as VMAT if the rotation direction field is absent.
 
-No other files need changes -- the rest of the codebase already uses `'CCW'` consistently. Only the parser input mapping is missing.
+**Fix**: Replace with CP-by-CP cumulative summation in `python/rtplan_complexity/parser.py` lines 415-417.
 
-## Files Modified
+### 2. MINOR: Python `has_rotation` checks `any()` CP vs TS checks only CP[0]
 
-| File | Change |
-|---|---|
-| `src/lib/dicom/parser.ts` | Add `mapRotationDirection` helper, use it in `parseControlPoint` to normalize `"CC"` to `"CCW"` |
+**TS** (parser.ts line 444): checks only `controlPoints[0].gantryRotationDirection`
+**Python** (parser.py line 411): checks `any(cp ... for cp in control_points)`
 
-## Impact
+In standard DICOM, gantry rotation direction is set on CP 0 and inherited. These should produce the same result in practice, but for strict parity, Python should check only the first CP.
 
-- Counter-clockwise arcs now correctly show the rotation icon and "Counter-CW" label
-- `hasGantryRotation` check in `isArc` now works for CC beams (no longer relying solely on gantry span fallback)
-- All existing CW and NONE plans are unaffected
-- No changes to types, metrics, or other components needed
+**Fix**: Change `any(...)` to `control_points[0].gantry_rotation_direction in ("CW", "CCW") if control_points else False`.
+
+### 3. MINOR: Beam-level `JA` accumulation counts ALL CPs including weight=0
+
+Both TS and Python sum `JA` across **all** control points (including CP[0] which has `metersetWeight=0`). This is consistent between TS and Python (so no parity issue), but it means the first CP's jaw area contributes to the total despite delivering no MU. This is a design choice that could be intentional (representing the setup field), but worth noting.
+
+---
+
+## Verified Correct
+
+- **Core UCoMx metrics** (MCS, LSV, AAV): CA midpoint interpolation, active leaf filtering, union A_max, Masi per-bank LSV with product combining -- all correct per the paper
+- **CC→CCW gantry direction mapping**: Both TS and Python correctly normalize DICOM "CC" to "CCW"
+- **`isArc` primary detection**: Rotation direction check is correct; cumulative gantry span fallback is correct in TS
+- **Technique determination**: VMAT/IMRT/CONFORMAL logic matches between TS and Python
+- **Jaw derivation for Elekta/Monaco**: Correctly derives X/Y jaw positions from open MLC leaves when ASYMX/ASYMY are absent
+- **MLC position inheritance**: Both implementations correctly inherit MLC and jaw positions from previous CP when not present
+- **Leaf travel**: Active-leaf-only travel computation matches between TS and Python
+- **PM formula**: Correct per UCoMx Eq. (38)
+- **Delivery time estimation**: Correct max(dose_time, gantry_time, mlc_time) approach
+- **Plan-level aggregation**: MU-weighted averages for core metrics, additive for LT/GT/PA/JA
+- **Energy label generation**: Correct PHOTON→X/FFF, ELECTRON→E mapping
+- **Anonymization**: Patient ID and institution are properly masked
+- **Perimeter calculation**: Side_perimeter algorithm with jaw clipping is correct
+- **EFS formula**: Sterling's 4A/P is correct
+
+---
+
+## Proposed Changes
+
+| File | Change | Priority |
+|---|---|---|
+| `python/rtplan_complexity/parser.py` | Fix `gantry_span` to use cumulative CP-by-CP sum (match TS) | High |
+| `python/rtplan_complexity/parser.py` | Change `has_rotation` from `any()` to check only first CP (match TS) | Low |
+
+Two targeted edits to the Python parser. No TS changes needed.
+
