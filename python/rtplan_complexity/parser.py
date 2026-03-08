@@ -408,13 +408,17 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
     
     # Determine if arc: check rotation direction first (CW/CCW), then gantry span fallback
     # Matches TS logic: explicit rotation direction OR gantry span > 5°
-    has_rotation = any(
-        cp.gantry_rotation_direction in ("CW", "CCW")
-        for cp in control_points
+    has_rotation = (
+        control_points[0].gantry_rotation_direction in ("CW", "CCW")
+        if control_points else False
     )
-    gantry_span = abs(gantry_end - gantry_start)
-    if gantry_span > 180:
-        gantry_span = 360 - gantry_span
+    # Cumulative CP-by-CP gantry span (handles full 360° arcs correctly)
+    gantry_span = 0.0
+    for i in range(1, len(gantry_angles)):
+        d = abs(gantry_angles[i] - gantry_angles[i - 1])
+        if d > 180:
+            d = 360 - d
+        gantry_span += d
     is_arc = has_rotation or gantry_span > 5
     
     # Per-beam treatment machine name
