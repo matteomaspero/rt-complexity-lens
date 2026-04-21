@@ -703,8 +703,10 @@ function calculateBeamMetrics(
   let weightedMAD = 0;
   let weightedEFS = 0;
   let weightedTG = 0;
+  let weightedSAS2 = 0;
   let weightedSAS5 = 0;
   let weightedSAS10 = 0;
+  let weightedSAS20 = 0;
   let totalMetersetWeight = 0;
   
   for (let i = 0; i < controlPointMetrics.length; i++) {
@@ -732,10 +734,14 @@ function calculateBeamMetrics(
       const cpEM = cpArea > 0 ? perimeter / (2 * cpArea) : 0;
       weightedEM += cpEM * weight;
       // SAS: fraction of leaf pairs with gap < threshold, weighted by MU
+      const sas2Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 2);
       const sas5Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 5);
       const sas10Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 10);
+      const sas20Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 20);
+      weightedSAS2 += sas2Frac * weight;
       weightedSAS5 += sas5Frac * weight;
       weightedSAS10 += sas10Frac * weight;
+      weightedSAS20 += sas20Frac * weight;
     }
     if (cpm.apertureArea > 0) {
       totalArea += cpm.apertureArea;
@@ -869,8 +875,10 @@ function calculateBeamMetrics(
   const JA = totalJawArea / 100;  // Convert mm² to cm² (sum across all CPs, not averaged)
   
   const totalCPs = controlPointMetrics.length;
+  const SAS2 = totalMetersetWeight > 0 ? weightedSAS2 / totalMetersetWeight : 0;
   const SAS5 = totalMetersetWeight > 0 ? weightedSAS5 / totalMetersetWeight : 0;
   const SAS10 = totalMetersetWeight > 0 ? weightedSAS10 / totalMetersetWeight : 0;
+  const SAS20 = totalMetersetWeight > 0 ? weightedSAS20 / totalMetersetWeight : 0;
   let psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
   
   let LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
