@@ -757,8 +757,10 @@ def calculate_beam_metrics(
     weighted_mad = 0.0
     weighted_efs = 0.0
     weighted_tg = 0.0
+    weighted_sas2 = 0.0
     weighted_sas5 = 0.0
     weighted_sas10 = 0.0
+    weighted_sas20 = 0.0
     total_meterset_weight = 0.0
     
     for i, cpm in enumerate(control_point_metrics):
@@ -798,10 +800,14 @@ def calculate_beam_metrics(
         
         # SAS: accumulate fraction of leaf pairs with gap < threshold, weighted by MU
         if weight > 0:
+            sas2_frac = calculate_leaf_pair_fraction_below_threshold(cp.mlc_positions, 2.0)
             sas5_frac = calculate_leaf_pair_fraction_below_threshold(cp.mlc_positions, 5.0)
             sas10_frac = calculate_leaf_pair_fraction_below_threshold(cp.mlc_positions, 10.0)
+            sas20_frac = calculate_leaf_pair_fraction_below_threshold(cp.mlc_positions, 20.0)
+            weighted_sas2 += sas2_frac * weight
             weighted_sas5 += sas5_frac * weight
             weighted_sas10 += sas10_frac * weight
+            weighted_sas20 += sas20_frac * weight
     
     # ===== CA-based UCoMX metrics calculation - only for photon beams (electrons have no MLCs) =====
     if not is_electron and n_ca > 0:
@@ -912,8 +918,10 @@ def calculate_beam_metrics(
     
     total_cps = len(control_point_metrics)
     # SAS: MU-weighted average fraction of leaf pairs (not CP count!)
+    SAS2 = weighted_sas2 / total_meterset_weight if total_meterset_weight > 0 else 0.0
     SAS5 = weighted_sas5 / total_meterset_weight if total_meterset_weight > 0 else 0.0
     SAS10 = weighted_sas10 / total_meterset_weight if total_meterset_weight > 0 else 0.0
+    SAS20 = weighted_sas20 / total_meterset_weight if total_meterset_weight > 0 else 0.0
     psmall = small_field_count / total_cps if total_cps > 0 else 0.0
     
     LTMCS = MCS / (1 + math.log10(1 + LT / 1000)) if LT > 0 else MCS
@@ -1074,8 +1082,10 @@ def calculate_beam_metrics(
         table_top_vertical=beam.control_points[0].table_top_vertical if beam.control_points else None,
         table_top_longitudinal=beam.control_points[0].table_top_longitudinal if beam.control_points else None,
         table_top_lateral=beam.control_points[0].table_top_lateral if beam.control_points else None,
+        SAS2=SAS2,
         SAS5=SAS5,
         SAS10=SAS10,
+        SAS20=SAS20,
         EM=EM,
         PI=PI,
         BAM=BAM,
@@ -1156,8 +1166,10 @@ def calculate_plan_metrics(
         TG = weighted_avg("TG")
         MD = weighted_avg("MD")
         MI = weighted_avg("MI")
+        SAS2 = weighted_avg("SAS2")
         SAS5 = weighted_avg("SAS5")
         SAS10 = weighted_avg("SAS10")
+        SAS20 = weighted_avg("SAS20")
         EM = weighted_avg("EM")
         PI = weighted_avg("PI")
         PAM = weighted_avg("BAM")  # PAM is the MU-weighted average of BAM
@@ -1166,7 +1178,7 @@ def calculate_plan_metrics(
         LG = MAD = EFS = psmall = None
         MUCA = LTNLMU = LNA = LTAL = mDRV = None
         GS = mGSV = LS = PM = TG = MD = MI = None
-        SAS5 = SAS10 = EM = PI = None
+        SAS2 = SAS5 = SAS10 = SAS20 = EM = PI = None
         PAM = None
         LTMU_plan = None
     
@@ -1228,8 +1240,10 @@ def calculate_plan_metrics(
         MD=MD,
         MI=MI,
         total_delivery_time=total_delivery_time if total_delivery_time > 0 else None,
+        SAS2=SAS2,
         SAS5=SAS5,
         SAS10=SAS10,
+        SAS20=SAS20,
         EM=EM,
         PI=PI,
         PAM=PAM,
