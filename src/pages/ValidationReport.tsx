@@ -75,7 +75,7 @@ function SourceFilesSection() {
 
 export default function ValidationReport() {
   const { planCount, passCount, failCount, lastValidated } = CROSS_VALIDATION_SUMMARY;
-  const allPassed = failCount === 0;
+  const allPassed = (failCount as number) === 0;
 
   return (
     <div className="min-h-screen bg-background">
