@@ -287,25 +287,33 @@ def calculate_leaf_gap(mlc_positions: MLCLeafPositions) -> float:
     return total_gap / open_count if open_count > 0 else 0.0
 
 
-def calculate_mad(mlc_positions: MLCLeafPositions) -> float:
-    """Calculate Mean Asymmetry Distance (MAD)."""
+def calculate_mad(
+    mlc_positions: MLCLeafPositions,
+    jaw_positions: Optional[JawPositions] = None,
+) -> float:
+    """Calculate Mean Asymmetry Distance (MAD).
+
+    Reference axis is the jaw center (X1+X2)/2 — not the isocenter.
+    For symmetric jaws this is identical; for off-axis fields it avoids
+    overstating asymmetry. Aligns with PyComplexityMetric/ComplexityCalc.
+    """
     bank_a = mlc_positions.bank_a
     bank_b = mlc_positions.bank_b
-    
+
     if len(bank_a) == 0 or len(bank_b) == 0:
         return 0.0
-    
+
+    central_axis = (jaw_positions.x1 + jaw_positions.x2) / 2.0 if jaw_positions else 0.0
     total_asymmetry = 0.0
     open_count = 0
-    central_axis = 0.0  # Assume isocenter at 0
-    
+
     for i in range(min(len(bank_a), len(bank_b))):
         gap = bank_b[i] - bank_a[i]
         if gap > 0:
             center_position = (bank_a[i] + bank_b[i]) / 2
             total_asymmetry += abs(center_position - central_axis)
             open_count += 1
-    
+
     return total_asymmetry / open_count if open_count > 0 else 0.0
 
 
@@ -336,38 +344,33 @@ def calculate_tongue_and_groove(
     mlc_positions: MLCLeafPositions,
     leaf_widths: List[float]
 ) -> float:
-    """
-    Calculate Tongue-and-Groove index.
-    T&G effect occurs when adjacent leaves have different positions.
+    """Calculate Tongue-and-Groove index (Webb 2001 / Younge 2016 -style).
+
+    TGI = Σ_pairs (|ΔA| + |ΔB|) / Σ_pairs (gap_i + gap_{i+1})
+
+    Removes the legacy 0.5 mm magic constant. Dimensionless, in [0, 1].
     """
     bank_a = mlc_positions.bank_a
     bank_b = mlc_positions.bank_b
-    
+
     if len(bank_a) < 2 or len(bank_b) < 2:
         return 0.0
-    
-    tg_exposure = 0.0
-    total_area = 0.0
+
     num_pairs = min(len(bank_a), len(bank_b))
-    
+    step_sum = 0.0
+    gap_sum = 0.0
+
     for i in range(num_pairs - 1):
-        gap_current = bank_b[i] - bank_a[i]
-        gap_next = bank_b[i + 1] - bank_a[i + 1]
-        leaf_width = leaf_widths[i] if i < len(leaf_widths) else 5.0
-        
-        if gap_current > 0:
-            total_area += gap_current * leaf_width
-            
-            if gap_next <= 0:
-                # Adjacent leaf is closed
-                tg_exposure += gap_current * 0.5
-            else:
-                # Both open but at different positions
-                position_diff_a = abs(bank_a[i + 1] - bank_a[i])
-                position_diff_b = abs(bank_b[i + 1] - bank_b[i])
-                tg_exposure += (position_diff_a + position_diff_b) * 0.25
-    
-    return tg_exposure / total_area if total_area > 0 else 0.0
+        gap_current = max(0.0, bank_b[i] - bank_a[i])
+        gap_next = max(0.0, bank_b[i + 1] - bank_a[i + 1])
+        if gap_current <= 0 and gap_next <= 0:
+            continue
+        step_a = abs(bank_a[i + 1] - bank_a[i])
+        step_b = abs(bank_b[i + 1] - bank_b[i])
+        step_sum += step_a + step_b
+        gap_sum += gap_current + gap_next
+
+    return step_sum / gap_sum if gap_sum > 0 else 0.0
 
 
 def check_small_apertures(mlc_positions: MLCLeafPositions) -> SmallApertureFlags:
