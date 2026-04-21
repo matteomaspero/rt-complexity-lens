@@ -539,6 +539,25 @@ def calculate_control_point_metrics(
     )
 
 
+def _cumulative_arc_span(beam: Beam) -> float:
+    """Cumulative gantry arc span in degrees.
+
+    Sums per-segment shortest-arc deltas between consecutive control points
+    so 270° / 358° single arcs are reported accurately. Mirrors the TS
+    `computeCumulativeArcSpan` and the parser's `gantry_span`.
+    """
+    cps = beam.control_points
+    if len(cps) < 2:
+        return 0.0
+    total = 0.0
+    for i in range(1, len(cps)):
+        d = abs(cps[i].gantry_angle - cps[i - 1].gantry_angle)
+        if d > 180:
+            d = 360 - d
+        total += d
+    return total
+
+
 def _estimate_beam_delivery_time(
     beam: Beam,
     control_point_metrics: List[ControlPointMetrics],
@@ -546,10 +565,13 @@ def _estimate_beam_delivery_time(
 ) -> Tuple[float, str, float, float, Optional[float]]:
     """
     Estimate delivery time for a beam.
-    
+
     For arcs: gantry moves continuously; time = max(MU_time, arc_time, mlc_time)
     For static: gantry doesn't move; time = max(MU_time, mlc_time)
-    
+
+    Arc length uses cumulative CP-by-CP shortest-arc summation so that
+    >180° single arcs (e.g., 270°, 358°) are not collapsed to (360 − span).
+
     Returns tuple of:
         - delivery_time (seconds)
         - limiting_factor ('doseRate', 'gantrySpeed', 'mlcSpeed')
@@ -558,52 +580,38 @@ def _estimate_beam_delivery_time(
         - MU_per_degree (optional)
     """
     beam_mu = beam.beam_dose or 100.0
-    
-    # Calculate total delivery dose time (MU / dose rate for entire beam)
-    total_dose_time = beam_mu / (machine_params.max_dose_rate / 60)  # seconds
-    
-    # Calculate total gantry arc time (if arc)
-    total_gantry_time = 0.0
-    if beam.is_arc and len(beam.control_points) > 1:
-        # Arc length: absolute difference, with wrap-around correction
-        arc_length = abs(beam.gantry_angle_end - beam.gantry_angle_start)
-        if arc_length > 180:
-            arc_length = 360 - arc_length
-        total_gantry_time = arc_length / machine_params.max_gantry_speed
-    
-    # Calculate total MLC travel time (max leaf travel across all segments)
-    total_mlc_travel = 0.0
+
+    total_dose_time = beam_mu / (machine_params.max_dose_rate / 60)
+
+    arc_length = _cumulative_arc_span(beam) if beam.is_arc else 0.0
+    total_gantry_time = arc_length / machine_params.max_gantry_speed if arc_length > 0 else 0.0
+
+    # MLC time gated by per-segment max single-leaf travel (slowest leaf)
+    total_max_per_segment_leaf_travel = 0.0
     for i in range(1, len(beam.control_points)):
         cp = beam.control_points[i]
         prev_cp = beam.control_points[i - 1]
-        max_leaf_travel = get_max_leaf_travel(prev_cp.mlc_positions, cp.mlc_positions)
-        total_mlc_travel += max_leaf_travel
-    total_mlc_time = total_mlc_travel / machine_params.max_mlc_speed if total_mlc_travel > 0 else 0
-    
-    # Delivery time is limited by the slowest factor
+        total_max_per_segment_leaf_travel += get_max_leaf_travel(prev_cp.mlc_positions, cp.mlc_positions)
+    total_mlc_time = (
+        total_max_per_segment_leaf_travel / machine_params.max_mlc_speed
+        if total_max_per_segment_leaf_travel > 0 else 0.0
+    )
+
     delivery_time = max(total_dose_time, total_gantry_time, total_mlc_time)
-    
-    # Determine limiting factor
+
     if total_dose_time >= total_gantry_time and total_dose_time >= total_mlc_time:
         limiting_factor = "doseRate"
     elif total_gantry_time >= total_mlc_time:
         limiting_factor = "gantrySpeed"
     else:
         limiting_factor = "mlcSpeed"
-    
-    # Calculate average rates
+
     avg_dose_rate = (beam_mu / delivery_time) * 60 if delivery_time > 0 else 0
-    avg_mlc_speed = total_mlc_travel / delivery_time if delivery_time > 0 else 0
-    
-    # MU per degree for arcs
-    mu_per_degree: Optional[float] = None
-    if beam.is_arc:
-        arc_length = abs(beam.gantry_angle_end - beam.gantry_angle_start)
-        if arc_length > 180:
-            arc_length = 360 - arc_length
-        if arc_length > 0:
-            mu_per_degree = beam_mu / arc_length
-    
+    avg_mlc_speed = (
+        total_max_per_segment_leaf_travel / delivery_time if delivery_time > 0 else 0
+    )
+    mu_per_degree: Optional[float] = beam_mu / arc_length if arc_length > 0 else None
+
     return (delivery_time, limiting_factor, avg_dose_rate, avg_mlc_speed, mu_per_degree)
 
 
