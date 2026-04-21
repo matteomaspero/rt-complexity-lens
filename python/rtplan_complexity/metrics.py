@@ -515,21 +515,13 @@ def calculate_control_point_metrics(
     small_aperture_flags = check_small_apertures(current_cp.mlc_positions)
     
     leaf_travel = 0.0
+    # aperture_aav is filled in later (in calculate_beam_metrics) using the
+    # beam-level union aperture A_max so that it matches the literature
+    # definition AAV = A_cp / A_max_union (McNiven 2010, UCoMx Eq. 29–30).
     aav = 0.0
-    
+
     if previous_cp:
-        # Per-CP leaf travel (raw, no filtering)
         leaf_travel = calculate_leaf_travel(previous_cp.mlc_positions, current_cp.mlc_positions)
-        
-        prev_area = calculate_aperture_area(
-            previous_cp.mlc_positions,
-            leaf_widths,
-            previous_cp.jaw_positions
-        )
-        
-        # AAV: relative change in aperture area
-        if prev_area > 0:
-            aav = abs(aperture_area - prev_area) / prev_area
     
     meterset_weight = current_cp.cumulative_meterset_weight - (
         previous_cp.cumulative_meterset_weight if previous_cp else 0
