@@ -821,7 +821,17 @@ function calculateBeamMetrics(
   // ===== Compute AAV and MCS per CA =====
   const caAAVs = caAreas.map(a => aMaxUnion > 0 ? a / aMaxUnion : 0);
   const caMCSs = caLSVs.map((lsv, i) => lsv * caAAVs[i]);
-  
+
+  // Backfill per-CP apertureAAV using the literature definition
+  // AAV_cp = A_cp / A_max_union (McNiven 2010, UCoMx Eq. 29–30).
+  // Replaces the legacy non-standard "relative area change" value so the
+  // per-CP UI display is consistent with the beam-level metric.
+  if (aMaxUnion > 0) {
+    for (const cpm of controlPointMetrics) {
+      cpm.apertureAAV = cpm.apertureArea / aMaxUnion;
+    }
+  }
+
   // ===== Aggregate: Eq. (2) MU-weighted for LSV, AAV, MCS per UCoMx manual =====
   const totalDeltaMU = caDeltaMU.reduce((s, v) => s + v, 0);
   let LSV = totalDeltaMU > 0
