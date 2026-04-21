@@ -62,6 +62,11 @@ class ExternalMetrics:
 # DICOM extraction
 # ----------------------------------------------------------------------
 
+_MLC_TYPES = ("MLCX", "MLCY", "MLCX1", "MLCX2", "MLCY1", "MLCY2", "MLC")
+_JAW_X_TYPES = ("ASYMX", "X")
+_JAW_Y_TYPES = ("ASYMY", "Y")
+
+
 def _extract_leaf_widths(beam_ds) -> List[float]:
     """Per-leaf-pair effective width from BeamLimitingDeviceSequence."""
     widths: List[float] = []
@@ -69,7 +74,7 @@ def _extract_leaf_widths(beam_ds) -> List[float]:
         return widths
     for d in beam_ds.BeamLimitingDeviceSequence:
         rt_type = getattr(d, "RTBeamLimitingDeviceType", "")
-        if rt_type in ("MLCX", "MLCY"):
+        if rt_type in _MLC_TYPES:
             boundaries = list(getattr(d, "LeafPositionBoundaries", []) or [])
             if len(boundaries) >= 2:
                 widths = [
@@ -93,12 +98,16 @@ def _extract_cp(cp_ds, prev_cp: Optional[_CP], n_leaves: int) -> _CP:
         for dev in cp_ds.BeamLimitingDevicePositionSequence:
             rt_type = getattr(dev, "RTBeamLimitingDeviceType", "")
             positions = [float(p) for p in getattr(dev, "LeafJawPositions", [])]
-            if rt_type in ("MLCX", "MLCY") and len(positions) >= 2 * n_leaves:
+            if rt_type in ("MLCX", "MLCY", "MLC") and len(positions) >= 2 * n_leaves:
                 bank_a = positions[:n_leaves]
                 bank_b = positions[n_leaves:2 * n_leaves]
-            elif rt_type in ("ASYMX", "X") and len(positions) == 2:
+            elif rt_type in ("MLCX1", "MLCY1") and len(positions) >= n_leaves:
+                bank_a = positions[:n_leaves]
+            elif rt_type in ("MLCX2", "MLCY2") and len(positions) >= n_leaves:
+                bank_b = positions[:n_leaves]
+            elif rt_type in _JAW_X_TYPES and len(positions) == 2:
                 jx1, jx2 = positions[0], positions[1]
-            elif rt_type in ("ASYMY", "Y") and len(positions) == 2:
+            elif rt_type in _JAW_Y_TYPES and len(positions) == 2:
                 jy1, jy2 = positions[0], positions[1]
 
     mu_cum = float(getattr(cp_ds, "CumulativeMetersetWeight", 0.0))
