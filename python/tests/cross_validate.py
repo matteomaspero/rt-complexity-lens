@@ -51,8 +51,10 @@ METRIC_TOLERANCES = {
     "LG":    0.5,        # mm
     "EFS":   0.5,        # mm
     "psmall": 0.02,
+    "SAS2":  0.02,
     "SAS5":  0.02,
     "SAS10": 0.02,
+    "SAS20": 0.02,
     "PI":    0.1,
     "EM":    0.01,
     "TG":    0.01,
@@ -92,8 +94,10 @@ def compute_python_metrics(dcm_path: str) -> dict:
 
     # Optional plan-level
     optional_map = {
+        "SAS2": metrics.SAS2,
         "SAS5": metrics.SAS5,
         "SAS10": metrics.SAS10,
+        "SAS20": metrics.SAS20,
         "MAD": metrics.MAD,
         "LG": metrics.LG,
         "EFS": metrics.EFS,

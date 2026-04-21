@@ -293,8 +293,10 @@ class BeamMetrics:
     table_top_lateral: Optional[float] = None  # mm
     
     # Additional complexity metrics
+    SAS2: Optional[float] = None  # Small Aperture Score (2mm) — sub-leaf-resolution
     SAS5: Optional[float] = None  # Small Aperture Score (5mm)
     SAS10: Optional[float] = None  # Small Aperture Score (10mm)
+    SAS20: Optional[float] = None  # Small Aperture Score (20mm)
     EM: Optional[float] = None  # Edge Metric
     PI: Optional[float] = None  # Plan Irregularity
     BAM: Optional[float] = None  # Beam Aperture Modulation (target-specific)
@@ -359,8 +361,10 @@ class PlanMetrics:
     total_delivery_time: Optional[float] = None  # seconds
     
     # Additional complexity metrics
+    SAS2: Optional[float] = None
     SAS5: Optional[float] = None
     SAS10: Optional[float] = None
+    SAS20: Optional[float] = None
     EM: Optional[float] = None
     PI: Optional[float] = None
     PAM: Optional[float] = None  # Plan Aperture Modulation (target-specific)

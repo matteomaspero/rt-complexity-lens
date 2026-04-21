@@ -46,7 +46,8 @@ describe('Export TS metrics to JSON', () => {
 
       // Add optional UCoMX metrics
       const optionalKeys = [
-        'SAS5', 'SAS10', 'MAD', 'LG', 'EFS', 'psmall', 'PI', 'EM', 'TG',
+        'SAS2', 'SAS5', 'SAS10', 'SAS20',
+        'MAD', 'LG', 'EFS', 'psmall', 'PI', 'EM', 'TG',
         'MUCA', 'LTMU', 'LS', 'mDRV', 'GT', 'GS', 'LTNLMU', 'LNA', 'LTAL',
         'mGSV', 'PM', 'MD', 'MI', 'PA', 'JA',
         'avgDoseRate', 'avgMLCSpeed', 'totalDeliveryTime',

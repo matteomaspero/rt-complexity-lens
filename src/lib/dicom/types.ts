@@ -215,8 +215,10 @@ export interface BeamMetrics {
   tableTopLateral?: number;
   
   // Additional complexity metrics
+  SAS2?: number; // Small Aperture Score (2mm threshold) — sub-leaf-resolution apertures (SBRT)
   SAS5?: number; // Small Aperture Score (5mm threshold)
   SAS10?: number; // Small Aperture Score (10mm threshold)
+  SAS20?: number; // Small Aperture Score (20mm threshold) — moderate apertures
   EM?: number; // Edge Metric
   PI?: number; // Plan Irregularity
   BAM?: number; // Beam Aperture Modulation (target-specific, weighted average of AM) [0, 1]
@@ -271,8 +273,10 @@ export interface PlanMetrics {
   totalDeliveryTime?: number; // seconds
   
   // Additional complexity metrics (aggregate)
+  SAS2?: number;
   SAS5?: number;
   SAS10?: number;
+  SAS20?: number;
   EM?: number;
   PI?: number;
   PAM?: number; // Plan Aperture Modulation (target-specific, MU-weighted from all beams) [0, 1]

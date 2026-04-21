@@ -178,8 +178,10 @@ export const PLAN_COLUMNS: ColumnDef[] = [
   // ── Complexity (Secondary) ──
   { key: 'LT', header: 'LT (mm)', category: 'Complexity (Secondary)', decimals: 1, extract: p => metricVal(p.metrics, 'LT'), extractBeam: bm => bm.LT },
   { key: 'LTMCS', header: 'LTMCS', category: 'Complexity (Secondary)', decimals: 1, extract: p => metricVal(p.metrics, 'LTMCS'), extractBeam: bm => bm.LTMCS },
+  { key: 'SAS2', header: 'SAS2', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'SAS2'), extractBeam: bm => bm.SAS2 },
   { key: 'SAS5', header: 'SAS5', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'SAS5'), extractBeam: bm => bm.SAS5 },
   { key: 'SAS10', header: 'SAS10', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'SAS10'), extractBeam: bm => bm.SAS10 },
+  { key: 'SAS20', header: 'SAS20', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'SAS20'), extractBeam: bm => bm.SAS20 },
   { key: 'EM', header: 'EM', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'EM'), extractBeam: bm => bm.EM },
   { key: 'PI', header: 'PI', category: 'Complexity (Secondary)', decimals: 4, extract: p => metricVal(p.metrics, 'PI'), extractBeam: bm => bm.PI },
   { key: 'LG', header: 'LG (mm)', category: 'Complexity (Secondary)', decimals: 2, extract: p => metricVal(p.metrics, 'LG'), extractBeam: bm => bm.LG },

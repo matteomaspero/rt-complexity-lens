@@ -703,8 +703,10 @@ function calculateBeamMetrics(
   let weightedMAD = 0;
   let weightedEFS = 0;
   let weightedTG = 0;
+  let weightedSAS2 = 0;
   let weightedSAS5 = 0;
   let weightedSAS10 = 0;
+  let weightedSAS20 = 0;
   let totalMetersetWeight = 0;
   
   for (let i = 0; i < controlPointMetrics.length; i++) {
@@ -732,10 +734,14 @@ function calculateBeamMetrics(
       const cpEM = cpArea > 0 ? perimeter / (2 * cpArea) : 0;
       weightedEM += cpEM * weight;
       // SAS: fraction of leaf pairs with gap < threshold, weighted by MU
+      const sas2Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 2);
       const sas5Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 5);
       const sas10Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 10);
+      const sas20Frac = calculateLeafPairFractionBelowThreshold(cp.mlcPositions, 20);
+      weightedSAS2 += sas2Frac * weight;
       weightedSAS5 += sas5Frac * weight;
       weightedSAS10 += sas10Frac * weight;
+      weightedSAS20 += sas20Frac * weight;
     }
     if (cpm.apertureArea > 0) {
       totalArea += cpm.apertureArea;
@@ -869,8 +875,10 @@ function calculateBeamMetrics(
   const JA = totalJawArea / 100;  // Convert mm² to cm² (sum across all CPs, not averaged)
   
   const totalCPs = controlPointMetrics.length;
+  const SAS2 = totalMetersetWeight > 0 ? weightedSAS2 / totalMetersetWeight : 0;
   const SAS5 = totalMetersetWeight > 0 ? weightedSAS5 / totalMetersetWeight : 0;
   const SAS10 = totalMetersetWeight > 0 ? weightedSAS10 / totalMetersetWeight : 0;
+  const SAS20 = totalMetersetWeight > 0 ? weightedSAS20 / totalMetersetWeight : 0;
   let psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
   
   let LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
@@ -1075,8 +1083,10 @@ function calculateBeamMetrics(
     tableTopVertical: beam.controlPoints[0]?.tableTopVertical,
     tableTopLongitudinal: beam.controlPoints[0]?.tableTopLongitudinal,
     tableTopLateral: beam.controlPoints[0]?.tableTopLateral,
+    SAS2,
     SAS5,
     SAS10,
+    SAS20,
     EM,
     PI,
     BAM: calculateBAM(beam, structure),
@@ -1103,8 +1113,10 @@ export function calculatePlanMetrics(
   let weightedLSV = 0;
   let weightedAAV = 0;
   let weightedMFA = 0;
+  let weightedSAS2 = 0;
   let weightedSAS5 = 0;
   let weightedSAS10 = 0;
+  let weightedSAS20 = 0;
   let weightedEM = 0;
   let weightedPI = 0;
   let weightedPAM = 0;
@@ -1148,8 +1160,10 @@ export function calculatePlanMetrics(
     weightedLSV += bm.LSV * mu;  // Eq. (2): MU-weighted
     weightedAAV += bm.AAV * mu;  // Eq. (2): MU-weighted
     weightedMFA += bm.MFA * mu;
+    weightedSAS2 += (bm.SAS2 || 0) * mu;
     weightedSAS5 += (bm.SAS5 || 0) * mu;
     weightedSAS10 += (bm.SAS10 || 0) * mu;
+    weightedSAS20 += (bm.SAS20 || 0) * mu;
     weightedEM += (bm.EM || 0) * mu;
     weightedPI += (bm.PI || 1) * mu;
     
@@ -1213,8 +1227,10 @@ export function calculatePlanMetrics(
   const LSV = totalMU > 0 ? weightedLSV / totalMU : 0;  // Eq. (2): MU-weighted
   const AAV = totalMU > 0 ? weightedAAV / totalMU : 0;  // Eq. (2): MU-weighted
   const MFA = totalMU > 0 ? weightedMFA / totalMU : 0;
+  const SAS2 = totalMU > 0 ? weightedSAS2 / totalMU : 0;
   const SAS5 = totalMU > 0 ? weightedSAS5 / totalMU : 0;
   const SAS10 = totalMU > 0 ? weightedSAS10 / totalMU : 0;
+  const SAS20 = totalMU > 0 ? weightedSAS20 / totalMU : 0;
   const EM = totalMU > 0 ? weightedEM / totalMU : 0;
   const PI = totalMU > 0 ? weightedPI / totalMU : 1;
   const LT = totalLT;
@@ -1284,8 +1300,10 @@ export function calculatePlanMetrics(
       ? plan.totalMU / plan.prescribedDose
       : undefined,
     totalDeliveryTime,
+    SAS2,
     SAS5,
     SAS10,
+    SAS20,
     EM,
     PI,
     PAM,
@@ -1522,11 +1540,17 @@ export function metricsToCSV(metrics: PlanMetrics, enabledMetrics?: string[]): s
   if (isEnabled('PI') && metrics.PI !== undefined) {
     lines.push(`PI,Plan Irregularity,${metrics.PI.toFixed(4)},`);
   }
+  if (isEnabled('SAS2') && metrics.SAS2 !== undefined) {
+    lines.push(`SAS2,Small Aperture Score (2mm),${metrics.SAS2.toFixed(4)},`);
+  }
   if (isEnabled('SAS5') && metrics.SAS5 !== undefined) {
     lines.push(`SAS5,Small Aperture Score (5mm),${metrics.SAS5.toFixed(4)},`);
   }
   if (isEnabled('SAS10') && metrics.SAS10 !== undefined) {
     lines.push(`SAS10,Small Aperture Score (10mm),${metrics.SAS10.toFixed(4)},`);
+  }
+  if (isEnabled('SAS20') && metrics.SAS20 !== undefined) {
+    lines.push(`SAS20,Small Aperture Score (20mm),${metrics.SAS20.toFixed(4)},`);
   }
   
   // Deliverability metrics

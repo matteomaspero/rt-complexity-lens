@@ -96,17 +96,63 @@ LTMCS = MCS / LT  # when LT > 0
 - **Unit**: 1/mm
 - **Interpretation**: Higher values suggest efficient modulation with less movement
 
-### SAS5 / SAS10 (Small Aperture Score)
+### SAS2 / SAS5 / SAS10 / SAS20 (Small Aperture Score)
 
-Fraction of aperture with small leaf gaps.
+MU-weighted fraction of leaf pairs whose gap is below the threshold:
 
 ```
-SAS5 = fraction of leaf pairs with gap < 5mm
-SAS10 = fraction of leaf pairs with gap < 10mm
+SAS_t = Σ_j ΔMU_j · (count_pairs_with_gap < t / N_pairs_j) / Σ_j ΔMU_j
 ```
 
 - **Range**: 0–1
+- **SAS2**: sub-leaf-resolution apertures, highly relevant for SBRT
+- **SAS5 / SAS10**: original Crowe definitions
+- **SAS20**: upper bound capturing the broader aperture-size distribution
 - **Reference**: Crowe SB, et al. Australas Phys Eng Sci Med. 2014
+
+### TG (Tongue-and-Groove Index, Webb 2001 / Younge 2016)
+
+Normalised inter-leaf step difference between adjacent leaf pairs (no magic constants):
+
+```
+TGI = Σ_pairs (|ΔbankA_{i,i+1}| + |ΔbankB_{i,i+1}|) / Σ_pairs (gap_i + gap_{i+1})
+```
+
+- **Range**: 0–1 (dimensionless)
+- **Note**: Replaces the legacy 0.5 mm "magic-constant" formulation. Drops the leaf-width factor (cancels under uniform widths) so the index is tool-agnostic and matches the closed-form variant used in PyComplexityMetric.
+- **Reference**: Webb S. Phys Med Biol. 2001;46(4); Younge KC, et al. J Appl Clin Med Phys. 2016;17(4)
+
+### MAD (Mean Asymmetry Distance) — jaw-center reference
+
+```
+MAD = mean( |center_pair − (X1 + X2)/2| )  for open leaf pairs
+```
+
+The reference axis is the **jaw center** `(X1+X2)/2`, not the isocenter (0). For symmetric jaws this is identical; for off-axis fields it avoids overstating asymmetry. Aligns with PyComplexityMetric / ComplexityCalc.
+
+- **Unit**: mm
+
+### Per-CP AAV — literature definition
+
+The per-control-point `apertureAAV` field stored on each `ControlPointMetrics` is now the literature-standard ratio:
+
+```
+AAV_cp = A_cp / A_max_union
+```
+
+(McNiven 2010 / UCoMx Eq. 29–30), backfilled in `calculateBeamMetrics` once the union aperture is known. The legacy non-standard "relative area change" definition has been removed so the per-CP UI display matches the beam-level metric.
+
+### JA aggregation (plan level)
+
+Plan-level `JA` is computed as the **sum** of per-beam `JA` (which is itself the sum of per-CP jaw areas), not the mean. This is intentional: the value is then directly comparable to plan-level `PA` (also additive), making `PA / JA` a direct measure of how much of the available jaw-defined opening is actually used by the MLC. If you need a mean instead, divide by `beamCount` or by the total CP count.
+
+### Delivery time — arc length and MLC gating
+
+`estimateBeamDeliveryTime` (TS) and `_estimate_beam_delivery_time` (Python) compute arc length using the **cumulative CP-by-CP shortest-arc summation** (`_cumulative_arc_span`), so 270° / 358° single arcs are reported accurately and are no longer collapsed to `(360 − span)`.
+
+MLC time uses the **per-segment max single-leaf travel** (slowest leaf gates each segment) summed across CPs — this is `totalMaxPerSegmentLeafTravel`, distinct from the cumulative `LT` metric used elsewhere.
+
+
 
 ### EM (Edge Metric)
 

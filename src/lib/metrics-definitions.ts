@@ -87,22 +87,44 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     category: 'secondary',
   },
   
-  SAS5: {
-    key: 'SAS5',
-    name: 'Small Aperture Score (5mm)',
-    shortDescription: 'Fraction of small gaps',
-    fullDescription: 'The fraction of control points with any leaf gap smaller than 5mm. Higher values indicate more small, complex apertures.',
+  SAS2: {
+    key: 'SAS2',
+    name: 'Small Aperture Score (2mm)',
+    shortDescription: 'Sub-leaf-resolution gaps (SBRT)',
+    fullDescription: 'MU-weighted fraction of leaf pairs with gap smaller than 2 mm. Highly relevant for SBRT and small-field dosimetry where sub-leaf-resolution apertures dominate uncertainty.',
     unit: null,
     category: 'secondary',
     reference: 'Crowe et al., 2014',
     doi: '10.1007/s13246-014-0274-9',
   },
-  
+
+  SAS5: {
+    key: 'SAS5',
+    name: 'Small Aperture Score (5mm)',
+    shortDescription: 'Fraction of small gaps',
+    fullDescription: 'The MU-weighted fraction of leaf pairs with gap smaller than 5 mm. Higher values indicate more small, complex apertures.',
+    unit: null,
+    category: 'secondary',
+    reference: 'Crowe et al., 2014',
+    doi: '10.1007/s13246-014-0274-9',
+  },
+
   SAS10: {
     key: 'SAS10',
     name: 'Small Aperture Score (10mm)',
     shortDescription: 'Fraction of moderate gaps',
-    fullDescription: 'The fraction of control points with any leaf gap smaller than 10mm. Complementary to SAS5 for aperture complexity assessment.',
+    fullDescription: 'The MU-weighted fraction of leaf pairs with gap smaller than 10 mm. Complementary to SAS5 for aperture complexity assessment.',
+    unit: null,
+    category: 'secondary',
+    reference: 'Crowe et al., 2014',
+    doi: '10.1007/s13246-014-0274-9',
+  },
+
+  SAS20: {
+    key: 'SAS20',
+    name: 'Small Aperture Score (20mm)',
+    shortDescription: 'Fraction of moderate-to-large gaps',
+    fullDescription: 'MU-weighted fraction of leaf pairs with gap smaller than 20 mm. Useful upper bound that captures the broader aperture-size distribution alongside SAS2/SAS5/SAS10.',
     unit: null,
     category: 'secondary',
     reference: 'Crowe et al., 2014',
