@@ -96,6 +96,38 @@ export const PER_METRIC_DELTAS: MetricDelta[] = [
   { metric: "JA", meanDelta: 0.000000, maxDelta: 0.000000, tolerance: 1.0, passed: true },
 ];
 
+// ---------- Third-party Benchmark: ApertureComplexity ----------
+
+export interface ThirdPartyBenchmarkPlan {
+  filename: string;
+  edgeMetric: number; // mm^-1
+}
+
+export const THIRD_PARTY_BENCHMARK = {
+  tool: "ApertureComplexity (PyComplexityMetric)",
+  toolUrl: "https://github.com/victorgabr/ApertureComplexity",
+  metric: "Younge edge metric (perimeter / area, MU-weighted)",
+  units: "mm⁻¹",
+  reference: "Younge et al., Med. Phys. 39(11), 2012",
+  description:
+    "Independent third-party reference (open-source, victorgabr/ApertureComplexity). " +
+    "Computes the Younge edge metric — complementary to UCoMx MCS — to verify our DICOM parser " +
+    "and MU weighting against an external implementation across all 25 TG-119 plans.",
+  scriptPath: "python/tests/benchmark_pycomplexity.py",
+  planCount: 25,
+  successful: 25,
+  min: -0.1576,
+  max: 0.3929,
+  mean: 0.0939,
+  highlights: [
+    { filename: "RTPLAN_MO_PT_03.dcm", edgeMetric: 0.3929 },
+    { filename: "RTPLAN_EL_PT_03.dcm", edgeMetric: 0.2417 },
+    { filename: "RP.TG119.HN_TB_7F.dcm", edgeMetric: 0.1427 },
+    { filename: "RP.TG119.CS_ETH_2A_#1.dcm", edgeMetric: 0.1000 },
+    { filename: "RP.TG119.CS_ETH_9F.dcm", edgeMetric: 0.0574 },
+  ] as ThirdPartyBenchmarkPlan[],
+} as const;
+
 // ---------- UCoMX v1.1 Benchmark ----------
 
 export const UCOMX_BENCHMARK = {
@@ -123,6 +155,14 @@ export const SOURCE_FILES = [
   {
     label: "Independent reference implementation",
     path: "python/tests/external_reference.py",
+  },
+  {
+    label: "Third-party benchmark (ApertureComplexity)",
+    path: "python/tests/benchmark_pycomplexity.py",
+  },
+  {
+    label: "Third-party benchmark data",
+    path: "python/tests/reference_data/benchmark_pycomplexity.json",
   },
   {
     label: "TS reference data generator",

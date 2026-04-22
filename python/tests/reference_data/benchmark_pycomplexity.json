@@ -1,0 +1,1058 @@
+{
+  "tool": "ApertureComplexity (PyComplexityMetric)",
+  "tool_url": "https://github.com/victorgabr/ApertureComplexity",
+  "metric": "Younge edge metric (perimeter / area, MU-weighted)",
+  "units": "mm^-1",
+  "plan_count": 25,
+  "successful": 25,
+  "min": -0.15761434377893524,
+  "max": 0.3928617658274667,
+  "mean": 0.09386824107640203,
+  "plans": {
+    "RP.TG119.CS_ETH_2A_#1.dcm": {
+      "plan_edge_metric_mm_inv": 0.10002675977812517,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 159.054041574579,
+          "edge_metric_mm_inv": 0.09358747428165844
+        },
+        {
+          "beam_key": "18",
+          "beam_mu": 441.01296862295,
+          "edge_metric_mm_inv": 0.10234912772631413
+        }
+      ]
+    },
+    "RP.TG119.CS_ETH_9F.dcm": {
+      "plan_edge_metric_mm_inv": 0.0573916495955931,
+      "beam_count": 9,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 226.097435509537,
+          "edge_metric_mm_inv": 0.053187720763910026
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 218.070972655163,
+          "edge_metric_mm_inv": 0.054754974020133816
+        },
+        {
+          "beam_key": "10",
+          "beam_mu": 137.458530089226,
+          "edge_metric_mm_inv": 0.05584643712613487
+        },
+        {
+          "beam_key": "11",
+          "beam_mu": 130.471413343259,
+          "edge_metric_mm_inv": 0.06020468944432719
+        },
+        {
+          "beam_key": "12",
+          "beam_mu": 203.089125454128,
+          "edge_metric_mm_inv": 0.05986826407121672
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 213.065630196473,
+          "edge_metric_mm_inv": 0.057754944789265225
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 140.016022435837,
+          "edge_metric_mm_inv": 0.0586225854927155
+        },
+        {
+          "beam_key": "15",
+          "beam_mu": 143.036944091384,
+          "edge_metric_mm_inv": 0.058105931003899464
+        },
+        {
+          "beam_key": "16",
+          "beam_mu": 229.665365768106,
+          "edge_metric_mm_inv": 0.059638234395127554
+        }
+      ]
+    },
+    "RP.TG119.CS_TB_2A_#1.dcm": {
+      "plan_edge_metric_mm_inv": 0.08818379216259523,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 343.960857196143,
+          "edge_metric_mm_inv": 0.08753391367368718
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 258.088250795803,
+          "edge_metric_mm_inv": 0.08904990195809692
+        }
+      ]
+    },
+    "RP.TG119.HN_ETH_2A_#1.dcm": {
+      "plan_edge_metric_mm_inv": 0.07555099999398092,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 264.496974256409,
+          "edge_metric_mm_inv": 0.08482865516666221
+        },
+        {
+          "beam_key": "18",
+          "beam_mu": 335.57113157438,
+          "edge_metric_mm_inv": 0.06823835748550396
+        }
+      ]
+    },
+    "RP.TG119.HN_ETH_7F.dcm": {
+      "plan_edge_metric_mm_inv": 0.08980698876081884,
+      "beam_count": 9,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 254.71229634554,
+          "edge_metric_mm_inv": 0.08292695152573835
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 234.146312043738,
+          "edge_metric_mm_inv": 0.08440378524196902
+        },
+        {
+          "beam_key": "10",
+          "beam_mu": 192.782930093611,
+          "edge_metric_mm_inv": 0.09745161804132618
+        },
+        {
+          "beam_key": "11",
+          "beam_mu": 190.28721459669,
+          "edge_metric_mm_inv": 0.10590769022362637
+        },
+        {
+          "beam_key": "12",
+          "beam_mu": 207.574712729735,
+          "edge_metric_mm_inv": 0.1000579121313353
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 213.26752257881,
+          "edge_metric_mm_inv": 0.07809336513108776
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 176.309191553177,
+          "edge_metric_mm_inv": 0.09342940358639662
+        },
+        {
+          "beam_key": "15",
+          "beam_mu": 224.394179272391,
+          "edge_metric_mm_inv": 0.08721230619567975
+        },
+        {
+          "beam_key": "16",
+          "beam_mu": 193.474542019162,
+          "edge_metric_mm_inv": 0.08357323965690185
+        }
+      ]
+    },
+    "RP.TG119.HN_TB_7F.dcm": {
+      "plan_edge_metric_mm_inv": 0.1427244877085178,
+      "beam_count": 9,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 210.0,
+          "edge_metric_mm_inv": 0.13505785222469913
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 206.0,
+          "edge_metric_mm_inv": 0.14328711351927015
+        },
+        {
+          "beam_key": "10",
+          "beam_mu": 186.0,
+          "edge_metric_mm_inv": 0.13676955586034747
+        },
+        {
+          "beam_key": "11",
+          "beam_mu": 174.0,
+          "edge_metric_mm_inv": 0.15633630327503004
+        },
+        {
+          "beam_key": "12",
+          "beam_mu": 200.0,
+          "edge_metric_mm_inv": 0.1348811236762279
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 198.0,
+          "edge_metric_mm_inv": 0.13145630685271914
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 159.0,
+          "edge_metric_mm_inv": 0.17322546803513592
+        },
+        {
+          "beam_key": "15",
+          "beam_mu": 191.0,
+          "edge_metric_mm_inv": 0.14916538350009434
+        },
+        {
+          "beam_key": "16",
+          "beam_mu": 198.0,
+          "edge_metric_mm_inv": 0.1323869099183978
+        }
+      ]
+    },
+    "RP.TG119.MT_ETH_2A_#1.dcm": {
+      "plan_edge_metric_mm_inv": 0.059151362899017,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 219.446066079103,
+          "edge_metric_mm_inv": 0.05363964921713292
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 213.556158539815,
+          "edge_metric_mm_inv": 0.06481509038462978
+        }
+      ]
+    },
+    "RP.TG119.MT_ETH_7F.dcm": {
+      "plan_edge_metric_mm_inv": 0.06545933626710161,
+      "beam_count": 7,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 119.054919490188,
+          "edge_metric_mm_inv": 0.06694363226903279
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 111.628391501003,
+          "edge_metric_mm_inv": 0.06075073007475976
+        },
+        {
+          "beam_key": "3",
+          "beam_mu": 111.250144393217,
+          "edge_metric_mm_inv": 0.06577759732665063
+        },
+        {
+          "beam_key": "4",
+          "beam_mu": 104.056910498698,
+          "edge_metric_mm_inv": 0.0685400812175973
+        },
+        {
+          "beam_key": "5",
+          "beam_mu": 83.8638810376766,
+          "edge_metric_mm_inv": 0.06549897693357394
+        },
+        {
+          "beam_key": "6",
+          "beam_mu": 79.5911341983837,
+          "edge_metric_mm_inv": 0.07054281314372465
+        },
+        {
+          "beam_key": "7",
+          "beam_mu": 105.308792048777,
+          "edge_metric_mm_inv": 0.06151852469472965
+        }
+      ]
+    },
+    "RP.TG119.PR_ETH_2A_2.dcm": {
+      "plan_edge_metric_mm_inv": 0.09185616440028996,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 449.985324011372,
+          "edge_metric_mm_inv": 0.101887516803685
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 429.440686656748,
+          "edge_metric_mm_inv": 0.08134490754510987
+        }
+      ]
+    },
+    "RP.TG119.PR_ETH_7F.dcm": {
+      "plan_edge_metric_mm_inv": 0.08075351573537685,
+      "beam_count": 7,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 138.237678312441,
+          "edge_metric_mm_inv": 0.08007039344525559
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 138.170278996098,
+          "edge_metric_mm_inv": 0.07488167079732684
+        },
+        {
+          "beam_key": "10",
+          "beam_mu": 191.038454293724,
+          "edge_metric_mm_inv": 0.07571377026030901
+        },
+        {
+          "beam_key": "11",
+          "beam_mu": 135.63576319709,
+          "edge_metric_mm_inv": 0.10311389301257463
+        },
+        {
+          "beam_key": "12",
+          "beam_mu": 125.278776747423,
+          "edge_metric_mm_inv": 0.088930997218284
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 165.846259908392,
+          "edge_metric_mm_inv": 0.06984540600540676
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 157.556190231297,
+          "edge_metric_mm_inv": 0.07834339377073184
+        }
+      ]
+    },
+    "RP.TG119.PR_UN_2A_#1.dcm": {
+      "plan_edge_metric_mm_inv": 0.12841626019123814,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 353.668465223408,
+          "edge_metric_mm_inv": 0.11423380686375725
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 249.505607475033,
+          "edge_metric_mm_inv": 0.14851956188530813
+        }
+      ]
+    },
+    "RP.TG119.PR_UN_7F.dcm": {
+      "plan_edge_metric_mm_inv": 0.11353636018585109,
+      "beam_count": 7,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 115.0,
+          "edge_metric_mm_inv": 0.11448344957777785
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 110.0,
+          "edge_metric_mm_inv": 0.11195834882268618
+        },
+        {
+          "beam_key": "10",
+          "beam_mu": 156.0,
+          "edge_metric_mm_inv": 0.12089147279759346
+        },
+        {
+          "beam_key": "11",
+          "beam_mu": 101.0,
+          "edge_metric_mm_inv": 0.14140267680549795
+        },
+        {
+          "beam_key": "12",
+          "beam_mu": 106.0,
+          "edge_metric_mm_inv": 0.12023188418866344
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 132.0,
+          "edge_metric_mm_inv": 0.09620463600789514
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 128.0,
+          "edge_metric_mm_inv": 0.09541786386594857
+        }
+      ]
+    },
+    "RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm": {
+      "plan_edge_metric_mm_inv": 0.09941349487863521,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 606.3041,
+          "edge_metric_mm_inv": 0.07349540871444954
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 259.4818,
+          "edge_metric_mm_inv": 0.15997358774641648
+        }
+      ]
+    },
+    "RTPLAN_EL_PT_01.dcm": {
+      "plan_edge_metric_mm_inv": 0.09672260435659072,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 603.0,
+          "edge_metric_mm_inv": 0.10689967406538861
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 1689.0,
+          "edge_metric_mm_inv": 0.09308922778204654
+        }
+      ]
+    },
+    "RTPLAN_EL_PT_03.dcm": {
+      "plan_edge_metric_mm_inv": 0.24167473585463584,
+      "beam_count": 4,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 776.0,
+          "edge_metric_mm_inv": 0.27497538591475174
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 1389.0,
+          "edge_metric_mm_inv": 0.22893953002974332
+        },
+        {
+          "beam_key": "3",
+          "beam_mu": 553.0,
+          "edge_metric_mm_inv": 0.25017613377799386
+        },
+        {
+          "beam_key": "4",
+          "beam_mu": 988.0,
+          "edge_metric_mm_inv": 0.22866524536122354
+        }
+      ]
+    },
+    "RTPLAN_MO_PT_01.dcm": {
+      "plan_edge_metric_mm_inv": 0.10885504842235945,
+      "beam_count": 1,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 1590.030029,
+          "edge_metric_mm_inv": 0.10885504842235945
+        }
+      ]
+    },
+    "RTPLAN_MO_PT_02.dcm": {
+      "plan_edge_metric_mm_inv": 0.27619292199702383,
+      "beam_count": 5,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 424.622864,
+          "edge_metric_mm_inv": 0.3110562487996019
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 449.953125,
+          "edge_metric_mm_inv": 0.270260946111903
+        },
+        {
+          "beam_key": "3",
+          "beam_mu": 538.898376,
+          "edge_metric_mm_inv": 0.23154428767670387
+        },
+        {
+          "beam_key": "4",
+          "beam_mu": 543.650696,
+          "edge_metric_mm_inv": 0.24826989938374602
+        },
+        {
+          "beam_key": "5",
+          "beam_mu": 282.210358,
+          "edge_metric_mm_inv": 0.37224465024516484
+        }
+      ]
+    },
+    "RTPLAN_MO_PT_03.dcm": {
+      "plan_edge_metric_mm_inv": 0.3928617658274667,
+      "beam_count": 5,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 581.279236,
+          "edge_metric_mm_inv": 0.39999999999999997
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 761.72406,
+          "edge_metric_mm_inv": 0.3468849546567437
+        },
+        {
+          "beam_key": "3",
+          "beam_mu": 447.323975,
+          "edge_metric_mm_inv": 0.4080154991648001
+        },
+        {
+          "beam_key": "4",
+          "beam_mu": 568.590332,
+          "edge_metric_mm_inv": 0.3142217048924424
+        },
+        {
+          "beam_key": "5",
+          "beam_mu": 545.429749,
+          "edge_metric_mm_inv": 0.5190149252650846
+        }
+      ]
+    },
+    "RTPLAN_MO_PT_04.dcm": {
+      "plan_edge_metric_mm_inv": 0.12257810444724698,
+      "beam_count": 1,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 2115.057373,
+          "edge_metric_mm_inv": 0.12257810444724698
+        }
+      ]
+    },
+    "RTPLAN_MR_PT_01_PENALTY.dcm": {
+      "plan_edge_metric_mm_inv": -0.09702186580762269,
+      "beam_count": 23,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 224.599212646484,
+          "edge_metric_mm_inv": -0.14785449721928898
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 74.0876159667969,
+          "edge_metric_mm_inv": -0.10920227206989924
+        },
+        {
+          "beam_key": "4",
+          "beam_mu": 18.305305480957,
+          "edge_metric_mm_inv": -0.13490166983942303
+        },
+        {
+          "beam_key": "5",
+          "beam_mu": 170.485258102417,
+          "edge_metric_mm_inv": -0.12043163835833255
+        },
+        {
+          "beam_key": "6",
+          "beam_mu": 126.601624250412,
+          "edge_metric_mm_inv": -0.11365852910065856
+        },
+        {
+          "beam_key": "7",
+          "beam_mu": 146.426458358765,
+          "edge_metric_mm_inv": -0.12304427181682248
+        },
+        {
+          "beam_key": "8",
+          "beam_mu": 88.3340158462524,
+          "edge_metric_mm_inv": -0.09338786521282903
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 185.535171508789,
+          "edge_metric_mm_inv": -0.06796922901888741
+        },
+        {
+          "beam_key": "10",
+          "beam_mu": 314.924557209015,
+          "edge_metric_mm_inv": -0.06824639449431402
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 45.5782725811005,
+          "edge_metric_mm_inv": -0.09641067094988563
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 92.5685729980469,
+          "edge_metric_mm_inv": -0.08585850792888478
+        },
+        {
+          "beam_key": "15",
+          "beam_mu": 95.1356010437012,
+          "edge_metric_mm_inv": -0.07474622860270168
+        },
+        {
+          "beam_key": "16",
+          "beam_mu": 95.6167306900024,
+          "edge_metric_mm_inv": -0.06913527562037337
+        },
+        {
+          "beam_key": "17",
+          "beam_mu": 165.312805175781,
+          "edge_metric_mm_inv": -0.06151065262248069
+        },
+        {
+          "beam_key": "18",
+          "beam_mu": 346.956600189209,
+          "edge_metric_mm_inv": -0.08361668176996084
+        },
+        {
+          "beam_key": "19",
+          "beam_mu": 576.743118286133,
+          "edge_metric_mm_inv": -0.0802603454684666
+        },
+        {
+          "beam_key": "24",
+          "beam_mu": 18.4436702728271,
+          "edge_metric_mm_inv": -0.15819838774619804
+        },
+        {
+          "beam_key": "25",
+          "beam_mu": 12.2657861709595,
+          "edge_metric_mm_inv": -0.13947068906207663
+        },
+        {
+          "beam_key": "26",
+          "beam_mu": 313.823327064514,
+          "edge_metric_mm_inv": -0.12756354439609957
+        },
+        {
+          "beam_key": "27",
+          "beam_mu": 45.5025939941406,
+          "edge_metric_mm_inv": -0.14474859627630068
+        },
+        {
+          "beam_key": "28",
+          "beam_mu": 52.0535674095154,
+          "edge_metric_mm_inv": -0.10296249797573517
+        },
+        {
+          "beam_key": "29",
+          "beam_mu": 194.340007781982,
+          "edge_metric_mm_inv": -0.11311557787494851
+        },
+        {
+          "beam_key": "30",
+          "beam_mu": 232.555335044861,
+          "edge_metric_mm_inv": -0.10152043782689313
+        }
+      ]
+    },
+    "RTPLAN_MR_PT_02_PENALTY.dcm": {
+      "plan_edge_metric_mm_inv": -0.13254957298995212,
+      "beam_count": 22,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 120.002151489258,
+          "edge_metric_mm_inv": -0.0875638239057637
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 122.915418624878,
+          "edge_metric_mm_inv": -0.14477387920099327
+        },
+        {
+          "beam_key": "3",
+          "beam_mu": 259.088671684265,
+          "edge_metric_mm_inv": -0.10772489312745469
+        },
+        {
+          "beam_key": "4",
+          "beam_mu": 269.826618432999,
+          "edge_metric_mm_inv": -0.15350211356311733
+        },
+        {
+          "beam_key": "5",
+          "beam_mu": 369.723937988281,
+          "edge_metric_mm_inv": -0.12231114482629103
+        },
+        {
+          "beam_key": "6",
+          "beam_mu": 204.795303344727,
+          "edge_metric_mm_inv": -0.04135316900923166
+        },
+        {
+          "beam_key": "7",
+          "beam_mu": 326.745098114014,
+          "edge_metric_mm_inv": -0.09101296416814383
+        },
+        {
+          "beam_key": "8",
+          "beam_mu": 480.36890411377,
+          "edge_metric_mm_inv": -0.11702795610983828
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 484.578882217407,
+          "edge_metric_mm_inv": -0.12743637940855762
+        },
+        {
+          "beam_key": "10",
+          "beam_mu": 66.4434432983398,
+          "edge_metric_mm_inv": -0.019632819746320307
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 65.1991939544678,
+          "edge_metric_mm_inv": -0.10265417242074305
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 35.0650367736816,
+          "edge_metric_mm_inv": -0.09237673787509103
+        },
+        {
+          "beam_key": "15",
+          "beam_mu": 111.216827392578,
+          "edge_metric_mm_inv": -0.17272011140981444
+        },
+        {
+          "beam_key": "16",
+          "beam_mu": 52.9363021850586,
+          "edge_metric_mm_inv": -0.16913118964867047
+        },
+        {
+          "beam_key": "17",
+          "beam_mu": 12.3030767440796,
+          "edge_metric_mm_inv": -0.19592843671552512
+        },
+        {
+          "beam_key": "18",
+          "beam_mu": 24.3316497802734,
+          "edge_metric_mm_inv": -0.22956297078725077
+        },
+        {
+          "beam_key": "25",
+          "beam_mu": 160.674964904785,
+          "edge_metric_mm_inv": -0.1587966057881112
+        },
+        {
+          "beam_key": "26",
+          "beam_mu": 260.940752029419,
+          "edge_metric_mm_inv": -0.19335820760257838
+        },
+        {
+          "beam_key": "27",
+          "beam_mu": 302.232797622681,
+          "edge_metric_mm_inv": -0.17880412652289684
+        },
+        {
+          "beam_key": "28",
+          "beam_mu": 182.312065124512,
+          "edge_metric_mm_inv": -0.221438728525558
+        },
+        {
+          "beam_key": "29",
+          "beam_mu": 105.854382514954,
+          "edge_metric_mm_inv": -0.1542479299748897
+        },
+        {
+          "beam_key": "30",
+          "beam_mu": 99.8332405090332,
+          "edge_metric_mm_inv": -0.12644972182196026
+        }
+      ]
+    },
+    "RTPLAN_MR_PT_03_O&C.dcm": {
+      "plan_edge_metric_mm_inv": -0.15761434377893524,
+      "beam_count": 26,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 324.099521636963,
+          "edge_metric_mm_inv": -0.22701010979047587
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 164.759170532227,
+          "edge_metric_mm_inv": -0.24080880232353527
+        },
+        {
+          "beam_key": "3",
+          "beam_mu": 283.157932281494,
+          "edge_metric_mm_inv": -0.18786477545678523
+        },
+        {
+          "beam_key": "4",
+          "beam_mu": 283.802209854126,
+          "edge_metric_mm_inv": -0.1594403113395268
+        },
+        {
+          "beam_key": "5",
+          "beam_mu": 174.794467926025,
+          "edge_metric_mm_inv": -0.15748804427890908
+        },
+        {
+          "beam_key": "6",
+          "beam_mu": 161.497436523438,
+          "edge_metric_mm_inv": -0.13589608725175711
+        },
+        {
+          "beam_key": "7",
+          "beam_mu": 287.973655700684,
+          "edge_metric_mm_inv": -0.1531824927205434
+        },
+        {
+          "beam_key": "8",
+          "beam_mu": 205.040279388428,
+          "edge_metric_mm_inv": -0.1254792530736721
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 305.921752929688,
+          "edge_metric_mm_inv": -0.17917286138542238
+        },
+        {
+          "beam_key": "12",
+          "beam_mu": 109.149103164673,
+          "edge_metric_mm_inv": -0.16655479962235514
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 31.243537902832,
+          "edge_metric_mm_inv": -0.09273407458562187
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 95.8038368225098,
+          "edge_metric_mm_inv": -0.14966667288739618
+        },
+        {
+          "beam_key": "15",
+          "beam_mu": 50.6446466445923,
+          "edge_metric_mm_inv": -0.13499949631664737
+        },
+        {
+          "beam_key": "16",
+          "beam_mu": 104.703205108643,
+          "edge_metric_mm_inv": -0.0844586498190812
+        },
+        {
+          "beam_key": "17",
+          "beam_mu": 80.4713287353516,
+          "edge_metric_mm_inv": -0.11769966569051475
+        },
+        {
+          "beam_key": "18",
+          "beam_mu": 38.8408737182617,
+          "edge_metric_mm_inv": -0.12074687943727878
+        },
+        {
+          "beam_key": "19",
+          "beam_mu": 66.0348968505859,
+          "edge_metric_mm_inv": -0.11556493477771308
+        },
+        {
+          "beam_key": "22",
+          "beam_mu": 140.72216796875,
+          "edge_metric_mm_inv": -0.14038870401912537
+        },
+        {
+          "beam_key": "23",
+          "beam_mu": 229.218841552734,
+          "edge_metric_mm_inv": -0.16040692463401432
+        },
+        {
+          "beam_key": "24",
+          "beam_mu": 231.110179662704,
+          "edge_metric_mm_inv": -0.14763246893269863
+        },
+        {
+          "beam_key": "25",
+          "beam_mu": 290.640968322754,
+          "edge_metric_mm_inv": -0.13641444199109903
+        },
+        {
+          "beam_key": "26",
+          "beam_mu": 245.943555831909,
+          "edge_metric_mm_inv": -0.15633850327848603
+        },
+        {
+          "beam_key": "27",
+          "beam_mu": 299.058958053589,
+          "edge_metric_mm_inv": -0.14540831934570161
+        },
+        {
+          "beam_key": "28",
+          "beam_mu": 156.286346435547,
+          "edge_metric_mm_inv": -0.14238158816240087
+        },
+        {
+          "beam_key": "29",
+          "beam_mu": 312.914772033691,
+          "edge_metric_mm_inv": -0.1499432112828028
+        },
+        {
+          "beam_key": "30",
+          "beam_mu": 342.450370311737,
+          "edge_metric_mm_inv": -0.14754974618818403
+        }
+      ]
+    },
+    "RTPLAN_MR_PT_05_A3i.dcm": {
+      "plan_edge_metric_mm_inv": 0.09270733232905484,
+      "beam_count": 24,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 201.892532348633,
+          "edge_metric_mm_inv": 0.08401592430248792
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 316.097900390625,
+          "edge_metric_mm_inv": 0.08885853719489417
+        },
+        {
+          "beam_key": "3",
+          "beam_mu": 152.878753662109,
+          "edge_metric_mm_inv": 0.06022638691462369
+        },
+        {
+          "beam_key": "4",
+          "beam_mu": 171.726615905762,
+          "edge_metric_mm_inv": 0.11825264760164228
+        },
+        {
+          "beam_key": "5",
+          "beam_mu": 238.284214019775,
+          "edge_metric_mm_inv": 0.0907901140155968
+        },
+        {
+          "beam_key": "6",
+          "beam_mu": 184.542526245117,
+          "edge_metric_mm_inv": 0.08334713128141855
+        },
+        {
+          "beam_key": "7",
+          "beam_mu": 222.13708114624,
+          "edge_metric_mm_inv": 0.09286348513930234
+        },
+        {
+          "beam_key": "8",
+          "beam_mu": 91.3520164489746,
+          "edge_metric_mm_inv": 0.07118222190930713
+        },
+        {
+          "beam_key": "9",
+          "beam_mu": 242.270915985107,
+          "edge_metric_mm_inv": 0.15454475425820308
+        },
+        {
+          "beam_key": "10",
+          "beam_mu": 41.7543563842773,
+          "edge_metric_mm_inv": 0.04315770326639762
+        },
+        {
+          "beam_key": "11",
+          "beam_mu": 101.433303833008,
+          "edge_metric_mm_inv": 0.05256529318523233
+        },
+        {
+          "beam_key": "12",
+          "beam_mu": 15.4185934066772,
+          "edge_metric_mm_inv": 0.04275165814100815
+        },
+        {
+          "beam_key": "13",
+          "beam_mu": 194.649332046509,
+          "edge_metric_mm_inv": 0.07528764186616393
+        },
+        {
+          "beam_key": "14",
+          "beam_mu": 73.3193836212158,
+          "edge_metric_mm_inv": 0.05303732255969022
+        },
+        {
+          "beam_key": "15",
+          "beam_mu": 19.4842014312744,
+          "edge_metric_mm_inv": 0.06341154157182384
+        },
+        {
+          "beam_key": "16",
+          "beam_mu": 54.4555988311768,
+          "edge_metric_mm_inv": 0.05071623044927777
+        },
+        {
+          "beam_key": "17",
+          "beam_mu": 164.300382614136,
+          "edge_metric_mm_inv": 0.10086657478732343
+        },
+        {
+          "beam_key": "18",
+          "beam_mu": 89.0315093994141,
+          "edge_metric_mm_inv": 0.0766931300004311
+        },
+        {
+          "beam_key": "19",
+          "beam_mu": 250.344619750977,
+          "edge_metric_mm_inv": 0.12788552241755202
+        },
+        {
+          "beam_key": "20",
+          "beam_mu": 101.233420372009,
+          "edge_metric_mm_inv": 0.0973320320853128
+        },
+        {
+          "beam_key": "21",
+          "beam_mu": 163.964851379395,
+          "edge_metric_mm_inv": 0.12566227040593822
+        },
+        {
+          "beam_key": "22",
+          "beam_mu": 178.253204345703,
+          "edge_metric_mm_inv": 0.08975484780176221
+        },
+        {
+          "beam_key": "23",
+          "beam_mu": 160.47131729126,
+          "edge_metric_mm_inv": 0.06764811776146229
+        },
+        {
+          "beam_key": "24",
+          "beam_mu": 211.312797546387,
+          "edge_metric_mm_inv": 0.08658736818002324
+        }
+      ]
+    },
+    "RTPLAN_PI_PT_01.dcm": {
+      "plan_edge_metric_mm_inv": 0.10612805959140226,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 254.6,
+          "edge_metric_mm_inv": 0.10352770733348327
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 272.4,
+          "edge_metric_mm_inv": 0.10855849162101378
+        }
+      ]
+    },
+    "RTPLAN_PI_PT_03.dcm": {
+      "plan_edge_metric_mm_inv": 0.10390006410363939,
+      "beam_count": 2,
+      "beams": [
+        {
+          "beam_key": "1",
+          "beam_mu": 288.1,
+          "edge_metric_mm_inv": 0.10723317702013468
+        },
+        {
+          "beam_key": "2",
+          "beam_mu": 269.9,
+          "edge_metric_mm_inv": 0.10034219144249712
+        }
+      ]
+    }
+  }
+}
