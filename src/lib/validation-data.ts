@@ -157,6 +157,14 @@ export const SOURCE_FILES = [
     path: "python/tests/external_reference.py",
   },
   {
+    label: "Third-party benchmark (ApertureComplexity)",
+    path: "python/tests/benchmark_pycomplexity.py",
+  },
+  {
+    label: "Third-party benchmark data",
+    path: "python/tests/reference_data/benchmark_pycomplexity.json",
+  },
+  {
     label: "TS reference data generator",
     path: "src/test/export-metrics-json.test.ts",
   },
