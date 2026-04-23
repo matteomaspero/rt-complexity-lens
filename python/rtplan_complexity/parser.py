@@ -674,7 +674,7 @@ def parse_rtstruct(file_path: str) -> dict:
     
     # Verify this is an RTSTRUCT
     sop_class_uid = _get_string(ds, "SOPClassUID")
-    if sop_class_uid != "1.2.840.10008.5.1.4.1.1.481.4":  # RTSTRUCT SOP Class UID
+    if sop_class_uid != "1.2.840.10008.5.1.4.1.1.481.3":  # RTSTRUCT SOP Class UID
         raise ValueError(f"File is not an RTSTRUCT (SOP Class: {sop_class_uid})")
     
     structures: dict = {}
@@ -683,7 +683,7 @@ def parse_rtstruct(file_path: str) -> dict:
     roi_map = {}
     if hasattr(ds, "StructureSetROISequence"):
         for roi in ds.StructureSetROISequence:
-            roi_number = int(roi.ReferencedROINumber)
+            roi_number = int(roi.ROINumber)
             roi_name = str(roi.ROIName)
             roi_map[roi_number] = roi_name
     
