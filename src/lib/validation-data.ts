@@ -231,8 +231,28 @@ export const GITHUB_BASE_URL =
 
 export const SOURCE_FILES = [
   {
-    label: "Cross-validation script",
+    label: "Audit orchestrator (all 3 layers)",
+    path: "python/tests/audit_all.py",
+  },
+  {
+    label: "TS↔Python cross-validation",
     path: "python/tests/cross_validate.py",
+  },
+  {
+    label: "UCoMx v1.1 cross-validation",
+    path: "python/tests/cross_validate_ucomx.py",
+  },
+  {
+    label: "Markdown audit report",
+    path: "python/tests/reference_data/AUDIT_REPORT.md",
+  },
+  {
+    label: "Audit summary (JSON)",
+    path: "python/tests/reference_data/audit_summary.json",
+  },
+  {
+    label: "Per-plan PyComplexity audit (JSON)",
+    path: "python/tests/reference_data/audit_pycomplexity_per_plan.json",
   },
   {
     label: "Independent reference implementation",
