@@ -327,6 +327,107 @@ export default function ValidationReport() {
             </CardContent>
           </Card>
 
+          {/* ── Section B3: Per-Plan PyComplexity Audit ── */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GitCompare className="h-5 w-5 text-primary" />
+                Per-Plan Audit: Ours vs ApertureComplexity (all {PER_PLAN_PYCOMPLEXITY.length} plans)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border-l-4 border-amber-500 bg-amber-500/5 p-3 text-xs text-muted-foreground flex items-start gap-2">
+                <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <span>
+                  <strong className="text-foreground">Complementary indicator, not an equivalence check.</strong>{' '}
+                  Our <code className="font-mono">EM</code> = perimeter / (2·area), MU-weighted, always ≥ 0.
+                  PyComplexity <code className="font-mono">CI</code> = signed Younge edge metric.
+                  Rows where ours = 0 are static-IMRT plans where our <code className="font-mono">EM</code>
+                  walker currently returns 0 (see Known Gaps below). Negative CI values correspond to
+                  MRIdian plans with inverted leaf geometry.
+                </span>
+              </div>
+              <div className="overflow-x-auto rounded-lg border max-h-[480px]">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur">
+                    <TableRow>
+                      <TableHead className="font-semibold">Plan</TableHead>
+                      <TableHead className="font-semibold text-right">Ours EM (mm⁻¹)</TableHead>
+                      <TableHead className="font-semibold text-right">PyComplexity CI (mm⁻¹)</TableHead>
+                      <TableHead className="font-semibold text-right">|Δ|</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {PER_PLAN_PYCOMPLEXITY.map((p) => (
+                      <TableRow key={p.plan}>
+                        <TableCell className="font-mono text-xs">{p.plan}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{p.tsEM.toFixed(4)}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{p.pyCI.toFixed(4)}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{p.absDelta.toFixed(4)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Section B4: UCoMx Audit Status ── */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5 text-primary" />
+                UCoMx v1.1 Per-Plan Audit — Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p className="text-muted-foreground leading-relaxed">{UCOMX_AUDIT_STATUS.reason}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground">Comparable metrics</div>
+                  <div className="font-mono font-semibold">{UCOMX_AUDIT_STATUS.comparableMetricCount}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground">UCoMx-only (not implemented)</div>
+                  <div className="font-mono font-semibold">{UCOMX_AUDIT_STATUS.notImplementedUCoMxMetrics.length}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground">Status</div>
+                  <div className="font-mono font-semibold capitalize">{UCOMX_AUDIT_STATUS.status}</div>
+                </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase text-muted-foreground mb-1">Not implemented in RTp-lens</div>
+                <div className="flex flex-wrap gap-1">
+                  {UCOMX_AUDIT_STATUS.notImplementedUCoMxMetrics.map((m) => (
+                    <Badge key={m} variant="outline" className="font-mono text-xs">{m}</Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Section B5: Known Gaps ── */}
+          <Card className="border-amber-500/40 bg-amber-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5 text-amber-600" />
+                Known Implementation Gaps
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {KNOWN_GAPS.map((g) => (
+                <div key={g.metric} className="rounded-lg border bg-background/60 p-3">
+                  <div className="font-mono font-semibold text-foreground">{g.metric}</div>
+                  <p className="text-muted-foreground text-xs mt-1">{g.issue}</p>
+                  <p className="text-xs mt-1"><span className="text-muted-foreground">Impact:</span> {g.impact}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+
+
           {/* ── Section C: Algorithmic Parity Statement ── */}
           <Card className="border-t-4 border-t-primary">
             <CardHeader>
