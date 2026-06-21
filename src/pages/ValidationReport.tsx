@@ -17,6 +17,9 @@ import {
   METRIC_TOLERANCES,
   SOURCE_FILES,
   GITHUB_BASE_URL,
+  PER_PLAN_PYCOMPLEXITY,
+  UCOMX_AUDIT_STATUS,
+  KNOWN_GAPS,
 } from '@/lib/validation-data';
 
 function StatusBadge({ passed }: { passed: boolean }) {
