@@ -1,0 +1,4257 @@
+{
+  "RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.32749893390777385,
+        "py": 0.32749893390777374,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.6726111567977742,
+        "py": 0.6726111567977742,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.4801360621303853,
+        "py": 0.48013606213038534,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 687.7604316918998,
+        "py": 687.7604316918998,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 865.7859,
+        "py": 865.7859,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.2668427049234496,
+        "py": 0.26684270492344947,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 15.876516704899819,
+        "py": 15.876516704899819,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.5198639378696147,
+        "py": 0.5198639378696146,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 23.409665134751364,
+        "py": 23.409665134751364,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 16.977434787097078,
+        "py": 16.977434787097078,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 20.270945854057345,
+        "py": 20.270945854057345,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.046173187280474884,
+        "py": 0.046173187280474884,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.06027618537018116,
+        "py": 0.06027618537018116,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.06869773212076986,
+        "py": 0.06869773212076986,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.14681124533935272,
+        "py": 0.14681124533935272,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.18893768740709696,
+        "py": 0.18893768740709696,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 8.181365003877213,
+        "py": 8.181365003877213,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.14948064023163968,
+        "py": 0.14948064023163968,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.6132354248680201,
+        "py": 0.6132354248680201,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 5.58176829999259,
+        "py": 5.58176829999259,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.7943770298082931,
+        "py": 0.7943770298082931,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 20.10025332381728,
+        "py": 20.10025332381728,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 2812.1277901753497,
+        "py": 2812.1277901753497,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 189.41460265000012,
+        "py": 189.41460265000012,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.CS_ETH_2A_#1.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 600.067010197529,
+        "py": 600.067010197529,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 2.042834783632221,
+        "py": 2.042834783632221,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 2838.08,
+        "py": 2838.08,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.CS_TB_2A_#1.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.43703156623191647,
+        "py": 0.43703156623191636,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.7678066185862077,
+        "py": 0.7678066185862077,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.5680839803090473,
+        "py": 0.5680839803090474,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 954.73,
+        "py": 954.73,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 602.049107991946,
+        "py": 602.049107991946,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.33849898672740214,
+        "py": 0.3384989867274021,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 26.222153859633465,
+        "py": 26.222153859633465,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.4319160196909528,
+        "py": 0.4319160196909526,
+        "abs_delta": 1.6653345369377348e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 14.68820723402737,
+        "py": 14.68820723402737,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 29.53384921546181,
+        "py": 29.53384921546181,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 24.595440522227292,
+        "py": 24.595440522227292,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.07553898993051661,
+        "py": 0.07553898993051661,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.11491216489294404,
+        "py": 0.11491216489294404,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.22898270455144015,
+        "py": 0.22898270455144015,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.28701797884900826,
+        "py": 0.28701797884900826,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 6.342766302520903,
+        "py": 6.342766302520903,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.09765854642958383,
+        "py": 0.09765854642958383,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.3181456095330631,
+        "py": 0.3181456095330631,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 1.7159146701384804,
+        "py": 1.7159146701384804,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 1.5858008712684148,
+        "py": 1.5858008712684148,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 16.96128519989038,
+        "py": 16.96128519989038,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 10091.9287,
+        "py": 10091.9287,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 317.1952800000005,
+        "py": 317.1952800000005,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.HN_ETH_2A_#1.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 600.0681058307889,
+        "py": 600.0681058307889,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 1.6968548459735817,
+        "py": 1.6968548459735817,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 2838.08,
+        "py": 2838.08,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.MT_ETH_2A_#1.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 433.002224618918,
+        "py": 433.002224618918,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 1.2069398367304658,
+        "py": 1.2069398367304658,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 2838.08,
+        "py": 2838.08,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.PR_ETH_2A_2.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 879.4260106681199,
+        "py": 879.4260106681199,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 2.455046237924528,
+        "py": 2.455046237924528,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 2838.08,
+        "py": 2838.08,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.PR_UN_2A_#1.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.23612115153650054,
+        "py": 0.23612115153650057,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.5085958825029878,
+        "py": 0.5085958825029879,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.47715708370250975,
+        "py": 0.47715708370250964,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 428.1533333333334,
+        "py": 428.1533333333334,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 603.174072698441,
+        "py": 603.174072698441,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.20447375868805992,
+        "py": 0.20447375868805995,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 14.98372958269282,
+        "py": 14.98372958269282,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.5228429162974902,
+        "py": 0.5228429162974902,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 11.682108942335393,
+        "py": 11.682108942335393,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 19.93556242736966,
+        "py": 19.93556242736966,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 20.38295938738959,
+        "py": 20.38295938738959,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0260598045669517,
+        "py": 0.0260598045669517,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.044485166163425904,
+        "py": 0.044485166163425904,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.07485848372166831,
+        "py": 0.07485848372166831,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.09310148619828597,
+        "py": 0.09310148619828597,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.12862541115583745,
+        "py": 0.12862541115583745,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 6.356435807217748,
+        "py": 6.356435807217748,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.13425444792687682,
+        "py": 0.13425444792687682,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.7655467192230544,
+        "py": 0.7655467192230544,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 1.7350896150074553,
+        "py": 1.7350896150074553,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.7098337821748353,
+        "py": 0.7098337821748353,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 20.72751107914253,
+        "py": 20.72751107914253,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 5439.2971000000025,
+        "py": 5439.2971000000025,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 178.23959999999994,
+        "py": 178.23959999999994,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.CS_ETH_9F.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 1640.9714395431129,
+        "py": 1640.9714395431129,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 1.1591573061270644,
+        "py": 1.1591573061270641,
+        "abs_delta": 2.220446049250313e-16,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 11728.640000000003,
+        "py": 11728.640000000001,
+        "abs_delta": 1.8189894035458565e-12,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.HN_ETH_7F.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 1886.9489012328543,
+        "py": 1886.948901232854,
+        "abs_delta": 2.2737367544323206e-13,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 1.2857233773805354,
+        "py": 1.2857233773805357,
+        "abs_delta": 2.220446049250313e-16,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 11728.640000000003,
+        "py": 11728.640000000001,
+        "abs_delta": 1.8189894035458565e-12,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.HN_TB_7F.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.3697616905047367,
+        "py": 0.3697616905047367,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.8251684979079944,
+        "py": 0.8251684979079944,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.4505825041972587,
+        "py": 0.4505825041972586,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 976.1416666666665,
+        "py": 976.1416666666665,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 1722.0,
+        "py": 1722.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.2853500020984717,
+        "py": 0.2853500020984717,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 12.44603253363414,
+        "py": 12.44603253363414,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.5494174958027414,
+        "py": 0.5494174958027414,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 29.677797804417384,
+        "py": 29.677797804417388,
+        "abs_delta": 3.552713678800501e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 12.653956820572281,
+        "py": 12.653956820572281,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 13.01452178592201,
+        "py": 13.01452178592201,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.12027499010520011,
+        "py": 0.12027499010520011,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.07976265244438883,
+        "py": 0.07976265244438882,
+        "abs_delta": 1.3877787807814457e-17,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.13431783000967895,
+        "py": 0.13431783000967892,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.2462659017013559,
+        "py": 0.24626590170135593,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.44793008124358513,
+        "py": 0.44793008124358513,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 17.472241767051344,
+        "py": 17.472241767051344,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.25952401258258606,
+        "py": 0.25952401258258606,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.7532031339450097,
+        "py": 0.7532031339450097,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 1.2785307309519087,
+        "py": 1.2785307309519087,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.5668650793650792,
+        "py": 0.5668650793650792,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 16.743321718931476,
+        "py": 16.743321718931476,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 17139.5605,
+        "py": 17139.5605,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 1807.6442000000013,
+        "py": 1807.6442000000015,
+        "abs_delta": 2.2737367544323206e-13,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.MT_ETH_7F.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 714.7541731679432,
+        "py": 714.7541731679432,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 0.6291075441199364,
+        "py": 0.6291075441199364,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 9125.760000000002,
+        "py": 9125.76,
+        "abs_delta": 1.8189894035458565e-12,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.PR_ETH_7F.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 1051.763401686465,
+        "py": 1051.763401686465,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 0.9275279829406595,
+        "py": 0.9275279829406595,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 9125.760000000002,
+        "py": 9125.76,
+        "abs_delta": 1.8189894035458565e-12,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RP.TG119.PR_UN_7F.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.28171660660518366,
+        "py": 0.2817166066051836,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.5769828590665419,
+        "py": 0.5769828590665419,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.49741644188788764,
+        "py": 0.4974164418878877,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 141.13166666666666,
+        "py": 141.13166666666666,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 848.0,
+        "py": 848.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.26644006377153334,
+        "py": 0.26644006377153334,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 9.61354617891617,
+        "py": 9.61354617891617,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.5025835581121123,
+        "py": 0.5025835581121123,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 12.552469377709476,
+        "py": 12.552469377709478,
+        "abs_delta": 1.7763568394002505e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 12.97657814557469,
+        "py": 12.976578145574688,
+        "abs_delta": 1.7763568394002505e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 17.349452827598885,
+        "py": 17.349452827598885,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.2171672017453001,
+        "py": 0.2171672017453001,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.038350826086948724,
+        "py": 0.038350826086948724,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.06726218120774324,
+        "py": 0.06726218120774324,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.11262631506257374,
+        "py": 0.11262631506257374,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.18422347471858788,
+        "py": 0.18422347471858788,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 7.316130415580384,
+        "py": 7.316130415580384,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.21521650534749778,
+        "py": 0.21521650534749778,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.8838997279724882,
+        "py": 0.8838997279724882,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 1.2814336962017343,
+        "py": 1.2814336962017343,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.16642885220125786,
+        "py": 0.16642885220125786,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 13.003537735849052,
+        "py": 13.003537735849054,
+        "abs_delta": 1.7763568394002505e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 6635.822499828339,
+        "py": 6635.822499828339,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 288.51608723640487,
+        "py": 288.5160872364049,
+        "abs_delta": 5.684341886080802e-14,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_MO_PT_01.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.18694703116148173,
+        "py": 0.18694703116148192,
+        "abs_delta": 1.942890293094024e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.48148031003878555,
+        "py": 0.48148031003878566,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.38206987025253797,
+        "py": 0.38206987025253814,
+        "abs_delta": 1.6653345369377348e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 433.05750000000006,
+        "py": 433.05750000000006,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 1590.030029,
+        "py": 1590.030029,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.16168201482195893,
+        "py": 0.1616820148219591,
+        "abs_delta": 1.6653345369377348e-16,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 17.328904411764757,
+        "py": 17.328904411764757,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.6179301297474621,
+        "py": 0.6179301297474619,
+        "abs_delta": 2.220446049250313e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 4.731130483749999,
+        "py": 4.731130483749999,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 7.801413914999991,
+        "py": 7.801413914999991,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 18.013445472993823,
+        "py": 18.013445472993823,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.007352941176470588,
+        "py": 0.007352941176470588,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.7975820249999996,
+        "py": 0.7975820249999996,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.8213004249999999,
+        "py": 0.8213004249999999,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.8862902624999999,
+        "py": 0.8862902624999999,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 7.233246798411801,
+        "py": 7.233246798411801,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.1247206605337002,
+        "py": 0.1247206605337002,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.21692973146060343,
+        "py": 0.21692973146060343,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 3.906707687960688,
+        "py": 3.906707687960688,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.27235806374824134,
+        "py": 0.27235806374824134,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 24.447337025733596,
+        "py": 24.447337025733596,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 7070.193000000021,
+        "py": 7070.193000000021,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 202.7188800000005,
+        "py": 202.7188800000005,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_MO_PT_02.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.11346857238096261,
+        "py": 0.11346857238096263,
+        "abs_delta": 1.3877787807814457e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.2418454411754358,
+        "py": 0.24184544117543585,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.47638619352512873,
+        "py": 0.47638619352512873,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 163.22,
+        "py": 163.22,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 2239.335419,
+        "py": 2239.335419,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.10647708862149896,
+        "py": 0.10647708862149897,
+        "abs_delta": 1.3877787807814457e-17,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 2.351519087326528,
+        "py": 2.351519087326528,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.5236138064748713,
+        "py": 0.5236138064748713,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 13.070759842734832,
+        "py": 13.070759842734834,
+        "abs_delta": 1.7763568394002505e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 4.214015563068337,
+        "py": 4.214015563068337,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 7.492449598458654,
+        "py": 7.492449598458654,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.7389099750159417,
+        "py": 0.7389099750159417,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.9249461621193764,
+        "py": 0.9249461621193764,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.9469468036515045,
+        "py": 0.9469468036515045,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.9798895945471141,
+        "py": 0.9798895945471141,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 3.9084362843978986,
+        "py": 3.9084362843978986,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.3000070294710558,
+        "py": 0.3000070294710558,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.4301992811046491,
+        "py": 0.4301992811046491,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 9.737655931843044,
+        "py": 9.737655931843046,
+        "abs_delta": 1.7763568394002505e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.07288769632951535,
+        "py": 0.07288769632951535,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 15.10006356357791,
+        "py": 15.10006356357791,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 486.29200000000003,
+        "py": 486.292,
+        "abs_delta": 5.684341886080802e-14,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 23.162059999999993,
+        "py": 23.162059999999993,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_MO_PT_03.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.1364580671564164,
+        "py": 0.13645806715641637,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.20061454064642817,
+        "py": 0.20061454064642817,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.6699448242551351,
+        "py": 0.6699448242551351,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 8.38375,
+        "py": 8.38375,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 2904.347352,
+        "py": 2904.347352,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.13596507974241942,
+        "py": 0.1359650797424194,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.5170678550471742,
+        "py": 0.5170678550471742,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.3300551757448649,
+        "py": 0.3300551757448649,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.5318556365792689,
+        "py": 0.5318556365792689,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 3.5128720337226214,
+        "py": 3.5128720337226214,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 8.02887546171791,
+        "py": 8.02887546171791,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.9782124511132678,
+        "py": 0.978212451113268,
+        "abs_delta": 2.220446049250313e-16,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.9935884254539736,
+        "py": 0.9935884254539737,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0832142401909182,
+        "py": 1.0832142401909182,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.2640129995942397,
+        "py": 0.2640129995942397,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.033018625066279256,
+        "py": 0.033018625066279256,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 21.286232879853653,
+        "py": 21.286232879853653,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0028866209801753765,
+        "py": 0.0028866209801753765,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 1.349012196251931,
+        "py": 1.349012196251931,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 74.031,
+        "py": 74.03099999999999,
+        "abs_delta": 1.4210854715202004e-14,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 1.2450300000000003,
+        "py": 1.2450300000000003,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_MO_PT_04.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.1695162093855801,
+        "py": 0.16951620938558018,
+        "abs_delta": 8.326672684688674e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.4411167928472175,
+        "py": 0.4411167928472174,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.3894867939835916,
+        "py": 0.3894867939835916,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 174.72874999999993,
+        "py": 174.72874999999993,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 2115.057373,
+        "py": 2115.057373,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.158435603862766,
+        "py": 0.1584356038627661,
+        "abs_delta": 8.326672684688674e-17,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 9.804546012269942,
+        "py": 9.804546012269942,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.6105132060164082,
+        "py": 0.6105132060164085,
+        "abs_delta": 2.220446049250313e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 3.2129582912499997,
+        "py": 3.2129582912499997,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 5.354330119999993,
+        "py": 5.354330119999993,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 16.16874730455116,
+        "py": 16.16874730455116,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.04294478527607362,
+        "py": 0.04294478527607362,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.8501455499999997,
+        "py": 0.8501455499999997,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.8815069874999999,
+        "py": 0.8815069874999999,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.9580222374999995,
+        "py": 0.9580222374999995,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 4.824827942923462,
+        "py": 4.824827942923462,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.14087948138742395,
+        "py": 0.14087948138742395,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.15420304009810104,
+        "py": 0.15420304009810104,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 13.055909709876543,
+        "py": 13.055909709876543,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0826118252065023,
+        "py": 0.0826118252065023,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 9.288636918692225,
+        "py": 9.288636918692225,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 1598.1410000000003,
+        "py": 1598.1410000000003,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 41.93664000000007,
+        "py": 41.93664000000007,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_EL_PT_01.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.21084026924878943,
+        "py": 0.21084026924878943,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.47249493653358837,
+        "py": 0.47249493653358837,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.4311778067360234,
+        "py": 0.43117780673602357,
+        "abs_delta": 1.6653345369377348e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 86.75249999999998,
+        "py": 86.75249999999998,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 2292.0,
+        "py": 2292.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.20348811191932456,
+        "py": 0.20348811191932456,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 10.313621281532603,
+        "py": 10.313621281532603,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.5688221932639765,
+        "py": 0.5688221932639764,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 4.2926392703861715,
+        "py": 4.2926392703861715,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 18.96643329177182,
+        "py": 18.96643329177182,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 23.0262106834649,
+        "py": 23.0262106834649,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0538136601618277,
+        "py": 0.0538136601618277,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0010005744959962223,
+        "py": 0.0010005744959962223,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.04720510484696182,
+        "py": 0.04720510484696182,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.10907564970118386,
+        "py": 0.10907564970118386,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 2.802263059831506,
+        "py": 2.802263059831506,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.09138727299441567,
+        "py": 0.09138727299441567,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.2089014879048374,
+        "py": 0.2089014879048374,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 16.1297165553349,
+        "py": 16.1297165553349,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.03785013089005235,
+        "py": 0.03785013089005235,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 8.99855509418066,
+        "py": 8.99855509418066,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 1671.924,
+        "py": 1671.924,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 408.52,
+        "py": 408.52,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_EL_PT_03.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.10925583044517222,
+        "py": 0.10925583044517224,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.16386049427779847,
+        "py": 0.16386049427779847,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.6915783216513633,
+        "py": 0.6915783216513633,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 7.819999999999999,
+        "py": 7.82,
+        "abs_delta": 8.881784197001252e-16,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 3706.0,
+        "py": 3706.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.10888746712758242,
+        "py": 0.10888746712758245,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.7812671011730398,
+        "py": 0.7812671011730398,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.30842167834863665,
+        "py": 0.30842167834863665,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 1.030523856799112,
+        "py": 1.030523856799112,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 6.550042192653752,
+        "py": 6.550042192653751,
+        "abs_delta": 8.881784197001252e-16,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 9.429139518724263,
+        "py": 9.429139518724263,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.9934976899688047,
+        "py": 0.9934976899688047,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.017941277413464636,
+        "py": 0.017941277413464636,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.08144637441010015,
+        "py": 0.08144637441010015,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.08303671317204475,
+        "py": 0.08303671317204477,
+        "abs_delta": 1.3877787807814457e-17,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.1928078172616228,
+        "py": 1.1928078172616228,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.2251316989844884,
+        "py": 0.2251316989844884,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.21964565151141385,
+        "py": 0.21964565151141385,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 27.766538496132394,
+        "py": 27.766538496132398,
+        "abs_delta": 3.552713678800501e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.002110091743119266,
+        "py": 0.0021100917431192663,
+        "abs_delta": 4.336808689942018e-19,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 1.0283324338909876,
+        "py": 1.0283324338909876,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 110.16999999999999,
+        "py": 110.16999999999997,
+        "abs_delta": 1.4210854715202004e-14,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 62.60000000000001,
+        "py": 62.6,
+        "abs_delta": 7.105427357601002e-15,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_PI_PT_01.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.23383910290871524,
+        "py": 0.23383910290871518,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.710609660993009,
+        "py": 0.7106096609930093,
+        "abs_delta": 2.220446049250313e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.3314891026709843,
+        "py": 0.3314891026709842,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 1298.0549999999996,
+        "py": 1298.0549999999996,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 527.0,
+        "py": 527.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.17176869528384744,
+        "py": 0.17176869528384742,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 58.654774783892044,
+        "py": 58.654774783892044,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.6685108973290158,
+        "py": 0.6685108973290158,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 18.995169944758274,
+        "py": 18.995169944758274,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 16.749610692842264,
+        "py": 16.749610692842264,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 21.890236792598028,
+        "py": 21.890236792598028,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.004892433019449716,
+        "py": 0.004892433019449716,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.6042184844814991,
+        "py": 0.6042184844814991,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.7360838073714417,
+        "py": 0.7360838073714417,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 18.8990024529763,
+        "py": 18.8990024529763,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.10926273992096175,
+        "py": 0.10926273992096175,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.2961835046668198,
+        "py": 0.2961835046668198,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 2.96405176641153,
+        "py": 2.96405176641153,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 2.4631024667931682,
+        "py": 2.4631024667931682,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 16.67930307229815,
+        "py": 16.67930307229815,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 10599.845000000001,
+        "py": 10599.845000000001,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 479.89650000000006,
+        "py": 479.89650000000006,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_PI_PT_03.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.21922326249473711,
+        "py": 0.21922326249473717,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.6872112910402568,
+        "py": 0.6872112910402566,
+        "abs_delta": 2.220446049250313e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.3194277863700824,
+        "py": 0.3194277863700824,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 1851.1112500000004,
+        "py": 1851.1112500000004,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 558.0,
+        "py": 558.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.1506674422528387,
+        "py": 0.15066744225283876,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 62.90257085822381,
+        "py": 62.90257085822381,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.6805722136299176,
+        "py": 0.6805722136299175,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 20.4534452993375,
+        "py": 20.4534452993375,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 17.464823248715454,
+        "py": 17.464823248715454,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 23.59188979676899,
+        "py": 23.59188979676899,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0028681383606630802,
+        "py": 0.0028681383606630802,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.6180740224097222,
+        "py": 0.6180740224097222,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.7306652411330645,
+        "py": 0.7306652411330645,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 15.165306927630535,
+        "py": 15.165306927630535,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.09381712508345144,
+        "py": 0.09381712508345144,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.25725451833088314,
+        "py": 0.25725451833088314,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 3.1381664048971043,
+        "py": 3.1381664048971043,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 3.317403673835126,
+        "py": 3.317403673835126,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 25.0,
+        "py": 25.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 11346.195,
+        "py": 11346.195,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 431.24399999999986,
+        "py": 431.24399999999986,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_MR_PT_01_PENALTY.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.2836282861436016,
+        "py": 0.2836282861436017,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.2969878488327861,
+        "py": 0.29698784883278617,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.957143051254183,
+        "py": 0.9571430512541829,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 61.20827290832116,
+        "py": 61.208272908321156,
+        "abs_delta": 7.105427357601002e-15,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 3636.195208072662,
+        "py": 3636.195208072662,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.27649455331370665,
+        "py": 0.27649455331370676,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 67.13791018727045,
+        "py": 67.13791018727046,
+        "abs_delta": 1.4210854715202004e-14,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.04285694874581708,
+        "py": 0.04285694874581708,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 24.05118464744117,
+        "py": 24.05118464744117,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 90.53379602346998,
+        "py": 90.53379602346998,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 48.380216463249035,
+        "py": 48.380216463249056,
+        "abs_delta": 2.1316282072803006e-14,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.00915967697781319,
+        "py": 0.009159676977813188,
+        "abs_delta": 1.734723475976807e-18,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.02237208685935271,
+        "py": 0.02237208685935271,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.04466013712645371,
+        "py": 0.04466013712645371,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.08476256577974309,
+        "py": 0.0847625657797431,
+        "abs_delta": 1.3877787807814457e-17,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 4.064634283627928,
+        "py": 4.064634283627926,
+        "abs_delta": 1.7763568394002505e-15,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.04299176656556515,
+        "py": 0.04299176656556515,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.2788594372108258,
+        "py": 0.2788594372108258,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 42.70827194174027,
+        "py": 42.708271941740264,
+        "abs_delta": 7.105427357601002e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.01680071185115052,
+        "py": 0.016833054719513848,
+        "abs_delta": 3.2342868363326865e-05,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 1.5361429943241138,
+        "py": 1.5361429943241138,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 10131.507109128093,
+        "py": 10131.507109128093,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 375.14583527787505,
+        "py": 375.145835277875,
+        "abs_delta": 5.684341886080802e-14,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_MR_PT_02_PENALTY.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.4111075673542055,
+        "py": 0.41110756735420567,
+        "abs_delta": 1.6653345369377348e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.5002647670947206,
+        "py": 0.5002647670947207,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.8252400206387047,
+        "py": 0.8252400206387048,
+        "abs_delta": 1.1102230246251565e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 292.7217562419959,
+        "py": 292.72175624199593,
+        "abs_delta": 5.684341886080802e-14,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 4117.388718843462,
+        "py": 4117.388718843462,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.3698656739448354,
+        "py": 0.36986567394483555,
+        "abs_delta": 1.6653345369377348e-16,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 63.140487730398696,
+        "py": 63.14048773039871,
+        "abs_delta": 1.4210854715202004e-14,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.1747599793612953,
+        "py": 0.17475997936129523,
+        "abs_delta": 8.326672684688674e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 23.677612472046185,
+        "py": 23.67761247204619,
+        "abs_delta": 3.552713678800501e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 78.4242684753963,
+        "py": 78.4242684753963,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 45.973466485090064,
+        "py": 45.973466485090064,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.00452616333110797,
+        "py": 0.004526163331107969,
+        "abs_delta": 8.673617379884035e-19,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.020443616624119365,
+        "py": 0.02044361662411937,
+        "abs_delta": 3.469446951953614e-18,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.06001041843526714,
+        "py": 0.06001041843526714,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.10936474644214297,
+        "py": 0.10936474644214296,
+        "abs_delta": 1.3877787807814457e-17,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 4.514683652017891,
+        "py": 4.514683652017889,
+        "abs_delta": 1.7763568394002505e-15,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.04600110411145677,
+        "py": 0.046001104111456775,
+        "abs_delta": 6.938893903907228e-18,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.3018493116603229,
+        "py": 0.3018493116603229,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 26.94905825496968,
+        "py": 26.949058254969678,
+        "abs_delta": 3.552713678800501e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.07095616345313985,
+        "py": 0.07109402979182856,
+        "abs_delta": 0.00013786633868871634,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 4.5031138476483,
+        "py": 4.5031138476483,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 13144.008361302684,
+        "py": 13144.008361302682,
+        "abs_delta": 1.8189894035458565e-12,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 655.349424459726,
+        "py": 655.349424459726,
+        "abs_delta": 0.0,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_MR_PT_03_O&C.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.3757227734127622,
+        "py": 0.3757227734127624,
+        "abs_delta": 1.6653345369377348e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 0.4113180987795832,
+        "py": 0.41131809877958325,
+        "abs_delta": 5.551115123125783e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.9194837869941056,
+        "py": 0.9194837869941059,
+        "abs_delta": 3.3306690738754696e-16,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 153.10337505960695,
+        "py": 153.10337505960698,
+        "abs_delta": 2.842170943040401e-14,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 5016.284015893938,
+        "py": 5016.284015893937,
+        "abs_delta": 9.094947017729282e-13,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.35383182027156845,
+        "py": 0.3538318202715686,
+        "abs_delta": 1.6653345369377348e-16,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 63.14863385398646,
+        "py": 63.14863385398645,
+        "abs_delta": 7.105427357601002e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 0.08051621300589411,
+        "py": 0.08051621300589408,
+        "abs_delta": 2.7755575615628914e-17,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 18.391162519349674,
+        "py": 18.391162519349677,
+        "abs_delta": 3.552713678800501e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 100.29746284791007,
+        "py": 100.2974628479101,
+        "abs_delta": 2.842170943040401e-14,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 58.41060314461753,
+        "py": 58.41060314461754,
+        "abs_delta": 7.105427357601002e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.013190548859629319,
+        "py": 0.013190548859629322,
+        "abs_delta": 3.469446951953614e-18,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.027950610760606863,
+        "py": 0.027950610760606866,
+        "abs_delta": 3.469446951953614e-18,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.049692192540207465,
+        "py": 0.049692192540207486,
+        "abs_delta": 2.0816681711721685e-17,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.060218880480720806,
+        "py": 0.06021888048072082,
+        "abs_delta": 1.3877787807814457e-17,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 2.551418425667717,
+        "py": 2.551418425667716,
+        "abs_delta": 8.881784197001252e-16,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.03527586868331835,
+        "py": 0.035275868683318355,
+        "abs_delta": 6.938893903907228e-18,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.22714868977852515,
+        "py": 0.22714868977852515,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 41.99273272298449,
+        "py": 41.992732722984506,
+        "abs_delta": 1.4210854715202004e-14,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.030496954868467648,
+        "py": 0.030521273232238005,
+        "abs_delta": 2.4318363770356455e-05,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 2.778191577043526,
+        "py": 2.778191577043527,
+        "abs_delta": 8.881784197001252e-16,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PA": {
+        "ts": 11020.220475049882,
+        "py": 11020.220475049879,
+        "abs_delta": 3.637978807091713e-12,
+        "tolerance": 1.0,
+        "within_tol": true
+      },
+      "JA": {
+        "ts": 532.8064636897141,
+        "py": 532.8064636897142,
+        "abs_delta": 1.1368683772161603e-13,
+        "tolerance": 1.0,
+        "within_tol": true
+      }
+    }
+  },
+  "RTPLAN_MR_PT_05_A3i.dcm": {
+    "status": "ok",
+    "metrics": {
+      "MCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LSV": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "AAV": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "LT": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "totalMU": {
+        "ts": 3640.609428405762,
+        "py": 3640.609428405762,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMCS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.001,
+        "within_tol": true
+      },
+      "MFA": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "PM": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.0001,
+        "within_tol": true
+      },
+      "MAD": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "EFS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "psmall": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS2": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS5": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS10": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "SAS20": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.02,
+        "within_tol": true
+      },
+      "PI": {
+        "ts": 1.0,
+        "py": 1.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "EM": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "TG": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.01,
+        "within_tol": true
+      },
+      "MUCA": {
+        "ts": 44.15809772413336,
+        "py": 44.15809772413337,
+        "abs_delta": 7.105427357601002e-15,
+        "tolerance": 0.5,
+        "within_tol": true
+      },
+      "LTMU": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.1,
+        "within_tol": true
+      },
+      "LS": {
+        "ts": 0.0,
+        "py": 0.0,
+        "abs_delta": 0.0,
+        "tolerance": 0.5,
+        "within_tol": true
+      }
+    }
+  }
+}
