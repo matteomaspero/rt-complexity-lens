@@ -1,0 +1,182 @@
+{
+  "status": "ok",
+  "tool": "ApertureComplexity (PyComplexityMetric)",
+  "tool_url": "https://github.com/victorgabr/ApertureComplexity",
+  "per_plan": {
+    "RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.14948064023163968,
+      "pycomplexity_CI_mm_inv": 0.09941349487863521,
+      "abs_delta": 0.050067145353004466,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.CS_ETH_2A_#1.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.10002675977812517,
+      "abs_delta": 0.10002675977812517,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.CS_TB_2A_#1.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.09765854642958383,
+      "pycomplexity_CI_mm_inv": 0.08818379216259523,
+      "abs_delta": 0.0094747542669886,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.HN_ETH_2A_#1.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.07555099999398092,
+      "abs_delta": 0.07555099999398092,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.MT_ETH_2A_#1.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.059151362899017,
+      "abs_delta": 0.059151362899017,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.PR_ETH_2A_2.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.09185616440028996,
+      "abs_delta": 0.09185616440028996,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.PR_UN_2A_#1.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.13425444792687682,
+      "pycomplexity_CI_mm_inv": 0.12841626019123814,
+      "abs_delta": 0.0058381877356386835,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.CS_ETH_9F.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.0573916495955931,
+      "abs_delta": 0.0573916495955931,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.HN_ETH_7F.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.08980698876081884,
+      "abs_delta": 0.08980698876081884,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.HN_TB_7F.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.25952401258258606,
+      "pycomplexity_CI_mm_inv": 0.1427244877085178,
+      "abs_delta": 0.11679952487406825,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.MT_ETH_7F.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.06545933626710161,
+      "abs_delta": 0.06545933626710161,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.PR_ETH_7F.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.08075351573537685,
+      "abs_delta": 0.08075351573537685,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RP.TG119.PR_UN_7F.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.21521650534749778,
+      "pycomplexity_CI_mm_inv": 0.11353636018585109,
+      "abs_delta": 0.1016801451616467,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_MO_PT_01.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.1247206605337002,
+      "pycomplexity_CI_mm_inv": 0.10885504842235945,
+      "abs_delta": 0.015865612111340757,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_MO_PT_02.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.3000070294710558,
+      "pycomplexity_CI_mm_inv": 0.27619292199702383,
+      "abs_delta": 0.023814107474031954,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_MO_PT_03.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.2640129995942397,
+      "pycomplexity_CI_mm_inv": 0.3928617658274667,
+      "abs_delta": 0.128848766233227,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_MO_PT_04.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.14087948138742395,
+      "pycomplexity_CI_mm_inv": 0.12257810444724698,
+      "abs_delta": 0.018301376940176972,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_EL_PT_01.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.09138727299441567,
+      "pycomplexity_CI_mm_inv": 0.09672260435659072,
+      "abs_delta": 0.0053353313621750525,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_EL_PT_03.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.2251316989844884,
+      "pycomplexity_CI_mm_inv": 0.24167473585463584,
+      "abs_delta": 0.016543036870147437,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_PI_PT_01.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.10926273992096175,
+      "pycomplexity_CI_mm_inv": 0.10612805959140226,
+      "abs_delta": 0.0031346803295594916,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_PI_PT_03.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.09381712508345144,
+      "pycomplexity_CI_mm_inv": 0.10390006410363939,
+      "abs_delta": 0.010082939020187948,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_MR_PT_01_PENALTY.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.04299176656556515,
+      "pycomplexity_CI_mm_inv": -0.09702186580762269,
+      "abs_delta": 0.14001363237318784,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_MR_PT_02_PENALTY.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.04600110411145677,
+      "pycomplexity_CI_mm_inv": -0.13254957298995212,
+      "abs_delta": 0.1785506771014089,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_MR_PT_03_O&C.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.03527586868331835,
+      "pycomplexity_CI_mm_inv": -0.15761434377893524,
+      "abs_delta": 0.19289021246225357,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    },
+    "RTPLAN_MR_PT_05_A3i.dcm": {
+      "status": "ok",
+      "ours_EM_mm_inv": 0.0,
+      "pycomplexity_CI_mm_inv": 0.09270733232905484,
+      "abs_delta": 0.09270733232905484,
+      "note": "Different definitions: ours EM = perimeter/(2\u00b7area); PyComplexity CI = signed Younge edge metric. Reported for transparency, NOT equivalence."
+    }
+  }
+}

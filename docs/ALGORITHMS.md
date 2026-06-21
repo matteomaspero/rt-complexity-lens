@@ -795,3 +795,44 @@ The cross-validation test (`src/test/em-pi-cross-validation.test.ts`) compares R
 
 8. Jothy/ComplexityCalc. "Complexity metrics for radiotherapy treatment plans." GitHub. [https://github.com/Jothy/ComplexityCalc](https://github.com/Jothy/ComplexityCalc)
 
+
+## Audit Results (2026-06-21)
+
+Full per-plan audit across all 25 example DICOM-RT plans in `public/test-data/`.
+Driven by `python/tests/audit_all.py`. Three independent verification layers:
+
+### Layer 1 — TS ↔ Python parity
+- **25/25 plans pass** for all 24 comparable metrics.
+- Max absolute Δ across all (metric, plan) pairs: **1.38 × 10⁻⁴** (LTMU), well
+  within the 0.1 mm/MU tolerance.
+- All other metrics (MCS, LSV, AAV, LT, totalMU, LTMCS, MFA, PM, MAD, LG, EFS,
+  psmall, SAS2/5/10/20, PI, EM, TG, MUCA, LS, PA, JA) match to floating-point
+  precision (Δ = 0.000000).
+
+### Layer 2 — ApertureComplexity (Younge edge metric)
+- Successfully executed across all 25 plans via `victorgabr/ApertureComplexity`.
+- This is a **complementary** modulation indicator, not an equivalence test:
+  our `EM = perimeter / (2·area)` differs in definition from PyComplexity's
+  signed Younge edge metric. Per-plan numbers are recorded in
+  `python/tests/reference_data/audit_pycomplexity_per_plan.json` and rendered
+  in the in-app Validation Report.
+
+### Layer 3 — UCoMx v1.1 (MATLAB)
+- Reference dataset (Zenodo 8276837) ships with the developer bundle but not
+  the public repo. The last in-repo run agreed within tolerance for all 24
+  comparable metrics across the 25 TG-119 plans. Re-run locally via
+  `python tests/cross_validate_ucomx.py` after placing `dataset.xlsx` under
+  `testdata/reference_dataset_v1.1/`.
+
+### Known gaps surfaced by the audit
+- **EM on static IMRT plans.** Our edge-metric walker returns 0 for several
+  TG-119 step-and-shoot plans where PyComplexity reports a non-zero CI. TS
+  and Python implementations agree exactly — the gap is shared and lives in
+  the perimeter walker for static beams. Affects 9 of the 25 audit plans.
+- **Park MI_t / MI_s / MI_a.** Exposed by UCoMx but not yet implemented in
+  RTp-lens. Flagged in `UCOMX_AUDIT_STATUS.notImplementedUCoMxMetrics` rather
+  than silently dropped.
+
+Artifacts: `python/tests/reference_data/{AUDIT_REPORT.md, audit_summary.json,
+audit_ts_python_per_plan.json, audit_pycomplexity_per_plan.json,
+audit_ucomx_per_plan.json}`.
