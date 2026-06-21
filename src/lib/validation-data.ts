@@ -65,10 +65,14 @@ export const CROSS_VALIDATION_SUMMARY = {
   planCount: 25,
   passCount: 25,
   failCount: 0,
-  lastValidated: "2026-04-22",
-  scriptPath: "python/tests/cross_validate.py",
+  lastValidated: "2026-06-21",
+  scriptPath: "python/tests/audit_all.py",
+  ucomxComparedMetrics: 24,
+  pycomplexityComparedPlans: 25,
 } as const;
 
+// Per-metric TS↔Python deltas from python/tests/reference_data/audit_summary.json
+// (Regenerate via: cd python && python tests/audit_all.py)
 export const PER_METRIC_DELTAS: MetricDelta[] = [
   { metric: "MCS", meanDelta: 0.000000, maxDelta: 0.000000, tolerance: 0.0001, passed: true },
   { metric: "LSV", meanDelta: 0.000000, maxDelta: 0.000000, tolerance: 0.0001, passed: true },
@@ -95,6 +99,84 @@ export const PER_METRIC_DELTAS: MetricDelta[] = [
   { metric: "PA", meanDelta: 0.000000, maxDelta: 0.000000, tolerance: 1.0, passed: true },
   { metric: "JA", meanDelta: 0.000000, maxDelta: 0.000000, tolerance: 1.0, passed: true },
 ];
+
+// ---------- Per-plan ApertureComplexity (Younge edge metric) audit ----------
+// Source: python/tests/reference_data/audit_pycomplexity_per_plan.json
+// IMPORTANT: Complementary indicator, NOT an equivalence test.
+//   - Ours `EM` = perimeter / (2 · aperture_area), MU-weighted, always ≥ 0
+//   - PyComplexity `CI` = signed Younge edge metric (perimeter / area)
+// Values where ours = 0 indicate static-IMRT plans where EM is currently 0
+// (see "Known gaps" in docs/ALGORITHMS.md). Negative CI = MRIdian-style
+// plans with inverted leaf geometry.
+export interface PycomplexityPlanEntry {
+  plan: string;
+  tsEM: number;
+  pyCI: number;
+  absDelta: number;
+}
+
+export const PER_PLAN_PYCOMPLEXITY: PycomplexityPlanEntry[] = [
+  { plan: "RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm", tsEM: 0.1495, pyCI: 0.0994, absDelta: 0.0501 },
+  { plan: "RP.TG119.CS_ETH_2A_#1.dcm", tsEM: 0.0000, pyCI: 0.1000, absDelta: 0.1000 },
+  { plan: "RP.TG119.CS_TB_2A_#1.dcm", tsEM: 0.0977, pyCI: 0.0882, absDelta: 0.0095 },
+  { plan: "RP.TG119.HN_ETH_2A_#1.dcm", tsEM: 0.0000, pyCI: 0.0756, absDelta: 0.0756 },
+  { plan: "RP.TG119.MT_ETH_2A_#1.dcm", tsEM: 0.0000, pyCI: 0.0592, absDelta: 0.0592 },
+  { plan: "RP.TG119.PR_ETH_2A_2.dcm", tsEM: 0.0000, pyCI: 0.0919, absDelta: 0.0919 },
+  { plan: "RP.TG119.PR_UN_2A_#1.dcm", tsEM: 0.1343, pyCI: 0.1284, absDelta: 0.0058 },
+  { plan: "RP.TG119.CS_ETH_9F.dcm", tsEM: 0.0000, pyCI: 0.0574, absDelta: 0.0574 },
+  { plan: "RP.TG119.HN_ETH_7F.dcm", tsEM: 0.0000, pyCI: 0.0898, absDelta: 0.0898 },
+  { plan: "RP.TG119.HN_TB_7F.dcm", tsEM: 0.2595, pyCI: 0.1427, absDelta: 0.1168 },
+  { plan: "RP.TG119.MT_ETH_7F.dcm", tsEM: 0.0000, pyCI: 0.0655, absDelta: 0.0655 },
+  { plan: "RP.TG119.PR_ETH_7F.dcm", tsEM: 0.0000, pyCI: 0.0808, absDelta: 0.0808 },
+  { plan: "RP.TG119.PR_UN_7F.dcm", tsEM: 0.2152, pyCI: 0.1135, absDelta: 0.1017 },
+  { plan: "RTPLAN_MO_PT_01.dcm", tsEM: 0.1247, pyCI: 0.1089, absDelta: 0.0159 },
+  { plan: "RTPLAN_MO_PT_02.dcm", tsEM: 0.3000, pyCI: 0.2762, absDelta: 0.0238 },
+  { plan: "RTPLAN_MO_PT_03.dcm", tsEM: 0.2640, pyCI: 0.3929, absDelta: 0.1288 },
+  { plan: "RTPLAN_MO_PT_04.dcm", tsEM: 0.1409, pyCI: 0.1226, absDelta: 0.0183 },
+  { plan: "RTPLAN_EL_PT_01.dcm", tsEM: 0.0914, pyCI: 0.0967, absDelta: 0.0053 },
+  { plan: "RTPLAN_EL_PT_03.dcm", tsEM: 0.2251, pyCI: 0.2417, absDelta: 0.0165 },
+  { plan: "RTPLAN_PI_PT_01.dcm", tsEM: 0.1093, pyCI: 0.1061, absDelta: 0.0031 },
+  { plan: "RTPLAN_PI_PT_03.dcm", tsEM: 0.0938, pyCI: 0.1039, absDelta: 0.0101 },
+  { plan: "RTPLAN_MR_PT_01_PENALTY.dcm", tsEM: 0.0430, pyCI: -0.0970, absDelta: 0.1400 },
+  { plan: "RTPLAN_MR_PT_02_PENALTY.dcm", tsEM: 0.0460, pyCI: -0.1325, absDelta: 0.1786 },
+  { plan: "RTPLAN_MR_PT_03_O&C.dcm", tsEM: 0.0353, pyCI: -0.1576, absDelta: 0.1929 },
+  { plan: "RTPLAN_MR_PT_05_A3i.dcm", tsEM: 0.0000, pyCI: 0.0927, absDelta: 0.0927 },
+];
+
+// ---------- UCoMx layer status (live re-run requires archived MATLAB dataset) ----------
+export const UCOMX_AUDIT_STATUS = {
+  status: "archived" as const,
+  reason:
+    "UCoMx v1.1 MATLAB reference (Zenodo 8276837) ships with the developer dataset, not the " +
+    "public repo. The last full per-plan re-run agreed within tolerance for all 24 comparable " +
+    "metrics across the 25 TG-119 plans. Re-run locally with " +
+    "`python tests/cross_validate_ucomx.py` after placing dataset.xlsx under " +
+    "testdata/reference_dataset_v1.1/.",
+  comparableMetricCount: 24,
+  notImplementedUCoMxMetrics: [
+    "MUcGy", "PMU", "LTNL", "MIt", "MIs", "MIa",
+    "psmall_20mm", "psmall_30mm",
+    "SAS25mm", "SAS50mm", "BJAR",
+  ],
+} as const;
+
+// ---------- Known implementation gaps surfaced by the audit ----------
+export const KNOWN_GAPS = [
+  {
+    metric: "EM (static IMRT)",
+    issue:
+      "Edge-metric returns 0 for several TG-119 step-and-shoot plans where " +
+      "PyComplexity reports a non-zero CI. TS and Python agree exactly — the " +
+      "gap is shared and lives in the EM perimeter walker for static beams.",
+    impact: "Affects 9 of 25 audit plans (CS/HN/MT/PR 2A & 7F, MR_A3i).",
+  },
+  {
+    metric: "Park MI_t / MI_s / MI_a",
+    issue: "UCoMx exposes these but RTp-lens has not implemented them yet.",
+    impact: "Reported under 'Not implemented' in the audit; no incorrect values shown.",
+  },
+] as const;
+
 
 // ---------- Third-party Benchmark: ApertureComplexity ----------
 
