@@ -1,76 +1,59 @@
-## Objective
+# Implement Remaining UCoMx Metrics + PyPI Publishing via GitHub Actions
 
-Close the two remaining audit gaps (Park MI_t / MI_s / MI_a, EM=0 on static IMRT), re-run the full audit, refresh the Validation Report, and prepare the `rtplan-complexity` Python package for a PyPI release.
+## Part A — Implement 5 metrics (TS + Python parity)
 
-## Scope
+Definitions from the UCoMx v1.1 reference (Chiavassa/Duchateau) and Park 2014:
 
-### 1. Implement Park Modulation Indices (MI_s, MI_a, MI_t)
+| Metric | Definition |
+|---|---|
+| **MCSv** | Modulation Complexity Score for VMAT (McNiven 2010): same MU-weighted product of LSV·AAV as MCS, but pair-wise between adjacent CPs (segment = interval), not per CP. For static IMRT falls back to MCS. |
+| **BJAR** | Beam Jaw Area Ratio = mean over CPs of (aperture_area / jaw_area). Requires per-CP aperture area (already computed) and jaw area (already computed for `JA`). |
+| **LTNL** | Leaf Travel Normalized by Luminance — Σ leaf_travel per beam / (beam MU × mean aperture area). Units: mm/(MU·cm²). |
+| **PMU** | Plan MU = totalMU / total prescribed dose (Gy). Inverse of MUcGy scaled — reported per plan. |
+| **MUcGy** | MU per cGy at prescription point = totalMU / (prescription_dose_Gy × 100). Uses `DoseReferenceSequence` target dose. |
 
-Reference: Park et al., *"A beam-specific modulation complexity score for intensity-modulated radiation therapy"*, PMB 2014, as implemented in UCoMx v1.1 (`MIs`, `MIa`, `MIt` columns).
+### Files to edit (mirror TS ⇄ Python)
+- `src/lib/dicom/types.ts` — add optional fields on `PlanMetrics` and `BeamMetrics` where applicable.
+- `src/lib/dicom/metrics.ts` — implement calculators; wire into `calculatePlanMetrics`.
+- `python/rtplan_complexity/types.py` — mirror fields.
+- `python/rtplan_complexity/metrics.py` — mirror calculators.
+- `src/lib/metrics-definitions.ts` — add UI definitions (category, description, references, thresholds).
+- `src/lib/export-utils.ts` + Python `export.py` — include in CSV/JSON exports.
+- `python/tests/cross_validate.py` — add tolerances.
+- `src/test/dicom-metrics.test.ts` — add a focused parity test for each new metric on one static-IMRT and one VMAT demo plan.
+- `docs/ALGORITHMS.md` — add formulas + references.
+- `src/lib/validation-data.ts` — remove the 5 metrics from `notImplementedUCoMxMetrics` after audit passes.
 
-Definition (per beam, then MU-weighted across beams):
+### Validation
+1. Regenerate TS reference: `bunx vitest run export-metrics-json`.
+2. Run `python tests/audit_all.py` — confirm all 25 plans pass TS↔Python parity for the new metrics and existing metrics remain at Δ≈0.
+3. Refresh `AUDIT_REPORT.md` and update the Validation Report page counts.
 
-- Compute leaf speed v(i, k) between adjacent control points k, k+1 for each leaf i.
-- Compute leaf acceleration a(i, k) between adjacent speed samples.
-- MI_s(f) = fraction of (leaf × CP-interval) samples with |v| > f · v_mean, integrated over f ∈ [0, 2] in steps of 0.01.
-- MI_a(f) same for acceleration.
-- MI_t(f) same but modulates by gantry-speed / dose-rate variation between CPs (Park's temporal term).
+## Part B — PyPI publishing via GitHub Actions
 
-Weight by CP delta-MU, sum across the beam, then MU-weight across beams for plan-level values.
+The GitHub App connector calls the GitHub REST API from edge functions; it cannot push git commits or run local `twine`. The correct path is a GitHub Actions workflow triggered on tag push, using PyPI's Trusted Publishing (OIDC) — no long-lived token required.
 
-Files to add / edit:
+### Steps
+1. Add `.github/workflows/publish-python.yml`:
+   - Trigger: `push` on tags matching `python-v*`, plus `workflow_dispatch`.
+   - Job: checkout → set up Python 3.11 → `pip install build` → `python -m build` in `python/` → `pypa/gh-action-pypi-publish@release/v1` with `packages-dir: python/dist/`.
+   - Use OIDC (`permissions: id-token: write`) — no secrets in the workflow.
+2. Document a one-time PyPI setup in `python/PUBLISHING_GUIDE.md`:
+   - Create the project on PyPI (if not already).
+   - Add a Trusted Publisher pointing to `<owner>/<repo>` + workflow filename + environment `pypi`.
+   - Alternative fallback: create a PyPI API token and store it as `PYPI_API_TOKEN` in GitHub repo secrets; workflow can switch to token auth if OIDC is refused.
+3. Tag `python-v1.2.0` (the version already bumped) — I will not push the tag from here; instead the plan documents the exact `git tag` / `git push` commands the user runs after the workflow lands, since the Lovable sandbox cannot push tags to their repo.
+4. Optionally, use the GitHub connector from an edge function later to trigger `workflow_dispatch` on demand — noted as a follow-up, not part of this change.
 
-- `src/lib/dicom/metrics.ts` — new helpers `calculateParkMIs`, `calculateParkMIa`, `calculateParkMIt`; wire into `calculateBeamMetrics` and plan aggregation.
-- `src/lib/dicom/types.ts` — add `MI_s`, `MI_a`, `MI_t` to `BeamMetrics` and `PlanMetrics`.
-- `src/lib/metrics-definitions.ts` — register the three metrics (category: Complexity) with formula + reference.
-- Python mirror in `python/rtplan_complexity/metrics.py` and `types.py` so parity holds.
-- Tests: `src/test/dicom-metrics.test.ts` (synthetic golden case), `python/tests/test_metrics.py` (matching case).
+### Why not "push directly to PyPI from Lovable"
+- PyPI accepts uploads only via `twine`/`gh-action-pypi-publish`, not the GitHub REST API.
+- Lovable's sandbox is ephemeral and cannot hold PyPI credentials for repeatable releases.
+- GitHub Actions + OIDC is the standard, secretless, auditable path.
 
-### 2. EM=0 on static step-and-shoot plans
-
-Investigate: current per-CP EM uses `weight > 0` gating, which drops shaping CPs in step-and-shoot. Static IMRT often emits `(shape CP, weight=0) → (same shape, weight=δ)` pairs; the perimeter is on the *shape* CP, but the weight lands on the delivery CP whose MLC state is identical, so EM should still be non-zero. Reproduce on `RP.TG119.CS_ETH_2A_#1.dcm` and locate whether:
-
-- (a) beam type detection reroutes static IMRT down a different path that skips EM, or
-- (b) `aperturePerimeter` is zero on the weighted CPs because the parser copies the previous MLC but resets the perimeter cache.
-
-Fix minimally in one place (parser or metrics loop). Add a regression case using one of the affected TG-119 plans.
-
-### 3. Re-run the audit
-
-- `python tests/audit_all.py` (already writes `audit_ts_python_per_plan.json`, `audit_pycomplexity_per_plan.json`, `audit_summary.json`, `AUDIT_REPORT.md`).
-- Regenerate `python/tests/reference_data/reference_metrics_ts.json` and `benchmark_pycomplexity.json`.
-- Confirm 25/25 plans pass at Δ = 0 for all 24 metrics plus the three new Park MIs.
-
-### 4. Refresh Validation Report + docs
-
-- `src/lib/validation-data.ts`: remove Park MI from `KNOWN_GAPS` (or move to "resolved"); update `notImplementedUCoMxMetrics` list; refresh audit summary numbers and generation date; update EM gap entry based on the fix outcome.
-- `src/pages/ValidationReport.tsx`: no structural change, just re-render with new data.
-- `docs/ALGORITHMS.md`: add a Park MI section with formulas and Park 2014 citation; add a dated "Audit Results (2026-07-24)" entry.
-
-### 5. Prepare Python package for PyPI
-
-- Bump `python/pyproject.toml` version 1.1.0 → 1.2.0 (adds Park MIs, EM fix, third-party benchmark script).
-- Update `python/rtplan_complexity/__init__.py` `__version__` and re-export new metrics.
-- Refresh `python/README.md` + `python/PACKAGE_STATUS.md` with the new metrics list and audit link.
-- Ensure `python/MANIFEST.in` includes `tests/reference_data/*.json` and `AUDIT_REPORT.md` so the audit ships with the sdist.
-- Run `python -m build` + `twine check dist/*` locally (via `code--exec`) to confirm the wheel + sdist pass.
-- **Do NOT run** `twine upload` — publishing needs the maintainer's PyPI token from Workspace Secrets and their explicit go-ahead. Leave `python/UPLOAD_INSTRUCTIONS.md` with the exact `twine upload` invocation and the token env-var name to expect.
-
-## Out of scope
-
-- MCSv, BJAR, LTNL, PMU, MUcGy (still tracked under `notImplementedUCoMxMetrics`).
-- Actually uploading to PyPI — that stays a manual maintainer action.
-
-## Technical notes
-
-- Park MI integrates over a threshold spectrum; use trapezoidal integration with 201 samples on [0, 2] to match UCoMx v1.1 exactly. If UCoMx's step size differs, mirror UCoMx (source: `testdata/reference_dataset_v1.1/…/dataset.xlsx` columns `MIs`, `MIa`, `MIt`) once we can validate against it; otherwise document the chosen spectrum in `ALGORITHMS.md`.
-- Speed/acceleration require valid delta-time between CPs; where CumulativeMetersetWeight is the only ordering signal (static IMRT), MI_t collapses toward MI_s — record that behaviour in the docs, don't force a synthetic time axis.
-- Wheel builds run inside `code--exec`; do not touch the dev server.
-
-## Verification checklist
-
-1. `bunx vitest run` — full TS suite green.
-2. `python -m pytest python/tests` — full Python suite green.
-3. `python tests/audit_all.py` — 25/25, zero deltas, Park MIs present.
-4. `python -m build && twine check dist/*` — both artefacts PASSED.
-5. `/validation` route renders the refreshed numbers; no design-token regressions beyond the two pre-existing warnings.
+## Order of work
+1. Implement 5 metrics in TS.
+2. Mirror in Python.
+3. Add tests + regenerate TS reference + run audit.
+4. Update docs and validation UI.
+5. Add the GitHub Actions workflow + publishing guide.
+6. Report back with audit deltas and the exact tag command for the user to publish v1.2.0.
