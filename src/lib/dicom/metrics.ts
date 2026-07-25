@@ -1295,6 +1295,17 @@ export function calculatePlanMetrics(
   const MD = countMD > 0 ? weightedMD / countMD : undefined;
   const MI = countMI > 0 ? weightedMI / countMI : undefined;
   const PAM = countPAM > 0 ? weightedPAM / countPAM : undefined;
+  const MCSv = totalMU > 0 ? weightedMCSv / totalMU : undefined;
+  const BJAR = countBJAR > 0 ? weightedBJAR / countBJAR : undefined;
+  const LTNL = countLTNL > 0 ? weightedLTNL / countLTNL : undefined;
+  // PMU: total plan MU per fraction (MU/fraction)
+  const PMU = plan.numberOfFractions && plan.numberOfFractions > 0
+    ? plan.totalMU / plan.numberOfFractions
+    : undefined;
+  // MUcGy: MU per cGy of prescribed dose (prescribedDose is in Gy)
+  const MUcGy = plan.prescribedDose && plan.prescribedDose > 0
+    ? plan.totalMU / (plan.prescribedDose * 100)
+    : undefined;
   
   return {
     planLabel: plan.planLabel,
