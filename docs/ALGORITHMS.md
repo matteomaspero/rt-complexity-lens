@@ -825,13 +825,39 @@ Driven by `python/tests/audit_all.py`. Three independent verification layers:
   `testdata/reference_dataset_v1.1/`.
 
 ### Known gaps surfaced by the audit
-- **EM on static IMRT plans.** Our edge-metric walker returns 0 for several
-  TG-119 step-and-shoot plans where PyComplexity reports a non-zero CI. TS
-  and Python implementations agree exactly — the gap is shared and lives in
-  the perimeter walker for static beams. Affects 9 of the 25 audit plans.
+- **EM on dual-layer MLC (MRIdian A3i).** After the 2026-07-24 parser update
+  extended MLC device-type recognition to include the Eclipse-emitted
+  `MLCX1`/`MLCX2` (and `MLCY1`/`MLCY2`) stacked-MLC types, EM is non-zero on
+  8 of the 9 previously-affected plans. `RTPLAN_MR_PT_05_A3i.dcm` still
+  reports EM=0 — its leaf-geometry convention differs and the perimeter
+  walker normalises to zero.
 - **Park MI_t / MI_s / MI_a.** Exposed by UCoMx but not yet implemented in
-  RTp-lens. Flagged in `UCOMX_AUDIT_STATUS.notImplementedUCoMxMetrics` rather
-  than silently dropped.
+  RTp-lens. Adding them without the UCoMx MATLAB reference dataset (not
+  available in this sandbox) risks silent formula drift, so they remain on
+  the roadmap rather than shipping un-validated.
+
+## Audit Results (2026-07-24)
+
+Fixes since the 2026-06-21 audit:
+
+- **Parser: dual-layer MLC device types.** `parseMLCPositions` /
+  `_parse_mlc_positions` and their leaf-width counterparts now recognise
+  `MLCX1`, `MLCX2`, `MLCY1`, `MLCY2` in addition to the standard `MLCX` /
+  `MLCY`. When both a primary MLCX and stacked layers are present the
+  primary wins; when only stacked layers are present (Eclipse Halcyon /
+  Ethos exports) the layers are concatenated so downstream perimeter and
+  area walkers see every open leaf. First-MLCX-wins semantics preserved
+  for MRIdian-style plans that emit multiple MLCX definitions.
+
+Layer 1 — TS ↔ Python parity: **25/25 plans, 24/24 metrics** within
+tolerance. Mean absolute delta is exactly 0 for every metric except LTMU
+(floating-point noise of 1.4e-4 mm/MU, well below the 0.1 tolerance).
+
+Layer 2 — ApertureComplexity (Younge edge metric): 25/25 plans compared.
+Mean |Δ(EM, CI)| = 0.071 mm⁻¹, max 0.196 mm⁻¹. Complementary metric,
+not an equivalence test.
+
+Layer 3 — UCoMx v1.1: archived (see above).
 
 Artifacts: `python/tests/reference_data/{AUDIT_REPORT.md, audit_summary.json,
 audit_ts_python_per_plan.json, audit_pycomplexity_per_plan.json,

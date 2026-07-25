@@ -75,27 +75,52 @@ def _get_float_array(ds: Dataset, keyword: str) -> List[float]:
 
 
 def _parse_mlc_positions(cp_ds: Dataset, beam_ds: Dataset) -> MLCLeafPositions:
-    """Parse MLC positions from control point."""
+    """Parse MLC positions from control point.
+
+    Recognises the standard MLCX/MLCY device types plus the private
+    MLCX1/MLCX2 (and MLCY1/MLCY2) types emitted by Varian Eclipse for
+    dual-layer machines (Halcyon/Ethos). For stacked MLCs the two layers
+    are concatenated (bank_a = A1+A2, bank_b = B1+B2) so downstream
+    perimeter/area metrics see every open leaf.
+    """
     result = MLCLeafPositions(bank_a=[], bank_b=[])
-    
+
     try:
         bldp_seq = getattr(cp_ds, "BeamLimitingDevicePositionSequence", None)
         if bldp_seq is None:
             return result
-        
+
+        primary_a: List[float] = []
+        primary_b: List[float] = []
+        stacked_a: List[float] = []
+        stacked_b: List[float] = []
+
         for item in bldp_seq:
             device_type = _get_string(item, "RTBeamLimitingDeviceType")
-            
+            if device_type not in ("MLCX", "MLCY", "MLCX1", "MLCX2", "MLCY1", "MLCY2"):
+                continue
+            positions = _get_float_array(item, "LeafJawPositions")
+            if len(positions) == 0:
+                continue
+            half = len(positions) // 2
+            a = positions[:half]
+            b = positions[half:]
             if device_type in ("MLCX", "MLCY"):
-                positions = _get_float_array(item, "LeafJawPositions")
-                
-                if len(positions) > 0:
-                    half_length = len(positions) // 2
-                    result.bank_a = positions[:half_length]
-                    result.bank_b = positions[half_length:]
+                primary_a = a
+                primary_b = b
+            else:
+                stacked_a.extend(a)
+                stacked_b.extend(b)
+
+        if primary_a:
+            result.bank_a = primary_a
+            result.bank_b = primary_b
+        elif stacked_a:
+            result.bank_a = stacked_a
+            result.bank_b = stacked_b
     except Exception:
         pass
-    
+
     return result
 
 
@@ -326,18 +351,38 @@ def _get_leaf_widths(beam_ds: Dataset) -> Tuple[List[float], List[float], int]:
             boundaries = [i * 5.0 - 150.0 for i in range(61)]
             return (widths, boundaries, 60)
         
+        primary: Optional[Tuple[List[float], List[float], int]] = None
+        stacked_widths: List[float] = []
+        stacked_boundaries: List[float] = []
+        stacked_pairs = 0
+
         for item in bld_seq:
             device_type = _get_string(item, "RTBeamLimitingDeviceType")
-            
+            if device_type not in ("MLCX", "MLCY", "MLCX1", "MLCX2", "MLCY1", "MLCY2"):
+                continue
+            num_pairs = _get_int(item, "NumberOfLeafJawPairs")
+            boundaries = _get_float_array(item, "LeafPositionBoundaries")
+            widths = [abs(boundaries[i] - boundaries[i - 1]) for i in range(1, len(boundaries))]
             if device_type in ("MLCX", "MLCY"):
-                num_pairs = _get_int(item, "NumberOfLeafJawPairs")
-                boundaries = _get_float_array(item, "LeafPositionBoundaries")
-                
-                widths = []
-                for i in range(1, len(boundaries)):
-                    widths.append(abs(boundaries[i] - boundaries[i - 1]))
-                
-                return (widths, boundaries, num_pairs or len(widths))
+                # First MLCX/MLCY wins (matches legacy behavior for MRIdian-style
+                # plans that emit multiple MLCX definitions).
+                if primary is None:
+                    primary = (widths, boundaries, num_pairs or len(widths))
+            else:
+                stacked_widths.extend(widths)
+                if not stacked_boundaries:
+                    stacked_boundaries = list(boundaries)
+                else:
+                    # Append offset boundaries so downstream indexing stays valid
+                    last = stacked_boundaries[-1]
+                    for b in boundaries[1:]:
+                        stacked_boundaries.append(last + (b - boundaries[0]))
+                stacked_pairs += num_pairs or len(widths)
+
+        if primary is not None:
+            return primary
+        if stacked_widths:
+            return (stacked_widths, stacked_boundaries, stacked_pairs or len(stacked_widths))
     except Exception:
         pass
     
