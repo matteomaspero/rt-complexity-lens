@@ -1337,6 +1337,11 @@ export function calculatePlanMetrics(
     TG,
     MD,
     MI,
+    MCSv,
+    BJAR,
+    LTNL,
+    PMU,
+    MUcGy,
     // Basic metrics
     totalMU: plan.totalMU,
     prescribedDose: plan.prescribedDose,
