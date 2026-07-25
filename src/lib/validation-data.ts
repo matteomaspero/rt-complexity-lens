@@ -65,7 +65,7 @@ export const CROSS_VALIDATION_SUMMARY = {
   planCount: 25,
   passCount: 25,
   failCount: 0,
-  lastValidated: "2026-06-21",
+  lastValidated: "2026-07-24",
   scriptPath: "python/tests/audit_all.py",
   ucomxComparedMetrics: 24,
   pycomplexityComparedPlans: 25,
@@ -105,9 +105,7 @@ export const PER_METRIC_DELTAS: MetricDelta[] = [
 // IMPORTANT: Complementary indicator, NOT an equivalence test.
 //   - Ours `EM` = perimeter / (2 · aperture_area), MU-weighted, always ≥ 0
 //   - PyComplexity `CI` = signed Younge edge metric (perimeter / area)
-// Values where ours = 0 indicate static-IMRT plans where EM is currently 0
-// (see "Known gaps" in docs/ALGORITHMS.md). Negative CI = MRIdian-style
-// plans with inverted leaf geometry.
+// Negative CI values come from MRIdian-style plans with inverted leaf geometry.
 export interface PycomplexityPlanEntry {
   plan: string;
   tsEM: number;
@@ -117,17 +115,17 @@ export interface PycomplexityPlanEntry {
 
 export const PER_PLAN_PYCOMPLEXITY: PycomplexityPlanEntry[] = [
   { plan: "RP1.2.752.243.1.1.20230623170950828.2520.26087.dcm", tsEM: 0.1495, pyCI: 0.0994, absDelta: 0.0501 },
-  { plan: "RP.TG119.CS_ETH_2A_#1.dcm", tsEM: 0.0000, pyCI: 0.1000, absDelta: 0.1000 },
+  { plan: "RP.TG119.CS_ETH_2A_#1.dcm", tsEM: 0.0730, pyCI: 0.1000, absDelta: 0.0270 },
   { plan: "RP.TG119.CS_TB_2A_#1.dcm", tsEM: 0.0977, pyCI: 0.0882, absDelta: 0.0095 },
-  { plan: "RP.TG119.HN_ETH_2A_#1.dcm", tsEM: 0.0000, pyCI: 0.0756, absDelta: 0.0756 },
-  { plan: "RP.TG119.MT_ETH_2A_#1.dcm", tsEM: 0.0000, pyCI: 0.0592, absDelta: 0.0592 },
-  { plan: "RP.TG119.PR_ETH_2A_2.dcm", tsEM: 0.0000, pyCI: 0.0919, absDelta: 0.0919 },
+  { plan: "RP.TG119.HN_ETH_2A_#1.dcm", tsEM: 0.0607, pyCI: 0.0756, absDelta: 0.0148 },
+  { plan: "RP.TG119.MT_ETH_2A_#1.dcm", tsEM: 0.0870, pyCI: 0.0592, absDelta: 0.0279 },
+  { plan: "RP.TG119.PR_ETH_2A_2.dcm", tsEM: 0.0960, pyCI: 0.0919, absDelta: 0.0042 },
   { plan: "RP.TG119.PR_UN_2A_#1.dcm", tsEM: 0.1343, pyCI: 0.1284, absDelta: 0.0058 },
-  { plan: "RP.TG119.CS_ETH_9F.dcm", tsEM: 0.0000, pyCI: 0.0574, absDelta: 0.0574 },
-  { plan: "RP.TG119.HN_ETH_7F.dcm", tsEM: 0.0000, pyCI: 0.0898, absDelta: 0.0898 },
+  { plan: "RP.TG119.CS_ETH_9F.dcm", tsEM: 0.2533, pyCI: 0.0574, absDelta: 0.1959 },
+  { plan: "RP.TG119.HN_ETH_7F.dcm", tsEM: 0.2084, pyCI: 0.0898, absDelta: 0.1186 },
   { plan: "RP.TG119.HN_TB_7F.dcm", tsEM: 0.2595, pyCI: 0.1427, absDelta: 0.1168 },
-  { plan: "RP.TG119.MT_ETH_7F.dcm", tsEM: 0.0000, pyCI: 0.0655, absDelta: 0.0655 },
-  { plan: "RP.TG119.PR_ETH_7F.dcm", tsEM: 0.0000, pyCI: 0.0808, absDelta: 0.0808 },
+  { plan: "RP.TG119.MT_ETH_7F.dcm", tsEM: 0.2232, pyCI: 0.0655, absDelta: 0.1578 },
+  { plan: "RP.TG119.PR_ETH_7F.dcm", tsEM: 0.1912, pyCI: 0.0808, absDelta: 0.1104 },
   { plan: "RP.TG119.PR_UN_7F.dcm", tsEM: 0.2152, pyCI: 0.1135, absDelta: 0.1017 },
   { plan: "RTPLAN_MO_PT_01.dcm", tsEM: 0.1247, pyCI: 0.1089, absDelta: 0.0159 },
   { plan: "RTPLAN_MO_PT_02.dcm", tsEM: 0.3000, pyCI: 0.2762, absDelta: 0.0238 },
@@ -163,19 +161,25 @@ export const UCOMX_AUDIT_STATUS = {
 // ---------- Known implementation gaps surfaced by the audit ----------
 export const KNOWN_GAPS = [
   {
-    metric: "EM (static IMRT)",
+    metric: "EM (dual-layer MLC — MRIdian A3i)",
     issue:
-      "Edge-metric returns 0 for several TG-119 step-and-shoot plans where " +
-      "PyComplexity reports a non-zero CI. TS and Python agree exactly — the " +
-      "gap is shared and lives in the EM perimeter walker for static beams.",
-    impact: "Affects 9 of 25 audit plans (CS/HN/MT/PR 2A & 7F, MR_A3i).",
+      "Edge-metric still returns 0 on RTPLAN_MR_PT_05_A3i.dcm. The 2026-07-24 " +
+      "parser update (accepting Eclipse MLCX1/MLCX2 stacked-MLC device types) " +
+      "resolved 8 of the 9 previously-affected plans; A3i uses a different " +
+      "leaf-geometry convention that our perimeter walker still normalises to zero.",
+    impact: "Affects 1 of 25 audit plans (down from 9).",
   },
   {
     metric: "Park MI_t / MI_s / MI_a",
-    issue: "UCoMx exposes these but RTp-lens has not implemented them yet.",
+    issue:
+      "UCoMx v1.1 exposes Park's modulation indices but RTp-lens does not " +
+      "implement them yet. Attempting to add them without the UCoMx MATLAB " +
+      "reference dataset (unavailable in this sandbox) risks silent formula " +
+      "drift, so they remain on the roadmap rather than being shipped un-validated.",
     impact: "Reported under 'Not implemented' in the audit; no incorrect values shown.",
   },
 ] as const;
+
 
 
 // ---------- Third-party Benchmark: ApertureComplexity ----------

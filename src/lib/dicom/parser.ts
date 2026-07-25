@@ -129,31 +129,49 @@ function parseMLCPositions(
   beamDataSet: dicomParser.DataSet
 ): MLCLeafPositions {
   const result: MLCLeafPositions = { bankA: [], bankB: [] };
-  
+
   try {
     const bldpSeq = dataSet.elements[TAGS.BeamLimitingDevicePositionSequence];
     if (!bldpSeq || !bldpSeq.items) return result;
-    
+
+    let primaryA: number[] = [];
+    let primaryB: number[] = [];
+    const stackedA: number[] = [];
+    const stackedB: number[] = [];
+
     for (const item of bldpSeq.items) {
       const itemDataSet = item.dataSet;
       if (!itemDataSet) continue;
-      
+
       const deviceType = getString(itemDataSet, TAGS.RTBeamLimitingDeviceType);
-      
+      if (!['MLCX', 'MLCY', 'MLCX1', 'MLCX2', 'MLCY1', 'MLCY2'].includes(deviceType)) continue;
+
+      const positions = getFloatArray(itemDataSet, TAGS.LeafJawPositions);
+      if (positions.length === 0) continue;
+
+      const halfLength = Math.floor(positions.length / 2);
+      const a = positions.slice(0, halfLength);
+      const b = positions.slice(halfLength);
       if (deviceType === 'MLCX' || deviceType === 'MLCY') {
-        const positions = getFloatArray(itemDataSet, TAGS.LeafJawPositions);
-        
-        if (positions.length > 0) {
-          const halfLength = Math.floor(positions.length / 2);
-          result.bankA = positions.slice(0, halfLength);
-          result.bankB = positions.slice(halfLength);
-        }
+        primaryA = a;
+        primaryB = b;
+      } else {
+        stackedA.push(...a);
+        stackedB.push(...b);
       }
+    }
+
+    if (primaryA.length > 0) {
+      result.bankA = primaryA;
+      result.bankB = primaryB;
+    } else if (stackedA.length > 0) {
+      result.bankA = stackedA;
+      result.bankB = stackedB;
     }
   } catch {
     // Silent fallback - MLC positions will use empty default
   }
-  
+
   return result;
 }
 
@@ -341,23 +359,50 @@ function getLeafWidths(beamDataSet: dicomParser.DataSet): { widths: number[]; bo
     const bldSeq = beamDataSet.elements[TAGS.BeamLimitingDeviceSequence];
     if (!bldSeq || !bldSeq.items) return { widths: [], boundaries: [], numLeaves: 60 };
     
+    let primary: { widths: number[]; boundaries: number[]; numLeaves: number } | null = null;
+    const stackedWidths: number[] = [];
+    let stackedBoundaries: number[] = [];
+    let stackedPairs = 0;
+
     for (const item of bldSeq.items) {
       const itemDataSet = item.dataSet;
       if (!itemDataSet) continue;
-      
+
       const deviceType = getString(itemDataSet, TAGS.RTBeamLimitingDeviceType);
-      
-      if (deviceType === 'MLCX' || deviceType === 'MLCY') {
-        const numPairs = getInt(itemDataSet, TAGS.NumberOfLeafJawPairs);
-        const boundaries = getFloatArray(itemDataSet, TAGS.LeafPositionBoundaries);
-        
-        const widths: number[] = [];
-        for (let i = 1; i < boundaries.length; i++) {
-          widths.push(Math.abs(boundaries[i] - boundaries[i - 1]));
-        }
-        
-        return { widths, boundaries, numLeaves: numPairs || widths.length };
+      if (!['MLCX', 'MLCY', 'MLCX1', 'MLCX2', 'MLCY1', 'MLCY2'].includes(deviceType)) continue;
+
+      const numPairs = getInt(itemDataSet, TAGS.NumberOfLeafJawPairs);
+      const boundaries = getFloatArray(itemDataSet, TAGS.LeafPositionBoundaries);
+      const widths: number[] = [];
+      for (let i = 1; i < boundaries.length; i++) {
+        widths.push(Math.abs(boundaries[i] - boundaries[i - 1]));
       }
+
+      if (deviceType === 'MLCX' || deviceType === 'MLCY') {
+        // First MLCX/MLCY wins (matches legacy behavior for MRIdian-style
+        // plans that emit multiple MLCX definitions).
+        if (!primary) primary = { widths, boundaries, numLeaves: numPairs || widths.length };
+      } else {
+        stackedWidths.push(...widths);
+        if (stackedBoundaries.length === 0) {
+          stackedBoundaries = [...boundaries];
+        } else if (boundaries.length > 1) {
+          const last = stackedBoundaries[stackedBoundaries.length - 1];
+          for (let i = 1; i < boundaries.length; i++) {
+            stackedBoundaries.push(last + (boundaries[i] - boundaries[0]));
+          }
+        }
+        stackedPairs += numPairs || widths.length;
+      }
+    }
+
+    if (primary) return primary;
+    if (stackedWidths.length > 0) {
+      return {
+        widths: stackedWidths,
+        boundaries: stackedBoundaries,
+        numLeaves: stackedPairs || stackedWidths.length,
+      };
     }
   } catch {
     // Silent fallback - will use default Millennium 120 configuration
