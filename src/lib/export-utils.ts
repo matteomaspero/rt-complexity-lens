@@ -159,6 +159,8 @@ export const PLAN_COLUMNS: ColumnDef[] = [
 
   // ── Delivery ──
   { key: 'totalMU', header: 'Total MU', category: 'Delivery', decimals: 1, extract: p => p.metrics.totalMU, extractBeam: bm => bm.beamMU },
+  { key: 'PMU', header: 'PMU (MU/fx)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'PMU') },
+  { key: 'MUcGy', header: 'MU/cGy', category: 'Delivery', decimals: 4, extract: p => metricVal(p.metrics, 'MUcGy') },
   { key: 'totalDeliveryTime', header: 'Delivery Time (s)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'totalDeliveryTime'), extractBeam: bm => bm.estimatedDeliveryTime },
   { key: 'GT', header: 'GT (°)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'GT'), extractBeam: bm => bm.GT },
   { key: 'avgDoseRate', header: 'Avg Dose Rate (MU/min)', category: 'Delivery', decimals: 1, extract: p => getAvgDoseRate(p.metrics), extractBeam: bm => bm.avgDoseRate },
