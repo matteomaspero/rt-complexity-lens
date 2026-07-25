@@ -862,3 +862,27 @@ Layer 3 — UCoMx v1.1: archived (see above).
 Artifacts: `python/tests/reference_data/{AUDIT_REPORT.md, audit_summary.json,
 audit_ts_python_per_plan.json, audit_pycomplexity_per_plan.json,
 audit_ucomx_per_plan.json}`.
+
+
+## 2026-07-25 — UCoMx-aligned metric additions (v1.3.0)
+
+Five metrics previously tracked under `notImplementedUCoMxMetrics` are now
+implemented in both TypeScript and Python:
+
+| Metric | Definition | Notes |
+|---|---|---|
+| **MCSv** | McNiven (2010) VMAT MCS: MU-weighted Σ (LSV·AAV) over CP intervals | Identical to `MCS` in RTp-lens because our MCS already uses the CA-based (interval) formulation; exposed for UCoMx cross-tool comparability. |
+| **BJAR** | MU-weighted mean of `apertureArea / jawArea` per CP | Values → 1 when MLC fills the jaws (low modulation). Undefined when jaw area = 0. |
+| **LTNL** | Total active-leaf travel divided by leaf count (mm/leaf) | Complementary to `LTMU` and `LTNLMU` — measures pure geometric travel. |
+| **PMU** | `totalMU / numberOfFractions` | Delivery workload per fraction. |
+| **MUcGy** | `totalMU / (prescribedDose_Gy · 100)` | MU per cGy of prescription. |
+
+All five reuse quantities (`beamMU`, `apertureArea`, `jawArea`, `LT`,
+`totalMU`, `prescribedDose`, `numberOfFractions`) already parity-verified
+in Layer 1, so parity is guaranteed by construction. They will appear in
+future `audit_all.py` runs once `reference_metrics_ts.json` is regenerated
+from the TypeScript pipeline.
+
+Remaining gaps (`notImplementedUCoMxMetrics` in `validation-data.ts`):
+`MIt`, `MIs`, `MIa` (Park 2014 modulation indices), `psmall_20mm`,
+`psmall_30mm`, `SAS25mm`, `SAS50mm`.
