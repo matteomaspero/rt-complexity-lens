@@ -1039,6 +1039,9 @@ function calculateBeamMetrics(
     GS = undefined;
     mGSV = undefined;
     LS = undefined;
+    MCSv = undefined;
+    BJAR = undefined;
+    LTNL = undefined;
   }
   
   return {
