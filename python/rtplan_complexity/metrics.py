@@ -762,6 +762,7 @@ def calculate_beam_metrics(
     weighted_sas5 = 0.0
     weighted_sas10 = 0.0
     weighted_sas20 = 0.0
+    weighted_bjar = 0.0
     total_meterset_weight = 0.0
     
     for i, cpm in enumerate(control_point_metrics):
