@@ -390,6 +390,7 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     shortDescription: 'VMAT variant of MCS (McNiven 2010)',
     fullDescription: 'Modulation Complexity Score computed as the MU-weighted product of LSV·AAV over adjacent-CP intervals (Control Arcs). This is the VMAT extension defined by McNiven (2010). In RTp-lens, MCS and MCSv are numerically identical because MCS is already computed with the CA-based (interval) formulation; MCSv is exposed for cross-tool comparability with UCoMx.',
     formula: 'MCSv = \\sum_i \\frac{\\Delta MU_i}{MU} (LSV_i \\cdot AAV_i)',
+    unit: null,
     category: 'primary',
     reference: 'McNiven et al., 2010',
     doi: '10.1118/1.3276775',
