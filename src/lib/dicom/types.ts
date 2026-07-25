@@ -193,6 +193,9 @@ export interface BeamMetrics {
   TG?: number; // Tongue-and-Groove Index (ratio 0-1)
   MD?: number; // Modulation Degree
   MI?: number; // Modulation Index
+  MCSv?: number; // MCS (VMAT variant): CA-based MU-weighted product of LSV·AAV per adjacent-CP interval (McNiven 2010)
+  BJAR?: number; // Beam Jaw Area Ratio: MU-weighted mean(aperture area / jaw area) [0-1]
+  LTNL?: number; // Leaf Travel per Leaf (no MU normalization) (mm/leaf) — equals beam LT
   
   // Delivery time metrics
   estimatedDeliveryTime?: number; // seconds
