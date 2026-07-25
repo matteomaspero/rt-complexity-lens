@@ -57,6 +57,11 @@ export const METRIC_TOLERANCES: MetricTolerance[] = [
   { metric: "LS", tolerance: 0.5, unit: "mm/s", category: "deliverability" },
   { metric: "PA", tolerance: 1.0, unit: "cm²", category: "deliverability" },
   { metric: "JA", tolerance: 1.0, unit: "cm²", category: "deliverability" },
+  { metric: "MCSv", tolerance: 0.0001, unit: "—", category: "core" },
+  { metric: "BJAR", tolerance: 0.001, unit: "—", category: "deliverability" },
+  { metric: "LTNL", tolerance: 0.1, unit: "mm/leaf", category: "deliverability" },
+  { metric: "PMU", tolerance: 0.5, unit: "MU/fx", category: "deliverability" },
+  { metric: "MUcGy", tolerance: 0.001, unit: "MU/cGy", category: "deliverability" },
 ];
 
 // ---------- Cross-validation summary ----------
