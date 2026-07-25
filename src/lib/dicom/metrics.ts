@@ -884,7 +884,15 @@ function calculateBeamMetrics(
   const SAS5 = totalMetersetWeight > 0 ? weightedSAS5 / totalMetersetWeight : 0;
   const SAS10 = totalMetersetWeight > 0 ? weightedSAS10 / totalMetersetWeight : 0;
   const SAS20 = totalMetersetWeight > 0 ? weightedSAS20 / totalMetersetWeight : 0;
+  const BJAR = totalMetersetWeight > 0 ? weightedBJAR / totalMetersetWeight : undefined;
   let psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
+
+  // MCSv: VMAT variant of MCS — identical to our MCS since we already compute
+  // it as MU-weighted product of LSV·AAV over adjacent-CP intervals (McNiven 2010 VMAT extension).
+  const MCSv = MCS;
+  // LTNL: Leaf Travel per Leaf (no MU normalization). Our beam-level LT is already
+  // totalActiveLeafTravel / numLeaves — matches UCoMx v1.1 LTNL definition.
+  const LTNL = LT;
   
   let LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
   
