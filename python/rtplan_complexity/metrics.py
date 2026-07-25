@@ -928,7 +928,19 @@ def calculate_beam_metrics(
     SAS10 = weighted_sas10 / total_meterset_weight if total_meterset_weight > 0 else 0.0
     SAS20 = weighted_sas20 / total_meterset_weight if total_meterset_weight > 0 else 0.0
     psmall = small_field_count / total_cps if total_cps > 0 else 0.0
-    
+
+    # BJAR: MU-weighted mean of aperture-to-jaw area ratio
+    BJAR: Optional[float] = (
+        weighted_bjar / total_meterset_weight if total_meterset_weight > 0 else None
+    )
+    # MCSv: VMAT variant of MCS — equal to our MCS by construction
+    # (CA-based MU-weighted LSV·AAV product, McNiven 2010).
+    MCSv: Optional[float] = MCS if not is_electron else None
+    # LTNL: Leaf Travel per Leaf (no MU norm) — equal to beam LT in our normalization.
+    LTNL: Optional[float] = LT if not is_electron else None
+    if is_electron:
+        BJAR = None
+
     LTMCS = MCS / (1 + math.log10(1 + LT / 1000)) if LT > 0 else MCS
     
     # Calculate arc length and gantry travel via CP-by-CP summation
