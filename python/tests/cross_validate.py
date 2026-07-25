@@ -65,6 +65,13 @@ METRIC_TOLERANCES = {
     "LS":    0.5,         # mm/s
     "PA":    1.0,         # cm²
     "JA":    1.0,         # cm²
+
+    # --- New in 1.3.0: UCoMx-aligned additions ---
+    "MCSv":  0.0001,      # VMAT MCS (identical to MCS in RTp-lens)
+    "BJAR":  0.001,       # aperture / jaw area ratio
+    "LTNL":  0.1,         # mm per leaf
+    "PMU":   0.5,         # MU/fraction
+    "MUcGy": 0.001,       # MU/cGy
 }
 
 # Beam-level metrics to compare
