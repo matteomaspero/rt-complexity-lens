@@ -810,6 +810,9 @@ def calculate_beam_metrics(
             weighted_sas5 += sas5_frac * weight
             weighted_sas10 += sas10_frac * weight
             weighted_sas20 += sas20_frac * weight
+            # BJAR: aperture area / jaw area (both mm²), MU-weighted
+            if jaw_area > 0:
+                weighted_bjar += (cpm.aperture_area / jaw_area) * weight
     
     # ===== CA-based UCoMX metrics calculation - only for photon beams (electrons have no MLCs) =====
     if not is_electron and n_ca > 0:
