@@ -1263,6 +1263,13 @@ def calculate_plan_metrics(
         TG=TG,
         MD=MD,
         MI=MI,
+        MCSv=MCSv,
+        BJAR=BJAR,
+        LTNL=LTNL,
+        PMU=(plan.total_mu / plan.number_of_fractions
+             if plan.number_of_fractions and plan.total_mu > 0 else None),
+        MUcGy=(plan.total_mu / (plan.prescribed_dose * 100)
+               if plan.prescribed_dose and plan.total_mu > 0 else None),
         total_delivery_time=total_delivery_time if total_delivery_time > 0 else None,
         SAS2=SAS2,
         SAS5=SAS5,
