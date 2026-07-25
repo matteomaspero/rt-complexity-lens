@@ -157,9 +157,9 @@ export const UCOMX_AUDIT_STATUS = {
     "testdata/reference_dataset_v1.1/.",
   comparableMetricCount: 24,
   notImplementedUCoMxMetrics: [
-    "MUcGy", "PMU", "LTNL", "MIt", "MIs", "MIa",
+    "MIt", "MIs", "MIa",
     "psmall_20mm", "psmall_30mm",
-    "SAS25mm", "SAS50mm", "BJAR",
+    "SAS25mm", "SAS50mm",
   ],
 } as const;
 
