@@ -121,6 +121,11 @@ def compute_python_metrics(dcm_path: str) -> dict:
         "PM": metrics.PM,
         "PA": metrics.PA,
         "JA": metrics.JA,
+        "MCSv": metrics.MCSv,
+        "BJAR": metrics.BJAR,
+        "LTNL": metrics.LTNL,
+        "PMU": metrics.PMU,
+        "MUcGy": metrics.MUcGy,
     }
     for k, v in optional_map.items():
         if v is not None:
