@@ -1080,6 +1080,9 @@ function calculateBeamMetrics(
     TG,
     MD,
     MI,
+    MCSv,
+    BJAR,
+    LTNL,
     // Basic metrics
     beamMU,
     arcLength,
