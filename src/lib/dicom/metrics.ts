@@ -1232,6 +1232,17 @@ export function calculatePlanMetrics(
       weightedMI += bm.MI * mu;
       countMI += mu;
     }
+    if (bm.MCSv !== undefined) {
+      weightedMCSv += bm.MCSv * mu;
+    }
+    if (bm.BJAR !== undefined) {
+      weightedBJAR += bm.BJAR * mu;
+      countBJAR += mu;
+    }
+    if (bm.LTNL !== undefined) {
+      weightedLTNL += bm.LTNL * mu;
+      countLTNL += mu;
+    }
     
     // Plan Aperture Modulation (target-specific)
     if (bm.BAM !== undefined) {
