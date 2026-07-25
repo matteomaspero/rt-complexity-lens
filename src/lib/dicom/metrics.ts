@@ -743,6 +743,10 @@ function calculateBeamMetrics(
       weightedSAS5 += sas5Frac * weight;
       weightedSAS10 += sas10Frac * weight;
       weightedSAS20 += sas20Frac * weight;
+      // BJAR: aperture area / jaw area (both mm²), MU-weighted
+      if (jawArea > 0) {
+        weightedBJAR += (cpm.apertureArea / jawArea) * weight;
+      }
     }
     if (cpm.apertureArea > 0) {
       totalArea += cpm.apertureArea;
