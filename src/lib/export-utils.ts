@@ -195,7 +195,9 @@ export const PLAN_COLUMNS: ColumnDef[] = [
   // ── Deliverability ──
   { key: 'MUCA', header: 'MUCA (MU/CP)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'MUCA'), extractBeam: bm => bm.MUCA },
   { key: 'LTMU', header: 'LTMU (mm/MU)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'LTMU'), extractBeam: bm => bm.LTMU },
+  { key: 'LTNL', header: 'LTNL (mm/leaf)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LTNL'), extractBeam: bm => bm.LTNL },
   { key: 'LTNLMU', header: 'LTNLMU', category: 'Deliverability', decimals: 6, extract: p => metricVal(p.metrics, 'LTNLMU'), extractBeam: bm => bm.LTNLMU },
+  { key: 'BJAR', header: 'BJAR', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'BJAR'), extractBeam: bm => bm.BJAR },
   { key: 'LNA', header: 'LNA', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'LNA'), extractBeam: bm => bm.LNA },
   { key: 'LTAL', header: 'LTAL (mm/°)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LTAL'), extractBeam: bm => bm.LTAL },
   { key: 'GS', header: 'GS (°/s)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'GS'), extractBeam: bm => bm.GS },
