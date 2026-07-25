@@ -269,6 +269,9 @@ class BeamMetrics:
     TG: Optional[float] = None  # Tongue-and-Groove Index (ratio)
     MD: Optional[float] = None  # Modulation Degree - CV of meterset weights
     MI: Optional[float] = None  # Modulation Index - normalized leaf travel (mm/leaf/CP)
+    MCSv: Optional[float] = None  # MCS (VMAT variant): CA-based MU-weighted LSV·AAV product
+    BJAR: Optional[float] = None  # Beam Jaw Area Ratio: MU-weighted mean(aperture/jaw area)
+    LTNL: Optional[float] = None  # Leaf Travel per Leaf (no MU norm) (mm/leaf)
     
     # Additional metrics
     arc_length: Optional[float] = None  # degrees
