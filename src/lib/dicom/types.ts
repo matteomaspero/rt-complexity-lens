@@ -271,6 +271,11 @@ export interface PlanMetrics {
   TG?: number; // Tongue-and-Groove Index
   MD?: number; // Modulation Degree
   MI?: number; // Modulation Index
+  MCSv?: number; // MCS (VMAT variant), MU-weighted across beams
+  BJAR?: number; // Beam Jaw Area Ratio (MU-weighted across beams) [0-1]
+  LTNL?: number; // Leaf Travel per Leaf, no MU normalization (mm/leaf), MU-weighted across beams
+  PMU?: number; // Plan MU per fraction (MU/fraction)
+  MUcGy?: number; // MU per cGy of prescription (MU/cGy)
   
   // Delivery time (aggregate)
   totalDeliveryTime?: number; // seconds
