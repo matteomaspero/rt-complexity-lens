@@ -159,6 +159,8 @@ export const PLAN_COLUMNS: ColumnDef[] = [
 
   // ── Delivery ──
   { key: 'totalMU', header: 'Total MU', category: 'Delivery', decimals: 1, extract: p => p.metrics.totalMU, extractBeam: bm => bm.beamMU },
+  { key: 'PMU', header: 'PMU (MU/fx)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'PMU') },
+  { key: 'MUcGy', header: 'MU/cGy', category: 'Delivery', decimals: 4, extract: p => metricVal(p.metrics, 'MUcGy') },
   { key: 'totalDeliveryTime', header: 'Delivery Time (s)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'totalDeliveryTime'), extractBeam: bm => bm.estimatedDeliveryTime },
   { key: 'GT', header: 'GT (°)', category: 'Delivery', decimals: 1, extract: p => metricVal(p.metrics, 'GT'), extractBeam: bm => bm.GT },
   { key: 'avgDoseRate', header: 'Avg Dose Rate (MU/min)', category: 'Delivery', decimals: 1, extract: p => getAvgDoseRate(p.metrics), extractBeam: bm => bm.avgDoseRate },
@@ -172,6 +174,7 @@ export const PLAN_COLUMNS: ColumnDef[] = [
 
   // ── Complexity (Primary) ──
   { key: 'MCS', header: 'MCS', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'MCS'), extractBeam: bm => bm.MCS },
+  { key: 'MCSv', header: 'MCSv', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'MCSv'), extractBeam: bm => bm.MCSv },
   { key: 'LSV', header: 'LSV', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'LSV'), extractBeam: bm => bm.LSV },
   { key: 'AAV', header: 'AAV', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'AAV'), extractBeam: bm => bm.AAV },
 
@@ -194,7 +197,9 @@ export const PLAN_COLUMNS: ColumnDef[] = [
   // ── Deliverability ──
   { key: 'MUCA', header: 'MUCA (MU/CP)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'MUCA'), extractBeam: bm => bm.MUCA },
   { key: 'LTMU', header: 'LTMU (mm/MU)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'LTMU'), extractBeam: bm => bm.LTMU },
+  { key: 'LTNL', header: 'LTNL (mm/leaf)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LTNL'), extractBeam: bm => bm.LTNL },
   { key: 'LTNLMU', header: 'LTNLMU', category: 'Deliverability', decimals: 6, extract: p => metricVal(p.metrics, 'LTNLMU'), extractBeam: bm => bm.LTNLMU },
+  { key: 'BJAR', header: 'BJAR', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'BJAR'), extractBeam: bm => bm.BJAR },
   { key: 'LNA', header: 'LNA', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'LNA'), extractBeam: bm => bm.LNA },
   { key: 'LTAL', header: 'LTAL (mm/°)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LTAL'), extractBeam: bm => bm.LTAL },
   { key: 'GS', header: 'GS (°/s)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'GS'), extractBeam: bm => bm.GS },

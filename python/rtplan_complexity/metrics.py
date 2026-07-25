@@ -762,6 +762,7 @@ def calculate_beam_metrics(
     weighted_sas5 = 0.0
     weighted_sas10 = 0.0
     weighted_sas20 = 0.0
+    weighted_bjar = 0.0
     total_meterset_weight = 0.0
     
     for i, cpm in enumerate(control_point_metrics):
@@ -809,6 +810,9 @@ def calculate_beam_metrics(
             weighted_sas5 += sas5_frac * weight
             weighted_sas10 += sas10_frac * weight
             weighted_sas20 += sas20_frac * weight
+            # BJAR: aperture area / jaw area (both mm²), MU-weighted
+            if jaw_area > 0:
+                weighted_bjar += (cpm.aperture_area / jaw_area) * weight
     
     # ===== CA-based UCoMX metrics calculation - only for photon beams (electrons have no MLCs) =====
     if not is_electron and n_ca > 0:
@@ -924,7 +928,19 @@ def calculate_beam_metrics(
     SAS10 = weighted_sas10 / total_meterset_weight if total_meterset_weight > 0 else 0.0
     SAS20 = weighted_sas20 / total_meterset_weight if total_meterset_weight > 0 else 0.0
     psmall = small_field_count / total_cps if total_cps > 0 else 0.0
-    
+
+    # BJAR: MU-weighted mean of aperture-to-jaw area ratio
+    BJAR: Optional[float] = (
+        weighted_bjar / total_meterset_weight if total_meterset_weight > 0 else None
+    )
+    # MCSv: VMAT variant of MCS — equal to our MCS by construction
+    # (CA-based MU-weighted LSV·AAV product, McNiven 2010).
+    MCSv: Optional[float] = MCS if not is_electron else None
+    # LTNL: Leaf Travel per Leaf (no MU norm) — equal to beam LT in our normalization.
+    LTNL: Optional[float] = LT if not is_electron else None
+    if is_electron:
+        BJAR = None
+
     LTMCS = MCS / (1 + math.log10(1 + LT / 1000)) if LT > 0 else MCS
     
     # Calculate arc length and gantry travel via CP-by-CP summation
@@ -1064,6 +1080,9 @@ def calculate_beam_metrics(
         TG=TG,
         MD=MD,
         MI=MI,
+        MCSv=MCSv,
+        BJAR=BJAR,
+        LTNL=LTNL,
         beam_mu=beam_mu,
         arc_length=arc_length,
         number_of_control_points=beam.number_of_control_points,
@@ -1174,11 +1193,15 @@ def calculate_plan_metrics(
         EM = weighted_avg("EM")
         PI = weighted_avg("PI")
         PAM = weighted_avg("BAM")  # PAM is the MU-weighted average of BAM
+        MCSv = weighted_avg("MCSv")
+        BJAR = weighted_avg("BJAR")
+        LTNL = weighted_avg("LTNL")
     else:
         MCS = MFA = 0.0
         LG = MAD = EFS = psmall = None
         MUCA = LTNLMU = LNA = LTAL = mDRV = None
         GS = mGSV = LS = PM = TG = MD = MI = None
+        MCSv = BJAR = LTNL = None
         SAS2 = SAS5 = SAS10 = SAS20 = EM = PI = None
         PAM = None
         LTMU_plan = None
@@ -1240,6 +1263,13 @@ def calculate_plan_metrics(
         TG=TG,
         MD=MD,
         MI=MI,
+        MCSv=MCSv,
+        BJAR=BJAR,
+        LTNL=LTNL,
+        PMU=(plan.total_mu / plan.number_of_fractions
+             if plan.number_of_fractions and plan.total_mu > 0 else None),
+        MUcGy=(plan.total_mu / (plan.prescribed_dose * 100)
+               if plan.prescribed_dose and plan.total_mu > 0 else None),
         total_delivery_time=total_delivery_time if total_delivery_time > 0 else None,
         SAS2=SAS2,
         SAS5=SAS5,

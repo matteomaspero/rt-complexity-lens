@@ -707,6 +707,7 @@ function calculateBeamMetrics(
   let weightedSAS5 = 0;
   let weightedSAS10 = 0;
   let weightedSAS20 = 0;
+  let weightedBJAR = 0;
   let totalMetersetWeight = 0;
   
   for (let i = 0; i < controlPointMetrics.length; i++) {
@@ -742,6 +743,10 @@ function calculateBeamMetrics(
       weightedSAS5 += sas5Frac * weight;
       weightedSAS10 += sas10Frac * weight;
       weightedSAS20 += sas20Frac * weight;
+      // BJAR: aperture area / jaw area (both mm²), MU-weighted
+      if (jawArea > 0) {
+        weightedBJAR += (cpm.apertureArea / jawArea) * weight;
+      }
     }
     if (cpm.apertureArea > 0) {
       totalArea += cpm.apertureArea;
@@ -879,7 +884,15 @@ function calculateBeamMetrics(
   const SAS5 = totalMetersetWeight > 0 ? weightedSAS5 / totalMetersetWeight : 0;
   const SAS10 = totalMetersetWeight > 0 ? weightedSAS10 / totalMetersetWeight : 0;
   const SAS20 = totalMetersetWeight > 0 ? weightedSAS20 / totalMetersetWeight : 0;
+  let BJAR: number | undefined = totalMetersetWeight > 0 ? weightedBJAR / totalMetersetWeight : undefined;
   let psmall = totalCPs > 0 ? smallFieldCount / totalCPs : 0;
+
+  // MCSv: VMAT variant of MCS — identical to our MCS since we already compute
+  // it as MU-weighted product of LSV·AAV over adjacent-CP intervals (McNiven 2010 VMAT extension).
+  let MCSv: number | undefined = MCS;
+  // LTNL: Leaf Travel per Leaf (no MU normalization). Our beam-level LT is already
+  // totalActiveLeafTravel / numLeaves — matches UCoMx v1.1 LTNL definition.
+  let LTNL: number | undefined = LT;
   
   let LTMCS = LT > 0 ? MCS / (1 + Math.log10(1 + LT / 1000)) : MCS;
   
@@ -1026,6 +1039,9 @@ function calculateBeamMetrics(
     GS = undefined;
     mGSV = undefined;
     LS = undefined;
+    MCSv = undefined;
+    BJAR = undefined;
+    LTNL = undefined;
   }
   
   return {
@@ -1064,6 +1080,9 @@ function calculateBeamMetrics(
     TG,
     MD,
     MI,
+    MCSv,
+    BJAR,
+    LTNL,
     // Basic metrics
     beamMU,
     arcLength,
@@ -1139,6 +1158,11 @@ export function calculatePlanMetrics(
   let weightedTG = 0;
   let weightedMD = 0;
   let weightedMI = 0;
+  let weightedMCSv = 0;
+  let weightedBJAR = 0;
+  let weightedLTNL = 0;
+  let countBJAR = 0;
+  let countLTNL = 0;
   let totalLT = 0;
   let totalDeliveryTime = 0;
   let totalGT = 0;
@@ -1208,6 +1232,17 @@ export function calculatePlanMetrics(
       weightedMI += bm.MI * mu;
       countMI += mu;
     }
+    if (bm.MCSv !== undefined) {
+      weightedMCSv += bm.MCSv * mu;
+    }
+    if (bm.BJAR !== undefined) {
+      weightedBJAR += bm.BJAR * mu;
+      countBJAR += mu;
+    }
+    if (bm.LTNL !== undefined) {
+      weightedLTNL += bm.LTNL * mu;
+      countLTNL += mu;
+    }
     
     // Plan Aperture Modulation (target-specific)
     if (bm.BAM !== undefined) {
@@ -1260,6 +1295,17 @@ export function calculatePlanMetrics(
   const MD = countMD > 0 ? weightedMD / countMD : undefined;
   const MI = countMI > 0 ? weightedMI / countMI : undefined;
   const PAM = countPAM > 0 ? weightedPAM / countPAM : undefined;
+  const MCSv = totalMU > 0 ? weightedMCSv / totalMU : undefined;
+  const BJAR = countBJAR > 0 ? weightedBJAR / countBJAR : undefined;
+  const LTNL = countLTNL > 0 ? weightedLTNL / countLTNL : undefined;
+  // PMU: total plan MU per fraction (MU/fraction)
+  const PMU = plan.numberOfFractions && plan.numberOfFractions > 0
+    ? plan.totalMU / plan.numberOfFractions
+    : undefined;
+  // MUcGy: MU per cGy of prescribed dose (prescribedDose is in Gy)
+  const MUcGy = plan.prescribedDose && plan.prescribedDose > 0
+    ? plan.totalMU / (plan.prescribedDose * 100)
+    : undefined;
   
   return {
     planLabel: plan.planLabel,
@@ -1291,6 +1337,11 @@ export function calculatePlanMetrics(
     TG,
     MD,
     MI,
+    MCSv,
+    BJAR,
+    LTNL,
+    PMU,
+    MUcGy,
     // Basic metrics
     totalMU: plan.totalMU,
     prescribedDose: plan.prescribedDose,

@@ -384,6 +384,55 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
   // ============================================================================
   // LEVEL 6: ADVANCED METRICS (Advanced analysis & research)
   // ============================================================================
+  MCSv: {
+    key: 'MCSv',
+    name: 'MCS (VMAT)',
+    shortDescription: 'VMAT variant of MCS (McNiven 2010)',
+    fullDescription: 'Modulation Complexity Score computed as the MU-weighted product of LSV·AAV over adjacent-CP intervals (Control Arcs). This is the VMAT extension defined by McNiven (2010). In RTp-lens, MCS and MCSv are numerically identical because MCS is already computed with the CA-based (interval) formulation; MCSv is exposed for cross-tool comparability with UCoMx.',
+    formula: 'MCSv = \\sum_i \\frac{\\Delta MU_i}{MU} (LSV_i \\cdot AAV_i)',
+    unit: null,
+    category: 'primary',
+    reference: 'McNiven et al., 2010',
+    doi: '10.1118/1.3276775',
+  },
+  BJAR: {
+    key: 'BJAR',
+    name: 'Beam Jaw Area Ratio',
+    shortDescription: 'Aperture / jaw area, MU-weighted',
+    fullDescription: 'MU-weighted mean of the ratio between the open MLC aperture area and the collimator jaw-defined field area per control point. Values near 1 indicate that the MLC uses most of the jaw opening (low modulation); low values indicate small apertures inside a large jaw opening (high modulation, harder to deliver accurately).',
+    formula: 'BJAR = \\sum_i \\frac{MU_i}{MU} \\cdot \\frac{A_{aperture,i}}{A_{jaw,i}}',
+    unit: null,
+    category: 'deliverability',
+    reference: 'UCoMx v1.1',
+  },
+  LTNL: {
+    key: 'LTNL',
+    name: 'Leaf Travel per Leaf',
+    shortDescription: 'Leaf travel normalized by leaf count',
+    fullDescription: 'Total active-leaf travel divided by the number of MLC leaves (no MU normalization). Complementary to LTMU/LTNLMU: measures raw geometric leaf motion per leaf.',
+    unit: 'mm/leaf',
+    category: 'deliverability',
+    reference: 'UCoMx v1.1',
+  },
+  PMU: {
+    key: 'PMU',
+    name: 'Plan MU per Fraction',
+    shortDescription: 'Total MU / number of fractions',
+    fullDescription: 'Plan monitor units delivered per fraction. Useful for cross-plan comparison of delivery workload independent of fractionation scheme.',
+    unit: 'MU/fraction',
+    category: 'delivery',
+    reference: 'UCoMx v1.1',
+  },
+  MUcGy: {
+    key: 'MUcGy',
+    name: 'MU per cGy',
+    shortDescription: 'MU per cGy of prescription',
+    fullDescription: 'Plan MU normalized by prescribed dose (in cGy). Related to MU/Gy but expressed on the cGy scale used in some clinical workflows.',
+    unit: 'MU/cGy',
+    category: 'delivery',
+    reference: 'UCoMx v1.1',
+  },
+
   LTNLMU: {
     key: 'LTNLMU',
     name: 'Leaf Travel per Leaf and MU',

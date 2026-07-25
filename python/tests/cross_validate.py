@@ -65,6 +65,13 @@ METRIC_TOLERANCES = {
     "LS":    0.5,         # mm/s
     "PA":    1.0,         # cm²
     "JA":    1.0,         # cm²
+
+    # --- New in 1.3.0: UCoMx-aligned additions ---
+    "MCSv":  0.0001,      # VMAT MCS (identical to MCS in RTp-lens)
+    "BJAR":  0.001,       # aperture / jaw area ratio
+    "LTNL":  0.1,         # mm per leaf
+    "PMU":   0.5,         # MU/fraction
+    "MUcGy": 0.001,       # MU/cGy
 }
 
 # Beam-level metrics to compare
@@ -114,6 +121,11 @@ def compute_python_metrics(dcm_path: str) -> dict:
         "PM": metrics.PM,
         "PA": metrics.PA,
         "JA": metrics.JA,
+        "MCSv": metrics.MCSv,
+        "BJAR": metrics.BJAR,
+        "LTNL": metrics.LTNL,
+        "PMU": metrics.PMU,
+        "MUcGy": metrics.MUcGy,
     }
     for k, v in optional_map.items():
         if v is not None:
