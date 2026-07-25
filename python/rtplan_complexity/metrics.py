@@ -1193,11 +1193,15 @@ def calculate_plan_metrics(
         EM = weighted_avg("EM")
         PI = weighted_avg("PI")
         PAM = weighted_avg("BAM")  # PAM is the MU-weighted average of BAM
+        MCSv = weighted_avg("MCSv")
+        BJAR = weighted_avg("BJAR")
+        LTNL = weighted_avg("LTNL")
     else:
         MCS = MFA = 0.0
         LG = MAD = EFS = psmall = None
         MUCA = LTNLMU = LNA = LTAL = mDRV = None
         GS = mGSV = LS = PM = TG = MD = MI = None
+        MCSv = BJAR = LTNL = None
         SAS2 = SAS5 = SAS10 = SAS20 = EM = PI = None
         PAM = None
         LTMU_plan = None
