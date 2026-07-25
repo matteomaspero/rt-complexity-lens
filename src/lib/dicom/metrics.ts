@@ -1158,6 +1158,11 @@ export function calculatePlanMetrics(
   let weightedTG = 0;
   let weightedMD = 0;
   let weightedMI = 0;
+  let weightedMCSv = 0;
+  let weightedBJAR = 0;
+  let weightedLTNL = 0;
+  let countBJAR = 0;
+  let countLTNL = 0;
   let totalLT = 0;
   let totalDeliveryTime = 0;
   let totalGT = 0;
