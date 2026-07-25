@@ -359,6 +359,11 @@ class PlanMetrics:
     TG: Optional[float] = None  # Tongue-and-Groove Index
     MD: Optional[float] = None  # Modulation Degree
     MI: Optional[float] = None  # Modulation Index (mm/leaf/CP)
+    MCSv: Optional[float] = None  # MCS VMAT variant, MU-weighted across beams
+    BJAR: Optional[float] = None  # Beam Jaw Area Ratio, MU-weighted across beams
+    LTNL: Optional[float] = None  # Leaf Travel per Leaf (no MU norm), MU-weighted across beams (mm/leaf)
+    PMU: Optional[float] = None  # Plan MU per fraction (MU/fraction)
+    MUcGy: Optional[float] = None  # MU per cGy of prescription (MU/cGy)
     
     # Delivery time
     total_delivery_time: Optional[float] = None  # seconds
