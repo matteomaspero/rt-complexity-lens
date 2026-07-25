@@ -172,6 +172,7 @@ export const PLAN_COLUMNS: ColumnDef[] = [
 
   // ── Complexity (Primary) ──
   { key: 'MCS', header: 'MCS', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'MCS'), extractBeam: bm => bm.MCS },
+  { key: 'MCSv', header: 'MCSv', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'MCSv'), extractBeam: bm => bm.MCSv },
   { key: 'LSV', header: 'LSV', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'LSV'), extractBeam: bm => bm.LSV },
   { key: 'AAV', header: 'AAV', category: 'Complexity (Primary)', decimals: 4, extract: p => metricVal(p.metrics, 'AAV'), extractBeam: bm => bm.AAV },
 
