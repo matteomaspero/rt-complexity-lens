@@ -707,6 +707,7 @@ function calculateBeamMetrics(
   let weightedSAS5 = 0;
   let weightedSAS10 = 0;
   let weightedSAS20 = 0;
+  let weightedBJAR = 0;
   let totalMetersetWeight = 0;
   
   for (let i = 0; i < controlPointMetrics.length; i++) {
