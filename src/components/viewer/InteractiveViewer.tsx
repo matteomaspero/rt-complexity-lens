@@ -328,15 +328,15 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleClosePlan}
-                title="Back to Home"
+                aria-label="Back to home"
               >
                 <Home className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" asChild>
+              <Button variant="ghost" size="icon" asChild aria-label="Help and documentation">
                 <Link to="/help">
                   <HelpCircle className="h-5 w-5" />
                 </Link>

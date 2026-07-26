@@ -192,7 +192,7 @@ export default function ComparePlans() {
               </Select>
               <PresetManager
                 trigger={
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Manage machine presets">
                     <Settings className="h-4 w-4" />
                   </Button>
                 }
@@ -205,7 +205,7 @@ export default function ComparePlans() {
               </Button>
             )}
             <Link to="/help">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" aria-label="Help and documentation">
                 <HelpCircle className="h-5 w-5" />
               </Button>
             </Link>
