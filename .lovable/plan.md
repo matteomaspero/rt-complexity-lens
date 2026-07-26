@@ -1,59 +1,50 @@
-# Implement Remaining UCoMx Metrics + PyPI Publishing via GitHub Actions
 
-## Part A — Implement 5 metrics (TS + Python parity)
+# Pages & Visualizations Audit — Findings and Fix Plan
 
-Definitions from the UCoMx v1.1 reference (Chiavassa/Duchateau) and Park 2014:
+Read-only audit of `src/pages/*.tsx` and their charts/panels surfaced correctness gaps (new metrics not wired everywhere), accessibility issues (unlabeled icon buttons app-wide), and small clarity issues. Full report available; below is the prioritized fix plan.
 
-| Metric | Definition |
-|---|---|
-| **MCSv** | Modulation Complexity Score for VMAT (McNiven 2010): same MU-weighted product of LSV·AAV as MCS, but pair-wise between adjacent CPs (segment = interval), not per CP. For static IMRT falls back to MCS. |
-| **BJAR** | Beam Jaw Area Ratio = mean over CPs of (aperture_area / jaw_area). Requires per-CP aperture area (already computed) and jaw area (already computed for `JA`). |
-| **LTNL** | Leaf Travel Normalized by Luminance — Σ leaf_travel per beam / (beam MU × mean aperture area). Units: mm/(MU·cm²). |
-| **PMU** | Plan MU = totalMU / total prescribed dose (Gy). Inverse of MUcGy scaled — reported per plan. |
-| **MUcGy** | MU per cGy at prescription point = totalMU / (prescription_dose_Gy × 100). Uses `DoseReferenceSequence` target dose. |
+## Priority 1 — Correctness: metric registry drift
 
-### Files to edit (mirror TS ⇄ Python)
-- `src/lib/dicom/types.ts` — add optional fields on `PlanMetrics` and `BeamMetrics` where applicable.
-- `src/lib/dicom/metrics.ts` — implement calculators; wire into `calculatePlanMetrics`.
-- `python/rtplan_complexity/types.py` — mirror fields.
-- `python/rtplan_complexity/metrics.py` — mirror calculators.
-- `src/lib/metrics-definitions.ts` — add UI definitions (category, description, references, thresholds).
-- `src/lib/export-utils.ts` + Python `export.py` — include in CSV/JSON exports.
-- `python/tests/cross_validate.py` — add tolerances.
-- `src/test/dicom-metrics.test.ts` — add a focused parity test for each new metric on one static-IMRT and one VMAT demo plan.
-- `docs/ALGORITHMS.md` — add formulas + references.
-- `src/lib/validation-data.ts` — remove the 5 metrics from `notImplementedUCoMxMetrics` after audit passes.
+The seven metrics added in the last audit round (MCSv, BJAR, LTNL, PMU, MUcGy, SAS2, SAS20) landed in the viewer and exporters but not in two other registries, so they never appear on the Compare / Cohort / Batch pages.
 
-### Validation
-1. Regenerate TS reference: `bunx vitest run export-metrics-json`.
-2. Run `python tests/audit_all.py` — confirm all 25 plans pass TS↔Python parity for the new metrics and existing metrics remain at Δ≈0.
-3. Refresh `AUDIT_REPORT.md` and update the Validation Report page counts.
+- **Compare page (`MetricsDiffTable`)** — extend `ALL_COMPARISON_METRICS` in `src/lib/comparison/diff-calculator.ts` (adding the 7 metrics with correct category, unit, decimals, higher-is-better flag).
+- **Cohort + Batch (`MetricSelector`, box/violin/scatter/correlation, `BatchSummaryStats`, `BatchDistributionChart`)** — treat `src/lib/dicom/metrics-definitions.ts` as the single source of truth: rewrite `src/lib/cohort/metric-utils.ts` to derive `METRIC_GROUPS`, `METRIC_DEFINITIONS`, and `METRIC_COLORS` from it (mapped to Delivery / Geometric / Complexity / Deliverability per project memory), instead of hand-maintaining a parallel catalogue. Reconcile the `psmall` unit conflict (`%` vs raw fraction) in the same pass.
+- Verify by spot-checking that each new metric appears in: Compare diff table, Cohort MetricSelector, box plot, correlation heatmap, batch distribution chart, batch summary stats.
 
-## Part B — PyPI publishing via GitHub Actions
+## Priority 2 — Accessibility: unlabeled icon-only buttons
 
-The GitHub App connector calls the GitHub REST API from edge functions; it cannot push git commits or run local `twine`. The correct path is a GitHub Actions workflow triggered on tag push, using PyPI's Trusted Publishing (OIDC) — no long-lived token required.
+Every page header uses `Button size="icon"` with just a lucide icon and no accessible name. Add `aria-label` to:
+- `Index.tsx` (theme/help/etc.), `Help.tsx`, `MetricsReference.tsx`, `PythonDocs.tsx`, `TechnicalReference.tsx`, `ValidationReport.tsx`, `BatchDashboard.tsx`, `ComparePlans.tsx`, `CohortAnalysis.tsx` (also switch from `title=` to `aria-label=` for consistency).
+- Labels: "Back to home", "Help", "Settings", "Clear all plans", "Toggle theme", etc.
 
-### Steps
-1. Add `.github/workflows/publish-python.yml`:
-   - Trigger: `push` on tags matching `python-v*`, plus `workflow_dispatch`.
-   - Job: checkout → set up Python 3.11 → `pip install build` → `python -m build` in `python/` → `pypa/gh-action-pypi-publish@release/v1` with `packages-dir: python/dist/`.
-   - Use OIDC (`permissions: id-token: write`) — no secrets in the workflow.
-2. Document a one-time PyPI setup in `python/PUBLISHING_GUIDE.md`:
-   - Create the project on PyPI (if not already).
-   - Add a Trusted Publisher pointing to `<owner>/<repo>` + workflow filename + environment `pypi`.
-   - Alternative fallback: create a PyPI API token and store it as `PYPI_API_TOKEN` in GitHub repo secrets; workflow can switch to token auth if OIDC is refused.
-3. Tag `python-v1.2.0` (the version already bumped) — I will not push the tag from here; instead the plan documents the exact `git tag` / `git push` commands the user runs after the workflow lands, since the Lovable sandbox cannot push tags to their repo.
-4. Optionally, use the GitHub connector from an edge function later to trigger `workflow_dispatch` on demand — noted as a follow-up, not part of this change.
+## Priority 3 — Documentation coverage of new metrics
 
-### Why not "push directly to PyPI from Lovable"
-- PyPI accepts uploads only via `twine`/`gh-action-pypi-publish`, not the GitHub REST API.
-- Lovable's sandbox is ephemeral and cannot hold PyPI credentials for repeatable releases.
-- GitHub Actions + OIDC is the standard, secretless, auditable path.
+Confirm that `MetricsReference.tsx`, `Help.tsx`, and `TechnicalReference.tsx` list MCSv / BJAR / LTNL / PMU / MUcGy / SAS2 / SAS20. If they render from `METRIC_DEFINITIONS` already, no work. If they use hardcoded tables, extend the tables (or refactor to iterate `METRIC_DEFINITIONS`).
 
-## Order of work
-1. Implement 5 metrics in TS.
-2. Mirror in Python.
-3. Add tests + regenerate TS reference + run audit.
-4. Update docs and validation UI.
-5. Add the GitHub Actions workflow + publishing guide.
-6. Report back with audit deltas and the exact tag command for the user to publish v1.2.0.
+## Priority 4 — Clarity fixes in the viewer
+
+- **`MetricsPanel.tsx`**: show threshold info on hover even when the metric is "normal" (currently only tooltips fail states), so users can see how close to warning/critical a value is.
+- **`CollimatorViewer.tsx`**: label jaw X1/X2/Y1/Y2 values with `mm` unit.
+- **`GantryViewer.tsx`**: add an `Info` tooltip explaining the IEC 61217 gantry-angle convention, mirroring the pattern already used in `CollimatorViewer`. (Rotating the "Couch" ring by `patientSupportAngle` is a nice-to-have; called out but deferred unless requested.)
+- **Category naming**: align the `MetricsPanel` category labels (`primary` / `secondary` / `accuracy`) with the canonical Delivery / Geometric / Complexity / Deliverability names used in `diff-calculator.ts` and project memory. Rename display labels only — no metric reassignments.
+
+## Priority 5 — Small polish
+
+- `metric-utils.ts` uses raw `hsl(H,S%,L%)` for some chart series colors; move all series colors to `hsl(var(--chart-N))` tokens for dark-mode consistency.
+- Header pattern: change `CohortAnalysis.tsx` to use `ArrowLeft` back-button pattern to match every other page (currently uses `Home` icon and `title=`).
+- `MetricsPanel` version caption "UCoMX v1.1" — replace with a preset-aware label or drop it, since newer metrics (MCSv, BJAR, ...) are not part of UCoMX v1.1.
+
+## Out of scope (deferred unless requested)
+
+- Mobile-layout audit of large tables (`BatchResultsTable`, `ExtendedStatsTable`, `BeamComparisonTable`) — needs visual verification, not a source read.
+- Full keyboard-focus-ring audit component-by-component.
+- Adding couch rotation into `GantryViewer`.
+
+## Verification steps after implementation
+
+1. `bun run build` clean.
+2. Load a demo plan in the viewer, comparison, batch, and cohort routes; confirm all seven new metrics appear and format correctly.
+3. Screen-reader smoke test: tab through each page header; every icon button announces a name.
+4. Toggle dark mode on Cohort box plot and correlation heatmap; confirm series colors adapt.
+
+Once you approve, I'll implement Priority 1–4 in a single pass and confirm with a build.
