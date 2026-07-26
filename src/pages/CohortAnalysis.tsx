@@ -55,13 +55,13 @@ function CohortAnalysisContent() {
                 Clear All
               </Button>
             )}
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/" title="Home">
+            <Button variant="ghost" size="icon" asChild aria-label="Back to home">
+              <Link to="/">
                 <Home className="h-5 w-5" />
               </Link>
             </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/help" title="Help">
+            <Button variant="ghost" size="icon" asChild aria-label="Help and documentation">
+              <Link to="/help">
                 <HelpCircle className="h-5 w-5" />
               </Link>
             </Button>

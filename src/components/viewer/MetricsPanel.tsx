@@ -90,10 +90,18 @@ function MetricRow({ metricKey, value }: { metricKey: string; value: number | st
   const status = !isNaN(numericValue) ? getThresholdStatus(metricKey, numericValue) : 'normal';
   const thresholds = getCurrentThresholds();
   const threshold = thresholds[metricKey];
+  // Always surface threshold context on hover — even when the value is
+  // "normal" — so users can see how close they are to warning/critical.
   const thresholdInfo =
-    thresholdsEnabled && threshold && status !== 'normal'
+    thresholdsEnabled && threshold
       ? formatThresholdInfo(threshold, getPresetName())
       : null;
+  const thresholdInfoClass =
+    status === 'critical'
+      ? 'text-destructive font-medium'
+      : status === 'warning'
+      ? 'text-[hsl(var(--status-warning))] font-medium'
+      : 'text-muted-foreground';
 
   return (
     <tr className="border-b border-border/30 last:border-0">
@@ -116,8 +124,8 @@ function MetricRow({ metricKey, value }: { metricKey: string; value: number | st
                     </p>
                   )}
                   {thresholdInfo && (
-                    <p className="text-xs font-medium text-destructive">
-                      ⚠ {thresholdInfo}
+                    <p className={cn('text-xs', thresholdInfoClass)}>
+                      {status !== 'normal' ? '⚠ ' : ''}{thresholdInfo}
                     </p>
                   )}
                 </div>
@@ -325,7 +333,7 @@ export function MetricsPanel({ metrics, plan, currentBeamIndex, chartContainerRe
             </Button>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">UCoMX v1.1</p>
+        <p className="text-xs text-muted-foreground">UCoMx v1.1 + extensions (MCSv, BJAR, LTNL, PMU, SAS2/20)</p>
       </CardHeader>
 
       <CardContent className="space-y-3 pt-0">

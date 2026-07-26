@@ -86,29 +86,35 @@ const ALL_COMPARISON_METRICS: ComparisonMetricDef[] = [
   { key: 'dosePerFraction', label: 'Dose per Fraction', category: 'Prescription', unit: 'Gy', lowerIsBetter: false },
   { key: 'numberOfFractions', label: 'Fractions', category: 'Prescription', lowerIsBetter: false },
   { key: 'MUperGy', label: 'MU per Gy', category: 'Prescription', unit: 'MU/Gy', lowerIsBetter: true },
+  { key: 'MUcGy', label: 'MU per cGy', category: 'Prescription', unit: 'MU/cGy', lowerIsBetter: true },
 
   // Delivery
   { key: 'totalMU', label: 'Total MU', category: 'Delivery', unit: 'MU', lowerIsBetter: true },
+  { key: 'PMU', label: 'Plan MU per Fraction', category: 'Delivery', unit: 'MU/fx', lowerIsBetter: true },
   { key: 'totalDeliveryTime', label: 'Delivery Time', category: 'Delivery', unit: 's', lowerIsBetter: true },
   { key: 'GT', label: 'Gantry Travel', category: 'Delivery', unit: '°', lowerIsBetter: false },
-  { key: 'psmall', label: '% Small Fields', category: 'Delivery', lowerIsBetter: true },
+  { key: 'psmall', label: '% Small Fields', category: 'Delivery', unit: '%', lowerIsBetter: true },
 
   // Geometric
   { key: 'MFA', label: 'Mean Field Area', category: 'Geometric', unit: 'cm²', lowerIsBetter: false },
   { key: 'EFS', label: 'Equiv. Field Size', category: 'Geometric', unit: 'mm', lowerIsBetter: false },
   { key: 'PA', label: 'Plan Area', category: 'Geometric', unit: 'cm²', lowerIsBetter: false },
   { key: 'JA', label: 'Jaw Area', category: 'Geometric', unit: 'cm²', lowerIsBetter: false },
+  { key: 'BJAR', label: 'Beam Jaw Area Ratio', category: 'Geometric', lowerIsBetter: false },
 
   // Complexity (Primary)
   { key: 'MCS', label: 'Modulation Complexity', category: 'Complexity (Primary)', lowerIsBetter: false },
+  { key: 'MCSv', label: 'MCS (VMAT)', category: 'Complexity (Primary)', lowerIsBetter: false },
   { key: 'LSV', label: 'Leaf Sequence Variability', category: 'Complexity (Primary)', lowerIsBetter: false },
   { key: 'AAV', label: 'Aperture Area Variability', category: 'Complexity (Primary)', lowerIsBetter: true },
 
   // Complexity (Secondary)
   { key: 'LT', label: 'Leaf Travel', category: 'Complexity (Secondary)', unit: 'mm', lowerIsBetter: true },
   { key: 'LTMCS', label: 'LT-weighted MCS', category: 'Complexity (Secondary)', lowerIsBetter: false },
+  { key: 'SAS2', label: 'Small Aperture (2mm)', category: 'Complexity (Secondary)', lowerIsBetter: true },
   { key: 'SAS5', label: 'Small Aperture (5mm)', category: 'Complexity (Secondary)', lowerIsBetter: true },
   { key: 'SAS10', label: 'Small Aperture (10mm)', category: 'Complexity (Secondary)', lowerIsBetter: true },
+  { key: 'SAS20', label: 'Small Aperture (20mm)', category: 'Complexity (Secondary)', lowerIsBetter: true },
   { key: 'EM', label: 'Edge Metric', category: 'Complexity (Secondary)', unit: 'mm⁻¹', lowerIsBetter: true },
   { key: 'PI', label: 'Plan Irregularity', category: 'Complexity (Secondary)', lowerIsBetter: true },
   { key: 'LG', label: 'Leaf Gap', category: 'Complexity (Secondary)', unit: 'mm', lowerIsBetter: false },
@@ -121,6 +127,7 @@ const ALL_COMPARISON_METRICS: ComparisonMetricDef[] = [
   // Deliverability
   { key: 'MUCA', label: 'MU per Control Arc', category: 'Deliverability', unit: 'MU/CP', lowerIsBetter: false },
   { key: 'LTMU', label: 'Leaf Travel per MU', category: 'Deliverability', unit: 'mm/MU', lowerIsBetter: true },
+  { key: 'LTNL', label: 'Leaf Travel per Leaf', category: 'Deliverability', unit: 'mm/leaf', lowerIsBetter: true },
   { key: 'LTNLMU', label: 'LT per Leaf and MU', category: 'Deliverability', lowerIsBetter: true },
   { key: 'LNA', label: 'LT per Leaf and CA', category: 'Deliverability', lowerIsBetter: true },
   { key: 'LTAL', label: 'LT per Arc Length', category: 'Deliverability', unit: 'mm/°', lowerIsBetter: true },

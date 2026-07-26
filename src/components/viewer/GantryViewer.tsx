@@ -1,4 +1,10 @@
 import { useMemo } from 'react';
+import { Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface GantryViewerProps {
   gantryAngle: number;
@@ -11,9 +17,9 @@ export function GantryViewer({ gantryAngle, direction, size = 180 }: GantryViewe
   const radius = size / 2 - 20;
   const innerRadius = radius - 15;
 
-  // Convert gantry angle to SVG coordinates (0° is at top, clockwise)
+  // Convert gantry angle to SVG coordinates (IEC 61217: 0° at top, CW positive)
   const angleRad = ((gantryAngle - 90) * Math.PI) / 180;
-  
+
   const gantryPosition = useMemo(() => ({
     x: center + radius * Math.cos(angleRad),
     y: center + radius * Math.sin(angleRad),
@@ -24,11 +30,11 @@ export function GantryViewer({ gantryAngle, direction, size = 180 }: GantryViewe
   // Generate tick marks every 30 degrees
   const tickMarks = useMemo(() => {
     const marks: Array<{ angle: number; x1: number; y1: number; x2: number; y2: number; label: string }> = [];
-    
+
     for (let angle = 0; angle < 360; angle += 30) {
       const rad = ((angle - 90) * Math.PI) / 180;
       const tickLength = angle % 90 === 0 ? 10 : 5;
-      
+
       marks.push({
         angle,
         x1: center + (radius - tickLength) * Math.cos(rad),
@@ -38,12 +44,30 @@ export function GantryViewer({ gantryAngle, direction, size = 180 }: GantryViewe
         label: angle % 90 === 0 ? `${angle}°` : '',
       });
     }
-    
+
     return marks;
   }, [center, radius]);
 
   return (
     <div className="flex flex-col items-center">
+      <div className="mb-2 flex items-center gap-1">
+        <span className="text-xs font-medium text-muted-foreground">Gantry</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Info className="h-3 w-3 cursor-help text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs">
+            <div className="space-y-1">
+              <p className="font-medium">IEC 61217 Gantry Angle</p>
+              <p className="text-xs">
+                0° = beam pointing down (source above patient). Positive rotation
+                is clockwise viewed from the foot of the couch: 90° from patient
+                left, 180° pointing up, 270° from patient right.
+              </p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </div>
       <svg width={size} height={size} className="overflow-visible">
         {/* Background circle */}
         <circle

@@ -184,19 +184,19 @@ export function CollimatorViewer({ collimatorAngle, jawPositions, size = 160 }: 
       <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <div className="flex justify-between">
           <span>X1:</span>
-          <span className="font-mono">{jawPositions.x1.toFixed(1)}</span>
+          <span className="font-mono">{jawPositions.x1.toFixed(1)} mm</span>
         </div>
         <div className="flex justify-between">
           <span>X2:</span>
-          <span className="font-mono">{jawPositions.x2.toFixed(1)}</span>
+          <span className="font-mono">{jawPositions.x2.toFixed(1)} mm</span>
         </div>
         <div className="flex justify-between">
           <span>Y1:</span>
-          <span className="font-mono">{jawPositions.y1.toFixed(1)}</span>
+          <span className="font-mono">{jawPositions.y1.toFixed(1)} mm</span>
         </div>
         <div className="flex justify-between">
           <span>Y2:</span>
-          <span className="font-mono">{jawPositions.y2.toFixed(1)}</span>
+          <span className="font-mono">{jawPositions.y2.toFixed(1)} mm</span>
         </div>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">
