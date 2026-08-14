@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { MLCLeafPositions } from '@/lib/dicom/types';
+import type { MultiPolygon } from '@/lib/dicom/conformality';
 
 interface MLCApertureViewerProps {
   mlcPositions: MLCLeafPositions;
@@ -7,6 +8,9 @@ interface MLCApertureViewerProps {
   jawPositions: { x1: number; x2: number; y1: number; y2: number };
   width?: number;
   height?: number;
+  /** Projected target silhouette in the MLC frame (mm at isocentre) */
+  targetOutline?: MultiPolygon;
+  targetLabel?: string;
 }
 
 export function MLCApertureViewer({
@@ -15,7 +19,10 @@ export function MLCApertureViewer({
   jawPositions,
   width = 400,
   height = 300,
+  targetOutline,
+  targetLabel,
 }: MLCApertureViewerProps) {
+
   const { bankA, bankB } = mlcPositions;
 
   // Validate jaw positions
