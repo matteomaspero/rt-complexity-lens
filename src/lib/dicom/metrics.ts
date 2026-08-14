@@ -1171,6 +1171,10 @@ export function calculatePlanMetrics(
   let weightedEM = 0;
   let weightedPI = 0;
   let weightedPAM = 0;
+  let weightedTCOV = 0;
+  let weightedATR = 0;
+  let weightedMARG = 0;
+  let minMARGMIN = Infinity;
   // Accuracy metrics
   let weightedLG = 0;
   let weightedMAD = 0;
@@ -1332,6 +1336,10 @@ export function calculatePlanMetrics(
   const MD = countMD > 0 ? weightedMD / countMD : undefined;
   const MI = countMI > 0 ? weightedMI / countMI : undefined;
   const PAM = countPAM > 0 ? weightedPAM / countPAM : undefined;
+  const TCOV = countPAM > 0 ? weightedTCOV / countPAM : undefined;
+  const ATR = countPAM > 0 ? weightedATR / countPAM : undefined;
+  const MARG = countPAM > 0 ? weightedMARG / countPAM : undefined;
+  const MARGMIN = countPAM > 0 && Number.isFinite(minMARGMIN) ? minMARGMIN : undefined;
   const MCSv = totalMU > 0 ? weightedMCSv / totalMU : undefined;
   const BJAR = countBJAR > 0 ? weightedBJAR / countBJAR : undefined;
   const LTNL = countLTNL > 0 ? weightedLTNL / countLTNL : undefined;
@@ -1395,6 +1403,11 @@ export function calculatePlanMetrics(
     EM,
     PI,
     PAM,
+    TCOV,
+    ATR,
+    MARG,
+    MARGMIN,
+    targetStructureName: structure?.name,
     beamMetrics,
     calculationDate: new Date(),
   };
