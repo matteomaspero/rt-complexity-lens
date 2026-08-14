@@ -301,6 +301,12 @@ export interface PlanMetrics {
   EM?: number;
   PI?: number;
   PAM?: number; // Plan Aperture Modulation (target-specific, MU-weighted from all beams) [0, 1]
+  TCOV?: number; // Target coverage fraction (MU-weighted across beams) [0, 1]
+  ATR?: number; // Aperture / projected target area ratio (MU-weighted across beams)
+  MARG?: number; // Mean aperture-to-target margin (mm)
+  MARGMIN?: number; // Minimum aperture-to-target margin (mm)
+  targetStructureName?: string; // ROI used for conformality metrics
+
   
   // Per-beam breakdown
   beamMetrics: BeamMetrics[];

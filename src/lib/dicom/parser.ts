@@ -31,6 +31,8 @@ const TAGS = {
   BeamNumber: 'x300a00c0',
   BeamName: 'x300a00c2',
   BeamDescription: 'x300a00c3',
+  SourceAxisDistance: 'x300a00b4',
+
   BeamType: 'x300a00c4',
   RadiationType: 'x300a00c6',
   TreatmentDeliveryType: 'x300a00ce',
