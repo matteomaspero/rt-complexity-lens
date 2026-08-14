@@ -1116,10 +1116,15 @@ function calculateBeamMetrics(
     SAS20,
     EM,
     PI,
-    BAM: calculateBAM(beam, structure),
+    BAM: conformality?.BAM,
+    TCOV: conformality?.TCOV,
+    ATR: conformality?.ATR,
+    MARG: conformality?.MARG,
+    MARGMIN: conformality?.MARGMIN,
     controlPointMetrics,
   };
 }
+
 
 /**
  * Calculate plan-level UCoMX metrics
