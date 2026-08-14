@@ -15,6 +15,14 @@ import type {
   MachineDeliveryParams,
   Structure
 } from './types';
+import {
+  DEFAULT_SAD,
+  calculateBeamConformality,
+  calculatePlanConformality,
+  projectPatientPointToBEV,
+  type BeamConformality,
+} from './conformality';
+
 
 // ===================================================================
 // CA-based UCoMx helper functions
