@@ -1276,11 +1276,16 @@ export function calculatePlanMetrics(
       countLTNL += mu;
     }
     
-    // Plan Aperture Modulation (target-specific)
+    // Plan Aperture Modulation + conformality (target-specific)
     if (bm.BAM !== undefined) {
       weightedPAM += bm.BAM * mu;
+      weightedTCOV += (bm.TCOV || 0) * mu;
+      weightedATR += (bm.ATR || 0) * mu;
+      weightedMARG += (bm.MARG || 0) * mu;
+      if (bm.MARGMIN !== undefined && bm.MARGMIN < minMARGMIN) minMARGMIN = bm.MARGMIN;
       countPAM += mu;
     }
+
     
     totalLT += bm.LT;
     totalDeliveryTime += bm.estimatedDeliveryTime || 0;
