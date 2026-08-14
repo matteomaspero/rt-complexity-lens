@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { MLCLeafPositions } from '@/lib/dicom/types';
+import type { MultiPolygon } from '@/lib/dicom/conformality';
 
 interface MLCApertureViewerProps {
   mlcPositions: MLCLeafPositions;
@@ -7,6 +8,9 @@ interface MLCApertureViewerProps {
   jawPositions: { x1: number; x2: number; y1: number; y2: number };
   width?: number;
   height?: number;
+  /** Projected target silhouette in the MLC frame (mm at isocentre) */
+  targetOutline?: MultiPolygon;
+  targetLabel?: string;
 }
 
 export function MLCApertureViewer({
@@ -15,7 +19,10 @@ export function MLCApertureViewer({
   jawPositions,
   width = 400,
   height = 300,
+  targetOutline,
+  targetLabel,
 }: MLCApertureViewerProps) {
+
   const { bankA, bankB } = mlcPositions;
 
   // Validate jaw positions
@@ -168,6 +175,20 @@ export function MLCApertureViewer({
         </g>
       ))}
 
+      {/* Projected target outline (RTSTRUCT BEV silhouette) */}
+      {targetOutline?.map((poly, pi) =>
+        poly.map((ring, ri) => (
+          <polygon
+            key={`t-${pi}-${ri}`}
+            points={ring.map(([x, y]) => `${x},${y}`).join(' ')}
+            fill="hsl(var(--primary))"
+            fillOpacity="0.12"
+            stroke="hsl(var(--primary))"
+            strokeWidth="1.2"
+          />
+        ))
+      )}
+
       {/* Center crosshair */}
       <line
         x1="0"
@@ -195,6 +216,23 @@ export function MLCApertureViewer({
         
         <rect y="16" width="12" height="12" className="fill-[hsl(var(--mlc-bank-b))]" opacity="0.85" />
         <text x="16" y="26" className="fill-foreground text-[8px]">Bank B</text>
+
+        {targetOutline && targetOutline.length > 0 && (
+          <>
+            <rect
+              y="32"
+              width="12"
+              height="12"
+              fill="hsl(var(--primary))"
+              fillOpacity="0.12"
+              stroke="hsl(var(--primary))"
+              strokeWidth="1"
+            />
+            <text x="16" y="42" className="fill-foreground text-[8px]">
+              {targetLabel || 'Target (BEV)'}
+            </text>
+          </>
+        )}
       </g>
     </svg>
   );

@@ -15,6 +15,14 @@ import type {
   MachineDeliveryParams,
   Structure
 } from './types';
+import {
+  DEFAULT_SAD,
+  calculateBeamConformality,
+  calculatePlanConformality,
+  projectPatientPointToBEV,
+  type BeamConformality,
+} from './conformality';
+
 
 // ===================================================================
 // CA-based UCoMx helper functions
@@ -1043,8 +1051,27 @@ function calculateBeamMetrics(
     BJAR = undefined;
     LTNL = undefined;
   }
-  
+
+  // RTSTRUCT conformality (polygon-based BEV geometry); undefined without a target
+  const conformality: BeamConformality | undefined = calculateBeamConformality(
+    beam,
+    structure,
+    beam.sourceAxisDistance ?? DEFAULT_SAD
+  );
+  if (conformality) {
+    conformality.perControlPoint.forEach((res, i) => {
+      const cpm = controlPointMetrics[i];
+      if (!cpm || !res) return;
+      cpm.PAM = res.blockedFraction;
+      cpm.TCOV = res.coverage;
+      cpm.ATR = res.apertureTargetRatio;
+      cpm.MARG = res.marginMean;
+      cpm.MARGMIN = res.marginMin;
+    });
+  }
+
   return {
+
     beamNumber: beam.beamNumber,
     beamName: beam.beamName,
     MCS,
@@ -1108,10 +1135,15 @@ function calculateBeamMetrics(
     SAS20,
     EM,
     PI,
-    BAM: calculateBAM(beam, structure),
+    BAM: conformality?.BAM,
+    TCOV: conformality?.TCOV,
+    ATR: conformality?.ATR,
+    MARG: conformality?.MARG,
+    MARGMIN: conformality?.MARGMIN,
     controlPointMetrics,
   };
 }
+
 
 /**
  * Calculate plan-level UCoMX metrics
@@ -1139,6 +1171,10 @@ export function calculatePlanMetrics(
   let weightedEM = 0;
   let weightedPI = 0;
   let weightedPAM = 0;
+  let weightedTCOV = 0;
+  let weightedATR = 0;
+  let weightedMARG = 0;
+  let minMARGMIN = Infinity;
   // Accuracy metrics
   let weightedLG = 0;
   let weightedMAD = 0;
@@ -1244,11 +1280,16 @@ export function calculatePlanMetrics(
       countLTNL += mu;
     }
     
-    // Plan Aperture Modulation (target-specific)
+    // Plan Aperture Modulation + conformality (target-specific)
     if (bm.BAM !== undefined) {
       weightedPAM += bm.BAM * mu;
+      weightedTCOV += (bm.TCOV || 0) * mu;
+      weightedATR += (bm.ATR || 0) * mu;
+      weightedMARG += (bm.MARG || 0) * mu;
+      if (bm.MARGMIN !== undefined && bm.MARGMIN < minMARGMIN) minMARGMIN = bm.MARGMIN;
       countPAM += mu;
     }
+
     
     totalLT += bm.LT;
     totalDeliveryTime += bm.estimatedDeliveryTime || 0;
@@ -1295,6 +1336,10 @@ export function calculatePlanMetrics(
   const MD = countMD > 0 ? weightedMD / countMD : undefined;
   const MI = countMI > 0 ? weightedMI / countMI : undefined;
   const PAM = countPAM > 0 ? weightedPAM / countPAM : undefined;
+  const TCOV = countPAM > 0 ? weightedTCOV / countPAM : undefined;
+  const ATR = countPAM > 0 ? weightedATR / countPAM : undefined;
+  const MARG = countPAM > 0 ? weightedMARG / countPAM : undefined;
+  const MARGMIN = countPAM > 0 && Number.isFinite(minMARGMIN) ? minMARGMIN : undefined;
   const MCSv = totalMU > 0 ? weightedMCSv / totalMU : undefined;
   const BJAR = countBJAR > 0 ? weightedBJAR / countBJAR : undefined;
   const LTNL = countLTNL > 0 ? weightedLTNL / countLTNL : undefined;
@@ -1358,177 +1403,46 @@ export function calculatePlanMetrics(
     EM,
     PI,
     PAM,
+    TCOV,
+    ATR,
+    MARG,
+    MARGMIN,
+    targetStructureName: structure?.name,
     beamMetrics,
     calculationDate: new Date(),
   };
 }
 
 /**
- * Project a 3D point to Beam's Eye View (BEV) plane.
- * Uses gantry angle to transform from patient coordinates to BEV coordinates.
- * @param point - 3D patient coordinates [x, y, z]
- * @param gantryAngleDeg - Gantry angle in degrees
- * @returns 2D BEV coordinates [x_bev, y_bev]
+ * Project a 3D patient point to the Beam's Eye View plane (isocentre plane).
+ * Thin wrapper over the conformality geometry core, kept for API stability.
  */
 export function projectPointToBEV(
   point: [number, number, number],
   gantryAngleDeg: number
 ): [number, number] {
-  const [x, y, z] = point;
-  const gantryRad = (gantryAngleDeg * Math.PI) / 180;
-  
-  // BEV projection: rotate around Y-axis by gantry angle
-  // X-component: z projects along beam direction (sin), x perpendicular (cos)
-  // Y-component: unchanged
-  const xBEV = z * Math.sin(gantryRad) + x * Math.cos(gantryRad);
-  const yBEV = y;
-  
-  return [xBEV, yBEV];
+  return projectPatientPointToBEV(point, { gantryAngle: gantryAngleDeg });
 }
 
 /**
- * Calculate aperture modulation (AM) between target and aperture projections.
- * Simplified approach: bounding box comparison for fast calculation.
- * For exact calculation, use shapely or similar polygon library on backend.
- *
- * @param targetBevPoints - Projected target contour points in BEV [x, y]
- * @param apertureBevPoints - Aperture boundary points in BEV [x, y]
- * @returns AM value in [0, 1]
- */
-function calculateApertureModulationSimplified(
-  targetBevPoints: Array<[number, number]>,
-  apertureBevPoints: Array<[number, number]>
-): number {
-  if (targetBevPoints.length === 0 || apertureBevPoints.length === 0) {
-    return 1.0; // Fully blocked if no points
-  }
-  
-  // Calculate bounding boxes as simplified geometry
-  const targetBounds = {
-    minX: Math.min(...targetBevPoints.map(p => p[0])),
-    maxX: Math.max(...targetBevPoints.map(p => p[0])),
-    minY: Math.min(...targetBevPoints.map(p => p[1])),
-    maxY: Math.max(...targetBevPoints.map(p => p[1])),
-  };
-  
-  const apertureBounds = {
-    minX: Math.min(...apertureBevPoints.map(p => p[0])),
-    maxX: Math.max(...apertureBevPoints.map(p => p[0])),
-    minY: Math.min(...apertureBevPoints.map(p => p[1])),
-    maxY: Math.max(...apertureBevPoints.map(p => p[1])),
-  };
-  
-  const targetArea =
-    (targetBounds.maxX - targetBounds.minX) * (targetBounds.maxY - targetBounds.minY);
-  
-  if (targetArea < 1e-6) {
-    return 0; // Degenerate target
-  }
-  
-  // Calculate intersection of bounding boxes
-  const overlapX = Math.max(0, Math.min(targetBounds.maxX, apertureBounds.maxX) - 
-                                Math.max(targetBounds.minX, apertureBounds.minX));
-  const overlapY = Math.max(0, Math.min(targetBounds.maxY, apertureBounds.maxY) - 
-                                Math.max(targetBounds.minY, apertureBounds.minY));
-  const overlapArea = overlapX * overlapY;
-  
-  // AM = (total - overlap) / total
-  const am = 1.0 - (overlapArea / targetArea);
-  return Math.max(0, Math.min(1, am)); // Clamp to [0, 1]
-}
-
-/**
- * Calculate Beam Aperture Modulation (BAM) for a single beam with target.
- * NOTE: This is a TypeScript placeholder using simplified bounding box geometry.
- * For exact polygon-based calculation, use Python backend or integrate Turf.js/d3-polygon.
- *
- * @param beam - Beam to analyze
- * @param structure - Target structure with 3D contours
- * @returns BAM value in [0, 1] or undefined if calculation not possible
+ * Beam Aperture Modulation (BAM) — MU-weighted fraction of the projected
+ * target blocked by MLC/jaws. Polygon-based (MLC + jaw aperture, divergent
+ * BEV projection of the ROI).
  */
 export function calculateBAM(beam: Beam, structure?: Structure): number | undefined {
-  if (!structure || !structure.contours || structure.contours.length === 0) {
-    return undefined;
-  }
-  
-  if (beam.controlPoints.length < 1) {
-    return undefined;
-  }
-  
-  // Collect all target points
-  const targetPoints: [number, number, number][] = [];
-  for (const contour of structure.contours) {
-    targetPoints.push(...contour.points);
-  }
-  
-  if (targetPoints.length === 0) {
-    return undefined;
-  }
-  
-  // Calculate weighted aperture modulation across control points
-  let totalWeightedAM = 0;
-  let totalMU = 0;
-  
-  for (let i = 0; i < beam.controlPoints.length; i++) {
-    const cp = beam.controlPoints[i];
-    
-    // Project target to BEV
-    const targetBevPoints = targetPoints.map(pt => 
-      projectPointToBEV(pt, cp.gantryAngle)
-    );
-    
-    // Create aperture boundary in BEV (simplified: rectangular bounds)
-    const apertureBevBounds: Array<[number, number]> = [
-      projectPointToBEV([-10000, cp.jawPositions.y1, 0], cp.gantryAngle),
-      projectPointToBEV([10000, cp.jawPositions.y1, 0], cp.gantryAngle),
-      projectPointToBEV([10000, cp.jawPositions.y2, 0], cp.gantryAngle),
-      projectPointToBEV([-10000, cp.jawPositions.y2, 0], cp.gantryAngle),
-    ];
-    
-    // Calculate AM for this control point
-    const am = calculateApertureModulationSimplified(targetBevPoints, apertureBevBounds);
-    
-    // Get MU weight
-    const deltaMU = i === 0 
-      ? cp.cumulativeMetersetWeight 
-      : cp.cumulativeMetersetWeight - beam.controlPoints[i - 1].cumulativeMetersetWeight;
-    
-    totalWeightedAM += am * deltaMU;
-    totalMU += deltaMU;
-  }
-  
-  return totalMU > 1e-6 ? totalWeightedAM / totalMU : undefined;
+  return calculateBeamConformality(beam, structure, beam.sourceAxisDistance ?? DEFAULT_SAD)?.BAM;
 }
 
 /**
- * Calculate Plan Aperture Modulation (PAM) for entire plan with target.
- * PAM is the MU-weighted average of BAM across all beams.
- * NOTE: This is a TypeScript placeholder using simplified bounding box geometry.
- *
- * @param plan - RT plan
- * @param structure - Target structure
- * @returns PAM value in [0, 1] or undefined if calculation not possible
+ * Plan Aperture Modulation (PAM) — MU-weighted BAM across beams.
  */
 export function calculatePAM(plan: RTPlan, structure?: Structure): number | undefined {
-  if (!plan.beams || plan.beams.length === 0 || !structure) {
-    return undefined;
-  }
-  
-  let totalWeightedPAM = 0;
-  let totalMU = 0;
-  
-  for (const beam of plan.beams) {
-    const bam = calculateBAM(beam, structure);
-    if (bam === undefined) {
-      continue;
-    }
-    
-    const beamMU = beam.finalCumulativeMetersetWeight;
-    totalWeightedPAM += bam * beamMU;
-    totalMU += beamMU;
-  }
-  
-  return totalMU > 1e-6 ? totalWeightedPAM / totalMU : undefined;
+  if (!structure || plan.beams.length === 0) return undefined;
+  const beamResults = plan.beams.map((beam) => ({
+    beamMU: beam.finalCumulativeMetersetWeight,
+    conformality: calculateBeamConformality(beam, structure, beam.sourceAxisDistance ?? DEFAULT_SAD),
+  }));
+  return calculatePlanConformality(plan, beamResults)?.PAM;
 }
 
 /**

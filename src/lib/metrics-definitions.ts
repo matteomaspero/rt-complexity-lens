@@ -227,6 +227,48 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
     doi: '10.1002/mp.70144',
   },
 
+  TCOV: {
+    key: 'TCOV',
+    name: 'Target Coverage',
+    shortDescription: 'Projected target inside the aperture',
+    fullDescription: 'MU-weighted fraction of the target\u2019s Beam\u2019s Eye View projection that falls inside the MLC + jaw aperture. Computed per control point from polygon intersection of the divergent target projection (convex-hull silhouette) with the true aperture polygon. Range [0, 1]; 1 means the projected target is always fully open. Requires an RTSTRUCT target structure.',
+    formula: 'TCOV = \\frac{\\sum_j \\left( A_{aperture} \\cap A_{target} \\right)_j \\cdot \\Delta MU_j}{\\sum_j A_{target,j} \\cdot \\Delta MU_j}',
+    unit: null,
+    category: 'secondary',
+    reference: 'Educational implementation (RTp-lens)',
+  },
+
+  ATR: {
+    key: 'ATR',
+    name: 'Aperture / Target Area Ratio',
+    shortDescription: 'Aperture size relative to the target',
+    fullDescription: 'MU-weighted ratio of aperture area to projected target area in the BEV plane. Values near 1 indicate apertures matched to the target silhouette, values below 1 indicate segmented (sub-target) apertures, values above 1 indicate apertures larger than the target projection. Requires an RTSTRUCT target structure.',
+    formula: 'ATR = \\frac{\\sum_j (A_{aperture,j} / A_{target,j}) \\cdot \\Delta MU_j}{\\sum_j \\Delta MU_j}',
+    unit: null,
+    category: 'secondary',
+    reference: 'Educational implementation (RTp-lens)',
+  },
+
+  MARG: {
+    key: 'MARG',
+    name: 'Mean Aperture-Target Margin',
+    shortDescription: 'Mean aperture edge to target edge distance',
+    fullDescription: 'MU-weighted mean distance from sampled aperture edge points to the nearest point on the projected target outline, expressed in mm at the isocentre plane. Small values indicate apertures tightly following the target silhouette. Requires an RTSTRUCT target structure.',
+    unit: 'mm',
+    category: 'secondary',
+    reference: 'Educational implementation (RTp-lens)',
+  },
+
+  MARGMIN: {
+    key: 'MARGMIN',
+    name: 'Minimum Aperture-Target Margin',
+    shortDescription: 'Closest aperture edge to target edge',
+    fullDescription: 'Smallest distance found between the aperture edge and the projected target outline across all control points, in mm at the isocentre plane. Requires an RTSTRUCT target structure.',
+    unit: 'mm',
+    category: 'secondary',
+    reference: 'Educational implementation (RTp-lens)',
+  },
+
   TG: {
     key: 'TG',
     name: 'Tongue-and-Groove Index',
