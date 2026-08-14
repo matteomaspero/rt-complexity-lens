@@ -1,22 +1,58 @@
-# Fix: uploaded Monaco plan fails to parse on the published site
+# RTSTRUCT Conformality Analysis
 
-## What I verified
+Yes — it is possible, and part of it already exists: the single-plan viewer already accepts an RTSTRUCT upload and feeds simplified BAM/PAM metrics. Today that geometry is a placeholder (jaw bounding boxes only, MLC ignored, no beam divergence) and there is no way to choose which ROI is the target. This plan replaces the placeholder with real polygon geometry, adds a full conformality metric set, and extends RTSTRUCT upload to Compare, Batch and Cohort.
 
-Your file (`rtplan_2.16.840.1.114337.1.10848.1785395016.0.dcm`) parses correctly on the current code:
+Educational tool only — conformality output is not clinically validated and the existing disclaimer stays in place.
 
-- Elekta Monaco VMAT, plan `31_AEV1recR`, 1 beam, 199 control points, 2 CCW rotations
-- 777.47 MU, 2.00 Gy x 25 fx = 50.00 Gy, MLC layout `ASYMY` + `MLCX`
-- Full metric set computes (MCS 0.272, LSV 0.567, AAV 0.480, EM 0.111, ...)
-- Verified through the real upload path in the running app on `/` (viewer renders) and `/batch` (row appears, stats compute), plus a direct Node-side parse
+## What the user gets
 
-So the parser is not broken. The failure is specific to the published build at `rt-complexity-lens.lovable.app`, which predates the parser fixes made in the recent audit rounds — notably the MLC-boundary selection fix (preferring the `MLCX` definition whose leaf count matches the leaf-position data) and the stacked `MLCX1`/`MLCX2` handling. An older bundle hitting a Monaco plan with an `ASYMY` + `MLCX` layout is exactly the case those fixes addressed.
+1. **ROI picker** — after uploading an RTSTRUCT, a dropdown lists all structures with contour counts; PTV-like names are auto-preselected. Currently the first ROI is silently used.
+2. **Beam's-eye-view overlay** — the projected target outline drawn over the MLC aperture viewer, per control point, so the aperture/target relation is visible and the numbers are checkable.
+3. **Conformality metrics** (per control point, per beam MU-weighted, per plan):
+   - **BAM / PAM** upgraded to true polygon geometry (aperture from MLC leaf pairs plus jaws; target projected with beam divergence).
+   - **Target coverage fraction** — share of the projected target inside the aperture.
+   - **Aperture/target area ratio** — flags over- or under-sized apertures.
+   - **Margin statistics** — mean and minimum aperture-edge-to-target-edge distance in mm at isocentre.
+4. **Availability on all analysis routes** — viewer, Compare (one RTSTRUCT per plan, diffed side by side), Batch and Cohort (one shared RTSTRUCT applied to every plan, with per-plan override by matched StructureSet UID when present).
+5. **Exports** — new metrics included in CSV/JSON exports and PDF reports; ROI name and source file recorded for provenance.
 
-## Plan
+## Technical approach
 
-1. Republish the project so the live site ships the current parser and metric code.
-2. Re-test the same file on the published URL after deploy: load it on the home page and confirm the viewer header shows `31_AEV1recR`, 1 beam, 777 MU, and that the metrics panel is populated.
-3. If it still fails on the published site only, capture the exact on-screen error text and browser console output from that page and diagnose from there (next suspects would be a cached bundle or a browser-specific `File`/`ArrayBuffer` issue, not the parser).
+**Geometry core — new `src/lib/dicom/conformality.ts`**
+- Divergent BEV projection: patient point -> couch/gantry/collimator rotation chain (IEC 61217, reusing the existing rotation conventions) -> perspective scale by `SAD / (SAD - z_beam)` to the isocentre plane.
+- Target BEV outline: project every contour point of the selected ROI, take the per-control-point convex hull of the projected cloud as the target silhouette (documented approximation; slice-wise union is a possible later refinement).
+- Aperture polygon: build from open MLC leaf-pair spans clipped by jaw X/Y, reusing the existing leaf-boundary and Y-clipping logic in `src/lib/dicom/metrics.ts` so aperture area stays consistent with AAV/EM/perimeter.
+- Boolean ops: add `polygon-clipping` (small, MIT, no native deps) for intersection/difference areas. Margin statistics use point-to-segment distances from sampled aperture edge points to the target outline.
+- Pure functions, no React, so they run inside the existing WebWorker path for batch/cohort.
 
-## Notes
+**Types and metric registry**
+- Extend `ControlPointMetrics`, `BeamMetrics`, `PlanMetrics` in `src/lib/dicom/types.ts` with optional `coverage`, `apertureTargetRatio`, `marginMean`, `marginMin` (undefined when no RTSTRUCT is loaded).
+- Register the new metrics in `src/lib/metrics-definitions.ts` (category: Geometric), which automatically surfaces them in MetricsReference, Help and TechnicalReference.
+- Add them to `src/lib/comparison/diff-calculator.ts` and `src/lib/cohort/metric-utils.ts` so Compare/Cohort/Batch charts pick them up.
 
-No source changes are needed for this issue. Nothing about the metric definitions or validation data changes.
+**State and UI**
+- New `src/contexts/StructureContext.tsx` holding `{ structures, selectedRoi, sourceFileName }` so the viewer, Compare, Batch and Cohort all read the same selection.
+- New `src/components/viewer/StructureSelector.tsx` (shadcn `Select`) with PTV/CTV/GTV name heuristics for the default choice.
+- `MLCApertureViewer.tsx` gains an optional target-outline SVG path with a legend entry.
+- `ComparisonUploadZone.tsx` gains an RTSTRUCT slot per plan; `BatchUploadZone`/`CohortUploadZone` gain a single shared RTSTRUCT slot plus a note that it applies to all plans.
+- `BatchContext`/`CohortContext` pass the selected structure into `calculatePlanMetrics`, and recompute when the ROI selection changes.
+
+**Python parity**
+- Mirror the geometry and the four new metrics in `python/rtplan_complexity/` (`conformality.py`, `types.py`, `metrics.py`, RTSTRUCT reading in `parser.py`) using `shapely` as the clipping backend; bump to 1.4.0 and add tolerances to `python/tests/cross_validate.py`.
+
+**Docs and validation**
+- `docs/ALGORITHMS.md`: new section with formulas, the convex-hull silhouette approximation and its limits.
+- `src/lib/validation-data.ts`: move BAM/PAM out of "simplified placeholder", add the new metrics with TS-Python parity status.
+- `docs/LOVABLE_CONTEXT.md` updated in the same pass.
+
+**Tests**
+- `src/test/conformality.test.ts`: analytic cases (square aperture vs concentric square target -> known coverage/ratio/margins), off-axis divergence scaling, no-RTSTRUCT path returns undefined, MU-weighted aggregation.
+- Verify with `npm run lint`, `npm run test`, `npm run build`, plus a demo-plan smoke check on viewer, Compare, Batch and Cohort.
+
+## Sequencing
+
+1. Geometry core + types + unit tests.
+2. Viewer: ROI picker, BEV overlay, metrics panel wiring.
+3. Compare, Batch, Cohort upload slots and recomputation.
+4. Exports, PDF, metric registries.
+5. Python parity, docs, validation report.
