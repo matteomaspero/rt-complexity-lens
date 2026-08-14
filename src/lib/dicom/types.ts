@@ -61,6 +61,8 @@ export interface Beam {
   mlcLeafBoundaries: number[]; // N+1 boundary positions defining leaf pair edges (mm, centered at 0)
   numberOfLeaves: number;
   sourceSkinDistance?: number;
+  sourceAxisDistance?: number; // SAD in mm (DICOM 300A,00B4), defaults to 1000
+
   // Energy fields (DICOM 300A,0114)
   nominalBeamEnergy?: number; // Energy in MeV (e.g., 6, 10, 15 for photons)
   energyLabel?: string; // Clinical label (e.g., '6X', '10FFF', '9E')
@@ -144,7 +146,13 @@ export interface ControlPointMetrics {
   };
   // Plan Aperture Modulation (per control point)
   PAM?: number; // Aperture modulation at this control point [0, 1]
+  // RTSTRUCT conformality (per control point, requires a target structure)
+  TCOV?: number; // Target coverage fraction [0, 1]
+  ATR?: number; // Aperture area / projected target area
+  MARG?: number; // Mean aperture-edge to target-edge distance (mm)
+  MARGMIN?: number; // Minimum aperture-edge to target-edge distance (mm)
 }
+
 
 export interface BeamMetrics {
   beamNumber: number;
@@ -225,6 +233,11 @@ export interface BeamMetrics {
   EM?: number; // Edge Metric
   PI?: number; // Plan Irregularity
   BAM?: number; // Beam Aperture Modulation (target-specific, weighted average of AM) [0, 1]
+  TCOV?: number; // Target coverage fraction (MU-weighted) [0, 1]
+  ATR?: number; // Aperture / projected target area ratio (MU-weighted)
+  MARG?: number; // Mean aperture-to-target margin (mm, MU-weighted)
+  MARGMIN?: number; // Minimum aperture-to-target margin across control points (mm)
+
   
   // Per-control-point data
   controlPointMetrics: ControlPointMetrics[];
