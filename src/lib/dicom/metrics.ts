@@ -1051,8 +1051,27 @@ function calculateBeamMetrics(
     BJAR = undefined;
     LTNL = undefined;
   }
-  
+
+  // RTSTRUCT conformality (polygon-based BEV geometry); undefined without a target
+  const conformality: BeamConformality | undefined = calculateBeamConformality(
+    beam,
+    structure,
+    beam.sourceAxisDistance ?? DEFAULT_SAD
+  );
+  if (conformality) {
+    conformality.perControlPoint.forEach((res, i) => {
+      const cpm = controlPointMetrics[i];
+      if (!cpm || !res) return;
+      cpm.PAM = res.blockedFraction;
+      cpm.TCOV = res.coverage;
+      cpm.ATR = res.apertureTargetRatio;
+      cpm.MARG = res.marginMean;
+      cpm.MARGMIN = res.marginMin;
+    });
+  }
+
   return {
+
     beamNumber: beam.beamNumber,
     beamName: beam.beamName,
     MCS,
