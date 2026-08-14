@@ -532,8 +532,10 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     mlcLeafWidths: widths,
     mlcLeafBoundaries: boundaries,
     numberOfLeaves: numLeaves,
+    sourceAxisDistance: getFloat(beamDataSet, TAGS.SourceAxisDistance) || undefined,
     nominalBeamEnergy,
     energyLabel,
+
     treatmentMachineName,
   };
 }
