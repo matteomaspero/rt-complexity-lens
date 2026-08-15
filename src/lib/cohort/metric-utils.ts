@@ -10,7 +10,7 @@ import type { CohortPlan } from '@/contexts/CohortContext';
 // Grouping is a UI concern for the cohort/batch charts. Keys must exist as
 // metrics in `PlanMetrics` or as computed keys handled below.
 export const METRIC_GROUPS = {
-  geometric: ['MFA', 'EFS', 'PA', 'JA', 'psmall', 'BJAR'] as const,
+  geometric: ['MFA', 'EFS', 'PA', 'JA', 'psmall', 'BJAR', 'TCOV', 'ATR', 'MARG', 'MARGMIN'] as const,
   beam: [
     'totalMU',
     'PMU',
@@ -70,6 +70,11 @@ const DECIMALS_OVERRIDES: Record<string, number> = {
   PA: 1,
   JA: 1,
   psmall: 1,
+  TCOV: 3,
+  ATR: 3,
+  MARG: 2,
+  MARGMIN: 2,
+
   LG: 1,
   MAD: 1,
   LT: 0,
@@ -107,6 +112,11 @@ export const METRIC_DEFINITIONS: Record<string, MetricInfo> = {
   JA: makeMetricInfo('JA', 'geometric', 'Jaw Area', 'cm²', 'Average jaw-defined field area'),
   psmall: makeMetricInfo('psmall', 'geometric', '% Small Fields', '%', 'Percentage of apertures below threshold'),
   BJAR: makeMetricInfo('BJAR', 'geometric', 'Beam Jaw Area Ratio', '', 'MU-weighted aperture / jaw area ratio'),
+  TCOV: makeMetricInfo('TCOV', 'geometric', 'Target Coverage', '', 'Projected target fraction inside the aperture (RTSTRUCT required)'),
+  ATR: makeMetricInfo('ATR', 'geometric', 'Aperture / Target Ratio', '', 'Aperture area over projected target area (RTSTRUCT required)'),
+  MARG: makeMetricInfo('MARG', 'geometric', 'Mean Margin', 'mm', 'Mean aperture-edge to target-edge distance at isocentre'),
+  MARGMIN: makeMetricInfo('MARGMIN', 'geometric', 'Minimum Margin', 'mm', 'Minimum aperture-edge to target-edge distance at isocentre'),
+
 
   // Beam / delivery
   totalMU: makeMetricInfo('totalMU', 'beam', 'Total MU', 'MU', 'Total monitor units for plan'),
@@ -217,6 +227,11 @@ export const METRIC_COLORS: Record<string, string> = {
   PA: 'hsl(var(--chart-4))',
   JA: 'hsl(var(--chart-5))',
   BJAR: 'hsl(var(--chart-2))',
+  TCOV: 'hsl(var(--chart-1))',
+  ATR: 'hsl(var(--chart-2))',
+  MARG: 'hsl(var(--chart-4))',
+  MARGMIN: 'hsl(var(--chart-5))',
+
   psmall: 'hsl(var(--chart-3))',
   GT: 'hsl(var(--chart-4))',
   MUCA: 'hsl(var(--chart-5))',

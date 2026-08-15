@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
-import type { RTPlan, PlanMetrics } from '@/lib/dicom/types';
+import type { RTPlan, PlanMetrics, Structure } from '@/lib/dicom/types';
 import { 
   generateClusters,
   generateMultiDimensionalClusters,
@@ -88,6 +88,10 @@ interface CohortContextType {
   
   // Per-cluster statistics
   clusterStats: Map<string, MetricExtendedStats>;
+
+  // Shared RTSTRUCT target ROI (applied to every plan in the cohort)
+  targetStructure: Structure | null;
+  applyTargetStructure: (structure: Structure | null) => void;
 }
 
 const CohortContext = createContext<CohortContextType | undefined>(undefined);
@@ -135,6 +139,8 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
   const [clusterMode, setClusterMode] = useState<ClusterMode>('single');
   const [primaryDimension, setPrimaryDimension] = useState<ClusterDimension>('technique');
   const [secondaryDimension, setSecondaryDimension] = useState<ClusterDimension>('complexity');
+  const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
+  const targetStructureRef = useRef<Structure | null>(null);
 
   // Get only successful plans
   const successfulPlans = useMemo(() => 
@@ -218,7 +224,7 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const plan = parseRTPlan(arrayBuffer, file.name);
-        const metrics = calculatePlanMetrics(plan);
+        const metrics = calculatePlanMetrics(plan, undefined, targetStructureRef.current ?? undefined);
 
         setPlans(prev => prev.map(p => 
           p.id === planId 
@@ -252,6 +258,19 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
     setProgress({ current: 0, total: 0 });
   }, []);
 
+  // Recompute metrics for all parsed plans when the shared target ROI changes.
+  const applyTargetStructure = useCallback((structure: Structure | null) => {
+    setTargetStructure(structure);
+    targetStructureRef.current = structure;
+    setPlans(prev =>
+      prev.map(p =>
+        p.status === 'success'
+          ? { ...p, metrics: calculatePlanMetrics(p.plan, undefined, structure ?? undefined) }
+          : p
+      )
+    );
+  }, []);
+
   return (
     <CohortContext.Provider value={{
       plans,
@@ -271,6 +290,8 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
       extendedStats,
       correlationMatrix,
       clusterStats,
+      targetStructure,
+      applyTargetStructure,
     }}>
       {children}
     </CohortContext.Provider>
