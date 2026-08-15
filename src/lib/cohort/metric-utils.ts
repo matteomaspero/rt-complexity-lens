@@ -10,7 +10,7 @@ import type { CohortPlan } from '@/contexts/CohortContext';
 // Grouping is a UI concern for the cohort/batch charts. Keys must exist as
 // metrics in `PlanMetrics` or as computed keys handled below.
 export const METRIC_GROUPS = {
-  geometric: ['MFA', 'EFS', 'PA', 'JA', 'psmall', 'BJAR'] as const,
+  geometric: ['MFA', 'EFS', 'PA', 'JA', 'psmall', 'BJAR', 'TCOV', 'ATR', 'MARG', 'MARGMIN'] as const,
   beam: [
     'totalMU',
     'PMU',

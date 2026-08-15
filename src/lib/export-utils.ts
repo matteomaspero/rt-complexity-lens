@@ -206,7 +206,14 @@ export const PLAN_COLUMNS: ColumnDef[] = [
   { key: 'mGSV', header: 'mGSV (°/s)', category: 'Deliverability', decimals: 4, extract: p => metricVal(p.metrics, 'mGSV'), extractBeam: bm => bm.mGSV },
   { key: 'LS', header: 'LS (mm/s)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'LS'), extractBeam: bm => bm.LS },
   { key: 'mDRV', header: 'mDRV (MU/min)', category: 'Deliverability', decimals: 2, extract: p => metricVal(p.metrics, 'mDRV'), extractBeam: bm => bm.mDRV },
+
+  // ── Conformality (only populated when an RTSTRUCT target ROI is loaded) ──
+  { key: 'TCOV', header: 'TCOV', category: 'Geometric', decimals: 4, extract: p => metricVal(p.metrics, 'TCOV'), extractBeam: bm => bm.TCOV },
+  { key: 'ATR', header: 'ATR', category: 'Geometric', decimals: 4, extract: p => metricVal(p.metrics, 'ATR'), extractBeam: bm => bm.ATR },
+  { key: 'MARG', header: 'MARG (mm)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'MARG'), extractBeam: bm => bm.MARG },
+  { key: 'MARGMIN', header: 'MARGMIN (mm)', category: 'Geometric', decimals: 2, extract: p => metricVal(p.metrics, 'MARGMIN'), extractBeam: bm => bm.MARGMIN },
 ];
+
 
 // ---------------------------------------------------------------------------
 // CSV generators

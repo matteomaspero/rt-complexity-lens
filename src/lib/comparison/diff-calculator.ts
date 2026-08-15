@@ -135,7 +135,14 @@ const ALL_COMPARISON_METRICS: ComparisonMetricDef[] = [
   { key: 'mGSV', label: 'Gantry Speed Variation', category: 'Deliverability', unit: '°/s', lowerIsBetter: true },
   { key: 'LS', label: 'Leaf Speed', category: 'Deliverability', unit: 'mm/s', lowerIsBetter: false },
   { key: 'mDRV', label: 'Dose Rate Variation', category: 'Deliverability', unit: 'MU/min', lowerIsBetter: true },
+
+  // Conformality (requires RTSTRUCT)
+  { key: 'TCOV', label: 'Target Coverage', category: 'Geometric', lowerIsBetter: false },
+  { key: 'ATR', label: 'Aperture / Target Ratio', category: 'Geometric', lowerIsBetter: false },
+  { key: 'MARG', label: 'Mean Margin', category: 'Geometric', unit: 'mm', lowerIsBetter: false },
+  { key: 'MARGMIN', label: 'Minimum Margin', category: 'Geometric', unit: 'mm', lowerIsBetter: false },
 ];
+
 
 function metricVal(m: PlanMetrics, key: string): number | undefined {
   const v = (m as unknown as Record<string, unknown>)[key];
