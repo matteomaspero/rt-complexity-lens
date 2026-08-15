@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
-import type { RTPlan, PlanMetrics } from '@/lib/dicom/types';
+import type { RTPlan, PlanMetrics, Structure } from '@/lib/dicom/types';
+
 
 export interface BatchPlan {
   id: string;
