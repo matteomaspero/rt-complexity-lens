@@ -30,7 +30,10 @@ interface BatchContextType {
   selectedPlans: BatchPlan[];
   isProcessing: boolean;
   progress: BatchProgress;
+  targetStructure: Structure | null;
+  applyTargetStructure: (structure: Structure | null) => void;
 }
+
 
 const BatchContext = createContext<BatchContextType | undefined>(undefined);
 
