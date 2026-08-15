@@ -258,6 +258,19 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
     setProgress({ current: 0, total: 0 });
   }, []);
 
+  // Recompute metrics for all parsed plans when the shared target ROI changes.
+  const applyTargetStructure = useCallback((structure: Structure | null) => {
+    setTargetStructure(structure);
+    targetStructureRef.current = structure;
+    setPlans(prev =>
+      prev.map(p =>
+        p.status === 'success'
+          ? { ...p, metrics: calculatePlanMetrics(p.plan, undefined, structure ?? undefined) }
+          : p
+      )
+    );
+  }, []);
+
   return (
     <CohortContext.Provider value={{
       plans,
@@ -277,6 +290,8 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
       extendedStats,
       correlationMatrix,
       clusterStats,
+      targetStructure,
+      applyTargetStructure,
     }}>
       {children}
     </CohortContext.Provider>
