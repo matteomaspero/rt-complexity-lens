@@ -227,6 +227,11 @@ export const METRIC_COLORS: Record<string, string> = {
   PA: 'hsl(var(--chart-4))',
   JA: 'hsl(var(--chart-5))',
   BJAR: 'hsl(var(--chart-2))',
+  TCOV: 'hsl(var(--chart-1))',
+  ATR: 'hsl(var(--chart-2))',
+  MARG: 'hsl(var(--chart-4))',
+  MARGMIN: 'hsl(var(--chart-5))',
+
   psmall: 'hsl(var(--chart-3))',
   GT: 'hsl(var(--chart-4))',
   MUCA: 'hsl(var(--chart-5))',
