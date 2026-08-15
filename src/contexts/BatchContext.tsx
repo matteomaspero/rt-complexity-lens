@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
 import type { RTPlan, PlanMetrics, Structure } from '@/lib/dicom/types';
 
@@ -41,6 +41,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
   const [plans, setPlans] = useState<BatchPlan[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<BatchProgress>({ current: 0, total: 0 });
+  const targetStructureRef = useRef<Structure | null>(null);
 
   const addPlans = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
@@ -74,7 +75,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const plan = parseRTPlan(arrayBuffer, file.name);
-        const metrics = calculatePlanMetrics(plan);
+        const metrics = calculatePlanMetrics(plan, undefined, targetStructureRef.current ?? undefined);
 
         setPlans(prev => prev.map(p => 
           p.id === planId 
@@ -133,6 +134,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
   // target ROI changes. The same RTSTRUCT is applied to all plans in the batch.
   const applyTargetStructure = useCallback((structure: Structure | null) => {
     setTargetStructure(structure);
+    targetStructureRef.current = structure;
     setPlans(prev =>
       prev.map(p =>
         p.status === 'success'
