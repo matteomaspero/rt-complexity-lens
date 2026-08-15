@@ -127,6 +127,21 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
 
   const selectedPlans = plans.filter(p => p.selected && p.status === 'success');
 
+  const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
+
+  // Recompute conformality-aware metrics for every parsed plan when the shared
+  // target ROI changes. The same RTSTRUCT is applied to all plans in the batch.
+  const applyTargetStructure = useCallback((structure: Structure | null) => {
+    setTargetStructure(structure);
+    setPlans(prev =>
+      prev.map(p =>
+        p.status === 'success'
+          ? { ...p, metrics: calculatePlanMetrics(p.plan, undefined, structure ?? undefined) }
+          : p
+      )
+    );
+  }, []);
+
   return (
     <BatchContext.Provider value={{
       plans,
@@ -139,7 +154,10 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
       selectedPlans,
       isProcessing,
       progress,
+      targetStructure,
+      applyTargetStructure,
     }}>
+
       {children}
     </BatchContext.Provider>
   );
