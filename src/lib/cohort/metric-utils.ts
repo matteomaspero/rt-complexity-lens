@@ -70,6 +70,11 @@ const DECIMALS_OVERRIDES: Record<string, number> = {
   PA: 1,
   JA: 1,
   psmall: 1,
+  TCOV: 3,
+  ATR: 3,
+  MARG: 2,
+  MARGMIN: 2,
+
   LG: 1,
   MAD: 1,
   LT: 0,
@@ -107,6 +112,11 @@ export const METRIC_DEFINITIONS: Record<string, MetricInfo> = {
   JA: makeMetricInfo('JA', 'geometric', 'Jaw Area', 'cm²', 'Average jaw-defined field area'),
   psmall: makeMetricInfo('psmall', 'geometric', '% Small Fields', '%', 'Percentage of apertures below threshold'),
   BJAR: makeMetricInfo('BJAR', 'geometric', 'Beam Jaw Area Ratio', '', 'MU-weighted aperture / jaw area ratio'),
+  TCOV: makeMetricInfo('TCOV', 'geometric', 'Target Coverage', '', 'Projected target fraction inside the aperture (RTSTRUCT required)'),
+  ATR: makeMetricInfo('ATR', 'geometric', 'Aperture / Target Ratio', '', 'Aperture area over projected target area (RTSTRUCT required)'),
+  MARG: makeMetricInfo('MARG', 'geometric', 'Mean Margin', 'mm', 'Mean aperture-edge to target-edge distance at isocentre'),
+  MARGMIN: makeMetricInfo('MARGMIN', 'geometric', 'Minimum Margin', 'mm', 'Minimum aperture-edge to target-edge distance at isocentre'),
+
 
   // Beam / delivery
   totalMU: makeMetricInfo('totalMU', 'beam', 'Total MU', 'MU', 'Total monitor units for plan'),
