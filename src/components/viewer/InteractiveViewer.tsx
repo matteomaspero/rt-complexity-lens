@@ -358,8 +358,21 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
               />
               <RTStructUploadZone
                 onStructuresLoaded={handleStructuresLoaded}
+                onClear={() => {
+                  setLoadedStructures(null);
+                  setSelectedStructureIndex(null);
+                }}
                 className="h-12 w-48 border-dashed p-2"
               />
+              {loadedStructures && loadedStructures.length > 0 && (
+                <StructureSelector
+                  structures={loadedStructures}
+                  selectedIndex={selectedStructureIndex}
+                  onSelect={setSelectedStructureIndex}
+                  className="w-56"
+                />
+              )}
+
             </div>
           </div>
 
