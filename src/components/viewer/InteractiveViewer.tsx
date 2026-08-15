@@ -28,6 +28,9 @@ import { Logo } from '@/components/ui/logo';
 import { HelpCircle, ChevronDown, Home, Github } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculatePlanMetrics } from '@/lib/dicom';
+import { projectTargetToBEV, pickDefaultTargetIndex } from '@/lib/dicom/conformality';
+import { StructureSelector } from '@/components/viewer/StructureSelector';
+
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAllPresetIds } from '@/lib/machine-mapping';
 import { BUILTIN_PRESETS } from '@/lib/threshold-definitions';
@@ -142,10 +145,17 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   // Handle structures loaded from RTStructUploadZone
   const handleStructuresLoaded = useCallback((structures: Structure[]) => {
     setLoadedStructures(structures);
-    if (structures.length > 0) {
-      setSelectedStructureIndex(0);
-    }
+    setSelectedStructureIndex(structures.length > 0 ? pickDefaultTargetIndex(structures) : null);
   }, []);
+
+  // Projected target silhouette (BEV) for the current control point
+  const targetOutline = useMemo(() => {
+    if (!currentCP || !loadedStructures || selectedStructureIndex === null) return undefined;
+    const structure = loadedStructures[selectedStructureIndex];
+    if (!structure) return undefined;
+    return projectTargetToBEV(structure, currentCP, currentBeam?.sourceAxisDistance);
+  }, [currentCP, currentBeam, loadedStructures, selectedStructureIndex]);
+
 
   // Recalculate metrics when structure is selected
   useEffect(() => {
@@ -425,9 +435,11 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                       mlcPositions={currentCP.mlcPositions}
                       leafWidths={currentBeam.mlcLeafWidths}
                       jawPositions={currentCP.jawPositions}
+                      targetOutline={targetOutline}
                       width={200}
                       height={180}
                     />
+
                   </div>
                 </div>
 
