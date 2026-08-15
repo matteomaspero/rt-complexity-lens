@@ -39,7 +39,7 @@ export function StructureSelector({
         </SelectTrigger>
         <SelectContent>
           {structures.map((structure, index) => (
-            <SelectItem key={`${structure.roiNumber}-${index}`} value={String(index)}>
+            <SelectItem key={`${structure.number}-${index}`} value={String(index)}>
               {structure.name}
               {structure.contours.length > 0 ? ` (${structure.contours.length} slices)` : ''}
             </SelectItem>
