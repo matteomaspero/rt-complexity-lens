@@ -134,6 +134,17 @@ export default function ComparePlans() {
     setPlanB((prev) => recompute(prev));
   }, []);
 
+  const withTarget = useCallback(
+    (plan: SessionPlan): SessionPlan =>
+      targetStructure
+        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, undefined, targetStructure) }
+        : plan,
+    [targetStructure]
+  );
+
+  const handlePlanALoaded = useCallback((plan: SessionPlan) => setPlanA(withTarget(plan)), [withTarget]);
+  const handlePlanBLoaded = useCallback((plan: SessionPlan) => setPlanB(withTarget(plan)), [withTarget]);
+
   const builtInOptions = Object.values(BUILTIN_PRESETS);
 
   const handleExportPDF = useCallback(async () => {
@@ -233,8 +244,8 @@ export default function ComparePlans() {
         <ComparisonHeader
           planA={planA}
           planB={planB}
-          onPlanALoaded={setPlanA}
-          onPlanBLoaded={setPlanB}
+          onPlanALoaded={handlePlanALoaded}
+          onPlanBLoaded={handlePlanBLoaded}
           onPlanARemoved={handlePlanARemoved}
           onPlanBRemoved={handlePlanBRemoved}
         />
