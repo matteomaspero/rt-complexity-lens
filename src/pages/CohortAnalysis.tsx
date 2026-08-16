@@ -17,12 +17,13 @@ import {
   ExtendedStatsTable,
   CohortExportPanel,
 } from '@/components/cohort';
+import { ConformalityPanel } from '@/components/viewer';
 import { ClusteringSuggestions } from '@/components/cohort/ClusteringSuggestions';
 import { suggestClusteringDimensions } from '@/lib/outlier-detection';
 import { useMemo } from 'react';
 
 function CohortAnalysisContent() {
-  const { successfulPlans, clearAll, isProcessing } = useCohort();
+  const { successfulPlans, clearAll, isProcessing, applyTargetStructure } = useCohort();
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate clustering suggestions
@@ -73,7 +74,12 @@ function CohortAnalysisContent() {
       {/* Main Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Upload Section */}
-        <CohortUploadZone />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <CohortUploadZone />
+          </div>
+          <ConformalityPanel onTargetChange={applyTargetStructure} />
+        </div>
         <CohortProgressBar />
 
         {/* Analysis Section - Only show when plans are loaded */}
