@@ -10,7 +10,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import type { SessionPlan } from '@/lib/dicom/types';
+import type { SessionPlan, Structure } from '@/lib/dicom/types';
+import { calculatePlanMetrics } from '@/lib/dicom/metrics';
+import { ConformalityPanel } from '@/components/viewer';
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import { BUILTIN_PRESETS } from '@/lib/threshold-definitions';
 import { PresetManager } from '@/components/settings';
@@ -37,6 +39,7 @@ export default function ComparePlans() {
   const [cpIndexB, setCpIndexB] = useState(0);
   const [gantrySync, setGantrySync] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
   const compareContentRef = useRef<HTMLDivElement>(null);
   
   const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
@@ -120,6 +123,27 @@ export default function ComparePlans() {
     setSelectedBeamMatch(0);
     setCurrentCPIndex(0);
   }, []);
+
+  const handleTargetChange = useCallback((structure: Structure | null) => {
+    setTargetStructure(structure);
+    const recompute = (plan: SessionPlan | null): SessionPlan | null =>
+      plan
+        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, undefined, structure ?? undefined) }
+        : null;
+    setPlanA((prev) => recompute(prev));
+    setPlanB((prev) => recompute(prev));
+  }, []);
+
+  const withTarget = useCallback(
+    (plan: SessionPlan): SessionPlan =>
+      targetStructure
+        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, undefined, targetStructure) }
+        : plan,
+    [targetStructure]
+  );
+
+  const handlePlanALoaded = useCallback((plan: SessionPlan) => setPlanA(withTarget(plan)), [withTarget]);
+  const handlePlanBLoaded = useCallback((plan: SessionPlan) => setPlanB(withTarget(plan)), [withTarget]);
 
   const builtInOptions = Object.values(BUILTIN_PRESETS);
 
@@ -220,10 +244,16 @@ export default function ComparePlans() {
         <ComparisonHeader
           planA={planA}
           planB={planB}
-          onPlanALoaded={setPlanA}
-          onPlanBLoaded={setPlanB}
+          onPlanALoaded={handlePlanALoaded}
+          onPlanBLoaded={handlePlanBLoaded}
           onPlanARemoved={handlePlanARemoved}
           onPlanBRemoved={handlePlanBRemoved}
+        />
+
+        <ConformalityPanel
+          onTargetChange={handleTargetChange}
+          description="Optional: load one RTSTRUCT and pick a target ROI to compute conformality metrics (TCOV, ATR, MARG) for both plans."
+          className="max-w-xl"
         />
 
         {/* Comparison Content */}

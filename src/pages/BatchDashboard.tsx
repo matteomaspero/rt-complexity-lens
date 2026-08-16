@@ -22,6 +22,7 @@ import {
   BatchDistributionChart,
   BatchExportPanel,
 } from '@/components/batch';
+import { ConformalityPanel } from '@/components/viewer';
 import { OutlierReport } from '@/components/batch/OutlierReport';
 import { type OutlierConfig, DEFAULT_OUTLIER_CONFIG } from '@/components/batch/OutlierSettings';
 import { detectOutliers } from '@/lib/outlier-detection';
@@ -29,7 +30,7 @@ import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAl
 import { toast } from 'sonner';
 
 export default function BatchDashboard() {
-  const { plans, clearAll, isProcessing } = useBatch();
+  const { plans, clearAll, isProcessing, applyTargetStructure } = useBatch();
   const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
   const hasPlans = plans.length > 0;
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -164,7 +165,12 @@ export default function BatchDashboard() {
       {/* Main Content */}
       <main className="px-6 py-6 space-y-6 w-full max-w-none">
         {/* Upload Zone */}
-        <BatchUploadZone />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <BatchUploadZone />
+          </div>
+          <ConformalityPanel onTargetChange={applyTargetStructure} />
+        </div>
 
         {/* Progress */}
         <BatchProgressBar />

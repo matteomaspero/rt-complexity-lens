@@ -1,5 +1,7 @@
 export { FileUploadZone } from './FileUploadZone';
 export { RTStructUploadZone } from './RTStructUploadZone';
+export { StructureSelector } from './StructureSelector';
+export { ConformalityPanel } from './ConformalityPanel';
 export { MLCApertureViewer } from './MLCApertureViewer';
 export { GantryViewer } from './GantryViewer';
 export { CollimatorViewer } from './CollimatorViewer';
