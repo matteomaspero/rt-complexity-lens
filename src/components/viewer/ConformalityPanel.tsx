@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Target } from 'lucide-react';
 import type { Structure } from '@/lib/dicom/types';
+import { pickDefaultTargetIndex } from '@/lib/dicom/conformality';
 import { RTStructUploadZone } from './RTStructUploadZone';
 import { StructureSelector } from './StructureSelector';
 
@@ -24,7 +25,8 @@ export function ConformalityPanel({
     (loaded: Structure[], name: string) => {
       setStructures(loaded);
       setFileName(name);
-      const defaultIndex = pickDefaultIndex(loaded);
+      const picked = pickDefaultTargetIndex(loaded);
+      const defaultIndex = picked >= 0 ? picked : null;
       setSelectedIndex(defaultIndex);
       onTargetChange(defaultIndex !== null ? loaded[defaultIndex] : null);
     },
@@ -69,17 +71,4 @@ export function ConformalityPanel({
       </div>
     </div>
   );
-}
-
-function pickDefaultIndex(structures: Structure[]): number | null {
-  if (structures.length === 0) return null;
-  const byPriority = ['ptv', 'ctv', 'gtv'];
-  for (const token of byPriority) {
-    const index = structures.findIndex(
-      (s) => s.name.toLowerCase().includes(token) && s.contours.length > 0
-    );
-    if (index >= 0) return index;
-  }
-  const firstWithContours = structures.findIndex((s) => s.contours.length > 0);
-  return firstWithContours >= 0 ? firstWithContours : 0;
 }
