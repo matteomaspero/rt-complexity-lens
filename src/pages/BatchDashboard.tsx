@@ -164,7 +164,12 @@ export default function BatchDashboard() {
       {/* Main Content */}
       <main className="px-6 py-6 space-y-6 w-full max-w-none">
         {/* Upload Zone */}
-        <BatchUploadZone />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <BatchUploadZone />
+          </div>
+          <ConformalityPanel onTargetChange={applyTargetStructure} />
+        </div>
 
         {/* Progress */}
         <BatchProgressBar />
