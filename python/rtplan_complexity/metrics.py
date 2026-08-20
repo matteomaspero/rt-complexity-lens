@@ -17,6 +17,18 @@ import numpy as np
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
+from .conformality import (
+    DEFAULT_SAD,
+    BeamConformality,
+    build_aperture_polygon,
+    calculate_beam_conformality,
+    calculate_plan_conformality,
+    compute_conformality,
+    pick_default_target,
+    project_patient_point_to_bev,
+    project_target_to_bev,
+)
+
 from .types import (
     RTPlan,
     Beam,
@@ -1041,10 +1053,30 @@ def calculate_beam_metrics(
         normalized_lt = LT / (num_leaves * num_cps)
         MI = normalized_lt
     
-    # BAM - Beam Aperture Modulation (if structure provided)
+    # RTSTRUCT conformality (polygon-based BEV geometry); None without a target
     BAM: Optional[float] = None
-    if structure is not None:
-        BAM = calculate_pam_beam(structure, beam, couch_angle)
+    TCOV: Optional[float] = None
+    ATR: Optional[float] = None
+    MARG: Optional[float] = None
+    MARGMIN: Optional[float] = None
+    conformality: Optional[BeamConformality] = calculate_beam_conformality(
+        beam, structure, beam.source_axis_distance or DEFAULT_SAD, leaf_bounds
+    )
+    if conformality is not None:
+        BAM = conformality.BAM
+        TCOV = conformality.TCOV
+        ATR = conformality.ATR
+        MARG = conformality.MARG
+        MARGMIN = conformality.MARGMIN
+        for i, res in enumerate(conformality.per_control_point):
+            if res is None or i >= len(control_point_metrics):
+                continue
+            cpm = control_point_metrics[i]
+            cpm.PAM = res.blocked_fraction
+            cpm.TCOV = res.coverage
+            cpm.ATR = res.aperture_target_ratio
+            cpm.MARG = res.margin_mean
+            cpm.MARGMIN = res.margin_min
     
     return BeamMetrics(
         beam_number=beam.beam_number,
@@ -1109,6 +1141,10 @@ def calculate_beam_metrics(
         EM=EM,
         PI=PI,
         BAM=BAM,
+        TCOV=TCOV,
+        ATR=ATR,
+        MARG=MARG,
+        MARGMIN=MARGMIN,
         control_point_metrics=control_point_metrics,
     )
 
@@ -1193,6 +1229,11 @@ def calculate_plan_metrics(
         EM = weighted_avg("EM")
         PI = weighted_avg("PI")
         PAM = weighted_avg("BAM")  # PAM is the MU-weighted average of BAM
+        TCOV = weighted_avg("TCOV")
+        ATR = weighted_avg("ATR")
+        MARG = weighted_avg("MARG")
+        margins = [bm.MARGMIN for bm in beam_metrics if bm.MARGMIN is not None]
+        MARGMIN = min(margins) if margins else None
         MCSv = weighted_avg("MCSv")
         BJAR = weighted_avg("BJAR")
         LTNL = weighted_avg("LTNL")
@@ -1204,6 +1245,7 @@ def calculate_plan_metrics(
         MCSv = BJAR = LTNL = None
         SAS2 = SAS5 = SAS10 = SAS20 = EM = PI = None
         PAM = None
+        TCOV = ATR = MARG = MARGMIN = None
         LTMU_plan = None
     
     # Total metrics (sum, not weighted average)
@@ -1278,6 +1320,11 @@ def calculate_plan_metrics(
         EM=EM,
         PI=PI,
         PAM=PAM,
+        TCOV=TCOV,
+        ATR=ATR,
+        MARG=MARG,
+        MARGMIN=MARGMIN,
+        target_structure_name=structure.name if structure is not None else None,
         mu_per_degree=mu_per_degree,
         avg_dose_rate=avg_dose_rate,
         beam_metrics=beam_metrics,
