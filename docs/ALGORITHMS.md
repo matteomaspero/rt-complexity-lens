@@ -878,3 +878,31 @@ from the TypeScript pipeline.
 Remaining gaps (`notImplementedUCoMxMetrics` in `validation-data.ts`):
 `MIt`, `MIs`, `MIa` (Park 2014 modulation indices), `psmall_20mm`,
 `psmall_30mm`, `SAS25mm`, `SAS50mm`.
+
+---
+
+## 2026-08-14 — RTSTRUCT conformality (v1.4.0)
+
+The former BAM/PAM placeholder (jaw bounding box only, MLC ignored, no beam
+divergence) is replaced by true polygon geometry, and three new conformality
+metrics are added.
+
+| Metric | Definition | Status |
+|---|---|---|
+| **BAM / PAM** | MU-weighted blocked target fraction (see above) | Rewritten on polygon geometry (TS `polygon-clipping`, Python `shapely`) |
+| **TCOV** | Target coverage fraction `A_∩ / A_t` | New |
+| **ATR** | Aperture / projected-target area ratio | New |
+| **MARG / MARGMIN** | Mean / minimum aperture-edge-to-target-edge distance (mm) | New |
+
+Parity: geometry and aggregation are mirrored function-for-function between
+`src/lib/dicom/conformality.ts` and `python/rtplan_complexity/conformality.py`.
+Both sides are pinned by the same analytic unit tests
+(`src/test/conformality.test.ts`, `python/tests/test_pam.py`): isocentre
+mapping, divergence scaling at 100 mm depth, gantry 90°, collimator 90°,
+20 mm cube silhouette, jaw-clipped aperture area, concentric-square coverage
+(TCOV = 1, ATR = 2.25, MARGMIN = 10 mm), half-overlap coverage (TCOV = 0.5,
+ATR = 1.0), and closed/open-aperture beam aggregation.
+
+The TG-119 audit corpus ships RTPLAN files without matching RTSTRUCTs, so
+conformality is **not** part of the numeric `audit_all.py` cross-validation
+table; it is validated by the shared analytic test suite instead.
