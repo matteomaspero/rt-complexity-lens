@@ -1,11 +1,8 @@
 """
-Plan Aperture Modulation (PAM) metric tests.
+RTSTRUCT conformality tests (BAM/PAM, TCOV, ATR, MARG, MARGMIN).
 
-Tests PAM calculation functions including:
-- BEV projection and polygon generation
-- Aperture polygon creation
-- Aperture modulation calculation
-- Full PAM/BAM computation
+Mirrors src/test/conformality.test.ts: the same analytic cases are asserted on
+both sides so TypeScript and Python geometry stay in lockstep.
 """
 
 import pytest
@@ -13,8 +10,9 @@ import math
 from pathlib import Path
 import sys
 
-# Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from shapely.geometry import Polygon
 
 from rtplan_complexity.types import (
     Structure,
@@ -24,6 +22,15 @@ from rtplan_complexity.types import (
     MLCLeafPositions,
     JawPositions,
     RTPlan,
+)
+from rtplan_complexity.conformality import (
+    DEFAULT_SAD,
+    build_aperture_polygon,
+    calculate_beam_conformality,
+    compute_conformality,
+    pick_default_target,
+    project_patient_point_to_bev,
+    project_target_to_bev,
 )
 from rtplan_complexity.metrics import (
     project_point_to_bev,
@@ -36,349 +43,257 @@ from rtplan_complexity.metrics import (
 )
 
 
+def _square(cx, cy, half):
+    return Polygon([
+        (cx - half, cy - half),
+        (cx + half, cy - half),
+        (cx + half, cy + half),
+        (cx - half, cy + half),
+    ])
+
+
 class TestBEVProjection:
-    """Test BEV (Beam's Eye View) projection functions."""
-    
-    def test_project_point_to_bev_zero_gantry(self):
-        """Test BEV projection with 0° gantry angle."""
-        # At 0° gantry, X-axis should align with patient X, Y stays same
-        point_3d = (10.0, 20.0, 5.0)
-        x_bev, y_bev = project_point_to_bev(point_3d, gantry_angle_deg=0.0)
-        
-        # Z projects to X in BEV, Y stays same
-        assert x_bev == pytest.approx(10.0, abs=0.01)
-        assert y_bev == pytest.approx(20.0, abs=0.01)
-    
-    def test_project_point_to_bev_90_degree_gantry(self):
-        """Test BEV projection with 90° gantry angle."""
-        # At 90° gantry, X-axis should go towards patient Z
-        point_3d = (10.0, 20.0, 5.0)
-        x_bev, y_bev = project_point_to_bev(point_3d, gantry_angle_deg=90.0)
-        
-        # Z projects to X in BEV (sin(90°)=1), Y stays same
-        assert x_bev == pytest.approx(5.0, abs=0.01)
-        assert y_bev == pytest.approx(20.0, abs=0.01)
-    
-    def test_project_point_to_bev_180_degree_gantry(self):
-        """Test BEV projection with 180° gantry angle."""
-        point_3d = (10.0, 20.0, 5.0)
-        x_bev, y_bev = project_point_to_bev(point_3d, gantry_angle_deg=180.0)
-        
-        # X-axis inverts (cos(180°)=-1), Z projects to -X (sin(180°)≈0)
-        assert x_bev == pytest.approx(-10.0, abs=0.01)
-        assert y_bev == pytest.approx(20.0, abs=0.01)
+    """Divergent BEV projection (IEC 61217 couch -> gantry -> collimator)."""
+
+    def test_isocentre_maps_to_origin(self):
+        assert project_patient_point_to_bev((0.0, 0.0, 0.0), 0.0) == (0.0, 0.0)
+
+    def test_in_plane_point_no_divergence(self):
+        # Patient x -> BEV x, patient z (superior) -> BEV y; depth = 0 here
+        x, y = project_patient_point_to_bev((10.0, 0.0, 20.0), gantry_angle=0.0)
+        assert x == pytest.approx(10.0, abs=1e-9)
+        assert y == pytest.approx(20.0, abs=1e-9)
+
+    def test_divergence_scales_upstream_point(self):
+        # 100 mm anterior of isocentre at gantry 0 -> closer to the source
+        x, y = project_patient_point_to_bev((10.0, -100.0, 0.0), gantry_angle=0.0)
+        assert x == pytest.approx(10.0 * DEFAULT_SAD / 900.0, abs=1e-6)
+        assert y == pytest.approx(0.0, abs=1e-9)
+
+    def test_gantry_90(self):
+        x, y = project_patient_point_to_bev((10.0, 0.0, 20.0), gantry_angle=90.0)
+        scale = DEFAULT_SAD / 990.0
+        assert x == pytest.approx(0.0, abs=1e-6)
+        assert y == pytest.approx(20.0 * scale, abs=1e-6)
+
+    def test_collimator_90_rotates_mlc_frame(self):
+        x, y = project_patient_point_to_bev(
+            (10.0, 0.0, 20.0), gantry_angle=0.0, collimator_angle=90.0
+        )
+        assert x == pytest.approx(20.0, abs=1e-6)
+        assert y == pytest.approx(-10.0, abs=1e-6)
 
 
-class TestBEVPolygonGeneration:
-    """Test conversion of 3D contours to BEV polygons."""
-    
-    def test_contour_to_bev_polygon_square(self):
-        """Test creating a square polygon in BEV."""
-        # Square target in XY plane, centered at isocenter
-        contour_points = [
-            (-5.0, -5.0, 0.0),
-            (5.0, -5.0, 0.0),
-            (5.0, 5.0, 0.0),
-            (-5.0, 5.0, 0.0),
-        ]
-        
-        poly = contour_to_bev_polygon(contour_points, gantry_angle_deg=0.0)
-        
+class TestTargetSilhouette:
+    """Convex-hull silhouette of the projected contour cloud."""
+
+    def make_box_structure(self):
+        """20 mm cube around isocentre, two contour slices."""
+        contours = []
+        for z in (-10.0, 10.0):
+            contours.append(ContourSequence(points=[
+                (-10.0, -10.0, z),
+                (10.0, -10.0, z),
+                (10.0, 10.0, z),
+                (-10.0, 10.0, z),
+            ]))
+        return Structure(name="PTV", number=1, contours=contours)
+
+    def make_cp(self, gantry=0.0):
+        return ControlPoint(
+            index=0,
+            gantry_angle=gantry,
+            gantry_rotation_direction="NONE",
+            beam_limiting_device_angle=0.0,
+            cumulative_meterset_weight=1.0,
+            mlc_positions=MLCLeafPositions(bank_a=[-30.0], bank_b=[30.0]),
+            jaw_positions=JawPositions(x1=-40, x2=40, y1=-20, y2=20),
+        )
+
+    def test_projected_cube_is_about_20x20(self):
+        poly = project_target_to_bev(self.make_box_structure(), self.make_cp())
         assert poly is not None
-        assert poly.is_valid
-        # Square with 10x10 area
-        assert poly.area == pytest.approx(100.0, rel=0.01)
-    
-    def test_contour_to_bev_polygon_empty(self):
-        """Test that empty contour returns None."""
-        poly = contour_to_bev_polygon([], gantry_angle_deg=0.0)
-        assert poly is None
-    
-    def test_contour_to_bev_polygon_too_few_points(self):
-        """Test that contour with < 3 points returns None."""
-        contour_points = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)]
-        poly = contour_to_bev_polygon(contour_points, gantry_angle_deg=0.0)
-        assert poly is None
+        # 20 x 20 silhouette, slightly magnified by divergence (< 3%)
+        assert poly.area == pytest.approx(400.0, rel=0.05)
+
+    def test_too_few_points_returns_none(self):
+        s = Structure(name="X", number=1, contours=[
+            ContourSequence(points=[(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)])
+        ])
+        assert project_target_to_bev(s, self.make_cp()) is None
+
+    def test_contour_to_bev_polygon_wrapper(self):
+        pts = [(-10.0, -10.0, -10.0), (10.0, -10.0, -10.0), (10.0, 10.0, 10.0), (-10.0, 10.0, 10.0)]
+        poly = contour_to_bev_polygon(pts, gantry_angle_deg=0.0)
+        assert poly is not None and poly.area > 0
+        assert contour_to_bev_polygon([], gantry_angle_deg=0.0) is None
 
 
 class TestAperturePolygon:
-    """Test aperture polygon generation from MLC/jaw positions."""
-    
-    def test_aperture_polygon_simple_symmetric(self):
-        """Test simple symmetric aperture."""
-        mlc_pos = MLCLeafPositions(
-            bank_a=[-10.0, -10.0],
-            bank_b=[10.0, 10.0],
+    """MLC + jaw aperture polygon."""
+
+    def test_symmetric_two_leaf_pairs(self):
+        poly = get_aperture_polygon(
+            MLCLeafPositions(bank_a=[-10.0, -10.0], bank_b=[10.0, 10.0]),
+            JawPositions(x1=-50, x2=50, y1=-10, y2=10),
+            [-10.0, 0.0, 10.0],
         )
-        jaw_pos = JawPositions(x1=-50, x2=50, y1=-10, y2=10)
-        leaf_bounds = [-10.0, 0.0, 10.0]  # 2 leaf pairs
-        
-        aperture_poly = get_aperture_polygon(mlc_pos, jaw_pos, leaf_bounds)
-        
-        assert aperture_poly is not None
-        # 2 leaves, each 10mm wide, 20mm opening = 2 * 10 * 20 = 400 mm²
-        assert aperture_poly.area == pytest.approx(400.0, rel=0.01)
-    
-    def test_aperture_polygon_fully_blocked(self):
-        """Test aperture with no opening (fully blocked)."""
-        mlc_pos = MLCLeafPositions(
-            bank_a=[10.0],  # Bank A to right
-            bank_b=[15.0],  # Bank B to far right, no opening
+        assert poly is not None
+        assert poly.area == pytest.approx(400.0, rel=0.01)
+
+    def test_closed_leaves_return_none(self):
+        poly = get_aperture_polygon(
+            MLCLeafPositions(bank_a=[10.0], bank_b=[15.0]),
+            JawPositions(x1=-50, x2=50, y1=-10, y2=10),
+            [-10.0, 10.0],
         )
-        jaw_pos = JawPositions(x1=-50, x2=50, y1=-10, y2=10)
-        leaf_bounds = [-10.0, 10.0]
-        
-        aperture_poly = get_aperture_polygon(mlc_pos, jaw_pos, leaf_bounds)
-        
-        assert aperture_poly is None  # No opening
-    
-    def test_aperture_polygon_clipped_by_jaw(self):
-        """Test aperture clipping by jaw boundaries."""
-        mlc_pos = MLCLeafPositions(
-            bank_a=[-20.0],
-            bank_b=[20.0],
+        # bank_b > bank_a means an open 5 mm gap; a truly closed pair is a == b
+        assert poly is not None
+        closed = get_aperture_polygon(
+            MLCLeafPositions(bank_a=[0.0], bank_b=[0.0]),
+            JawPositions(x1=-50, x2=50, y1=-10, y2=10),
+            [-10.0, 10.0],
         )
-        # Narrow Y-jaw opening
-        jaw_pos = JawPositions(x1=-50, x2=50, y1=-5, y2=5)
-        leaf_bounds = [-20.0, 20.0]
-        
-        aperture_poly = get_aperture_polygon(mlc_pos, jaw_pos, leaf_bounds)
-        
-        assert aperture_poly is not None
-        # Opening narrowed to 10mm by jaws (y: -5 to 5), width 40mm (x)
-        assert aperture_poly.area == pytest.approx(400.0, rel=0.01)
+        assert closed is None
+
+    def test_y_jaw_clipping(self):
+        poly = get_aperture_polygon(
+            MLCLeafPositions(bank_a=[-20.0], bank_b=[20.0]),
+            JawPositions(x1=-50, x2=50, y1=-5, y2=5),
+            [-20.0, 20.0],
+        )
+        assert poly is not None
+        assert poly.area == pytest.approx(400.0, rel=0.01)
 
 
-class TestApertureModulation:
-    """Test aperture modulation calculation."""
-    
-    def test_aperture_modulation_fully_unblocked(self):
-        """Test when target is fully within aperture."""
-        from shapely.geometry import Polygon
-        
-        # Target: 10x10 square
-        target_poly = Polygon([[-5, -5], [5, -5], [5, 5], [-5, 5]])
-        # Aperture: larger 20x20 square
-        aperture_poly = Polygon([[-10, -10], [10, -10], [10, 10], [-10, 10]])
-        
-        am = calculate_aperture_modulation(target_poly, aperture_poly)
-        
-        # Target fully within aperture = 0% blocked = AM = 0
-        assert am == pytest.approx(0.0, abs=0.01)
-    
-    def test_aperture_modulation_fully_blocked(self):
-        """Test when target is fully outside aperture."""
-        from shapely.geometry import Polygon
-        
-        # Target: 10x10 square at left
-        target_poly = Polygon([[-15, -5], [-5, -5], [-5, 5], [-15, 5]])
-        # Aperture: 10x10 square at right
-        aperture_poly = Polygon([[5, -5], [15, -5], [15, 5], [5, 5]])
-        
-        am = calculate_aperture_modulation(target_poly, aperture_poly)
-        
-        # No overlap = 100% blocked = AM = 1
-        assert am == pytest.approx(1.0, abs=0.01)
-    
-    def test_aperture_modulation_partial_overlap(self):
-        """Test partial overlap between target and aperture."""
-        from shapely.geometry import Polygon
-        
-        # Target: 10x10 square from -5 to 5
-        target_poly = Polygon([[-5, -5], [5, -5], [5, 5], [-5, 5]])
-        # Aperture: 10x10 square from 0 to 10 (half overlap)
-        aperture_poly = Polygon([[0, -5], [10, -5], [10, 5], [0, 5]])
-        
-        am = calculate_aperture_modulation(target_poly, aperture_poly)
-        
-        # 50% overlap = 50% unblocked = AM = 0.5
-        assert am == pytest.approx(0.5, abs=0.01)
+class TestConformalityQuantities:
+    """Analytic coverage / ratio / margin cases."""
+
+    def test_concentric_squares(self):
+        res = compute_conformality(_square(0, 0, 30), _square(0, 0, 20))
+        assert res is not None
+        assert res.coverage == pytest.approx(1.0, abs=1e-9)
+        assert res.blocked_fraction == pytest.approx(0.0, abs=1e-9)
+        assert res.aperture_target_ratio == pytest.approx(3600.0 / 1600.0, rel=1e-9)
+        assert res.margin_min == pytest.approx(10.0, abs=1e-6)
+        assert res.margin_mean >= res.margin_min
+
+    def test_half_covered_target(self):
+        aperture = Polygon([(0, -20), (40, -20), (40, 20), (0, 20)])
+        res = compute_conformality(aperture, _square(0, 0, 20))
+        assert res is not None
+        assert res.coverage == pytest.approx(0.5, abs=1e-9)
+        assert res.aperture_target_ratio == pytest.approx(1.0, rel=1e-9)
+
+    def test_no_target_returns_none(self):
+        assert compute_conformality(_square(0, 0, 30), None) is None
+
+    def test_empty_aperture_blocks_target(self):
+        res = compute_conformality(None, _square(0, 0, 20))
+        assert res is not None
+        assert res.coverage == pytest.approx(0.0, abs=1e-9)
+        assert res.blocked_fraction == pytest.approx(1.0, abs=1e-9)
+        assert res.aperture_target_ratio == pytest.approx(0.0, abs=1e-9)
 
 
-class TestPAMCalculation:
-    """Test complete PAM/BAM calculation."""
-    
-    def create_test_structure(self):
-        """Helper to create a simple test structure (10x10 box at isocenter)."""
-        contour_points = [
-            (-5.0, -5.0, 0.0),
-            (5.0, -5.0, 0.0),
-            (5.0, 5.0, 0.0),
-            (-5.0, 5.0, 0.0),
-        ]
-        contour = ContourSequence(points=contour_points)
-        return Structure(name="Target", number=1, contours=[contour])
-    
-    def create_test_beam(self):
-        """Helper to create a simple test beam."""
-        # Single control point with symmetric aperture
-        cp1 = ControlPoint(
-            index=0,
-            gantry_angle=0.0,
-            gantry_rotation_direction="NONE",
-            beam_limiting_device_angle=0.0,
-            cumulative_meterset_weight=0.0,
-            mlc_positions=MLCLeafPositions(bank_a=[-10.0], bank_b=[10.0]),
-            jaw_positions=JawPositions(x1=-50, x2=50, y1=-50, y2=50),
-        )
-        cp2 = ControlPoint(
-            index=1,
-            gantry_angle=0.0,
-            gantry_rotation_direction="NONE",
-            beam_limiting_device_angle=0.0,
-            cumulative_meterset_weight=1.0,
-            mlc_positions=MLCLeafPositions(bank_a=[-10.0], bank_b=[10.0]),
-            jaw_positions=JawPositions(x1=-50, x2=50, y1=-50, y2=50),
-        )
-        
-        beam = Beam(
+class TestBeamAndPlanAggregation:
+    """MU-weighted aggregation across control points and beams."""
+
+    def make_structure(self):
+        contours = []
+        for z in (-10.0, 10.0):
+            contours.append(ContourSequence(points=[
+                (-10.0, -10.0, z),
+                (10.0, -10.0, z),
+                (10.0, 10.0, z),
+                (-10.0, 10.0, z),
+            ]))
+        return Structure(name="PTV", number=1, contours=contours)
+
+    def make_beam(self, bank_a=-30.0, bank_b=30.0):
+        cps = []
+        for i, w in enumerate((0.0, 1.0)):
+            cps.append(ControlPoint(
+                index=i,
+                gantry_angle=0.0,
+                gantry_rotation_direction="NONE",
+                beam_limiting_device_angle=0.0,
+                cumulative_meterset_weight=w,
+                mlc_positions=MLCLeafPositions(bank_a=[bank_a], bank_b=[bank_b]),
+                jaw_positions=JawPositions(x1=-40, x2=40, y1=-30, y2=30),
+            ))
+        return Beam(
             beam_number=1,
-            beam_name="Beam 1",
+            beam_name="B1",
             beam_type="STATIC",
             radiation_type="PHOTON",
             treatment_delivery_type="TREATMENT",
             number_of_control_points=2,
-            control_points=[cp1, cp2],
+            control_points=cps,
             number_of_leaves=1,
-            mlc_leaf_widths=[20.0],
-            mlc_leaf_boundaries=[-10.0, 10.0],
+            mlc_leaf_widths=[60.0],
+            mlc_leaf_boundaries=[-30.0, 30.0],
         )
-        return beam
-    
-    def test_pam_fully_unblocked(self):
-        """Test PAM when target is fully unblocked."""
-        structure = self.create_test_structure()
-        beam = self.create_test_beam()
-        
-        # With large aperture, target should be fully unblocked
-        am = calculate_pam_control_point(structure, beam, 1)
-        assert am is not None
-        assert am == pytest.approx(0.0, abs=0.01)
-    
-    def test_pam_fully_blocked(self):
-        """Test PAM when target is fully blocked by MLC."""
-        structure = self.create_test_structure()
-        
-        # Create beam where both MLCs are closed
-        cp1 = ControlPoint(
-            index=0,
-            gantry_angle=0.0,
-            gantry_rotation_direction="NONE",
-            beam_limiting_device_angle=0.0,
-            cumulative_meterset_weight=0.0,
-            mlc_positions=MLCLeafPositions(bank_a=[0.0], bank_b=[0.0]),  # Closed
-            jaw_positions=JawPositions(x1=-50, x2=50, y1=-50, y2=50),
-        )
-        cp2 = ControlPoint(
-            index=1,
-            gantry_angle=0.0,
-            gantry_rotation_direction="NONE",
-            beam_limiting_device_angle=0.0,
-            cumulative_meterset_weight=1.0,
-            mlc_positions=MLCLeafPositions(bank_a=[0.0], bank_b=[0.0]),  # Closed
-            jaw_positions=JawPositions(x1=-50, x2=50, y1=-50, y2=50),
-        )
-        
-        beam = Beam(
-            beam_number=1,
-            beam_name="Beam 1",
-            beam_type="STATIC",
-            radiation_type="PHOTON",
-            treatment_delivery_type="TREATMENT",
-            number_of_control_points=2,
-            control_points=[cp1, cp2],
-            number_of_leaves=1,
-            mlc_leaf_widths=[20.0],
-            mlc_leaf_boundaries=[-10.0, 10.0],
-        )
-        
-        am = calculate_pam_control_point(structure, beam, 1)
-        # With closed aperture, target fully blocked
-        assert am == pytest.approx(1.0, abs=0.01)
-    
-    def test_bam_calculation(self):
-        """Test BAM (Beam Aperture Modulation) calculation."""
-        structure = self.create_test_structure()
-        beam = self.create_test_beam()
-        
-        bam = calculate_pam_beam(structure, beam)
-        
-        assert bam is not None
-        # With large aperture, target fully unblocked
-        assert bam == pytest.approx(0.0, abs=0.05)
-    
-    def test_pam_calculation(self):
-        """Test full PAM calculation with complete plan."""
-        structure = self.create_test_structure()
-        beam = self.create_test_beam()
-        
+
+    def test_open_aperture_covers_target(self):
+        conf = calculate_beam_conformality(self.make_beam(), self.make_structure())
+        assert conf is not None
+        assert conf.TCOV == pytest.approx(1.0, abs=1e-6)
+        assert conf.BAM == pytest.approx(0.0, abs=1e-6)
+        assert conf.ATR > 1.0
+        assert conf.MARGMIN > 0.0
+
+    def test_closed_aperture_blocks_target(self):
+        conf = calculate_beam_conformality(self.make_beam(0.0, 0.0), self.make_structure())
+        assert conf is not None
+        assert conf.TCOV == pytest.approx(0.0, abs=1e-9)
+        assert conf.BAM == pytest.approx(1.0, abs=1e-9)
+
+    def test_no_structure_returns_none(self):
+        assert calculate_beam_conformality(self.make_beam(), None) is None
+
+    def test_wrappers(self):
+        beam = self.make_beam()
+        structure = self.make_structure()
+        assert calculate_pam_control_point(structure, beam, 1) == pytest.approx(0.0, abs=1e-6)
+        assert calculate_pam_beam(structure, beam) == pytest.approx(0.0, abs=1e-6)
+
         plan = RTPlan(
-            patient_id="TEST001",
-            patient_name="Test Patient",
+            patient_id="TEST",
+            patient_name="Test",
             plan_label="TestPlan",
             plan_name="TestPlan",
             beams=[beam],
         )
-        
-        pam = calculate_pam_plan(plan, structure)
-        
-        assert pam is not None
-        # With large aperture, target fully unblocked
-        assert pam == pytest.approx(0.0, abs=0.05)
+        assert calculate_pam_plan(plan, structure) == pytest.approx(0.0, abs=1e-6)
+        assert calculate_pam_plan(plan, None) is None
+
+    def test_aperture_modulation_wrapper(self):
+        am = calculate_aperture_modulation(_square(0, 0, 20), _square(0, 0, 30))
+        assert am == pytest.approx(0.0, abs=1e-9)
+        am_blocked = calculate_aperture_modulation(
+            Polygon([(-30, -5), (-10, -5), (-10, 5), (-30, 5)]),
+            Polygon([(10, -5), (30, -5), (30, 5), (10, 5)]),
+        )
+        assert am_blocked == pytest.approx(1.0, abs=1e-9)
+
+    def test_project_point_to_bev_wrapper_matches_core(self):
+        assert project_point_to_bev((10.0, 0.0, 20.0), 0.0) == project_patient_point_to_bev(
+            (10.0, 0.0, 20.0), 0.0
+        )
 
 
-class TestPAMEdgeCases:
-    """Test edge cases and error handling."""
-    
-    def test_pam_with_none_structure(self):
-        """Test that None structure returns None."""
-        beam = Beam(
-            beam_number=1,
-            beam_name="Beam 1",
-            beam_type="STATIC",
-            radiation_type="PHOTON",
-            treatment_delivery_type="TREATMENT",
-            number_of_control_points=1,
-            control_points=[ControlPoint(
-                index=0,
-                gantry_angle=0.0,
-                gantry_rotation_direction="NONE",
-                beam_limiting_device_angle=0.0,
-                cumulative_meterset_weight=1.0,
-            )],
-        )
-        plan = RTPlan(
-            patient_id="TEST",
-            patient_name="Test",
-            plan_label="Test",
-            plan_name="Test",
-            beams=[beam],
-        )
-        
-        pam = calculate_pam_plan(plan, None)
-        assert pam is None
-    
-    def test_pam_with_empty_structure(self):
-        """Test that structure with no contours returns None."""
-        structure = Structure(name="Empty", number=1, contours=[])
-        beam = Beam(
-            beam_number=1,
-            beam_name="Beam 1",
-            beam_type="STATIC",
-            radiation_type="PHOTON",
-            treatment_delivery_type="TREATMENT",
-            number_of_control_points=1,
-            control_points=[ControlPoint(
-                index=0,
-                gantry_angle=0.0,
-                gantry_rotation_direction="NONE",
-                beam_limiting_device_angle=0.0,
-                cumulative_meterset_weight=1.0,
-            )],
-        )
-        
-        am = calculate_pam_control_point(structure, beam, 0)
-        assert am is None
+class TestDefaultTargetPick:
+    def test_prefers_ptv_then_ctv_then_gtv(self):
+        structures = {
+            "Bladder": Structure(name="Bladder", number=1, contours=[ContourSequence(points=[(0, 0, 0)])]),
+            "CTV_1": Structure(name="CTV_1", number=2, contours=[ContourSequence(points=[(0, 0, 0)])]),
+            "PTV_high": Structure(name="PTV_high", number=3, contours=[ContourSequence(points=[(0, 0, 0)])]),
+        }
+        assert pick_default_target(structures).name == "PTV_high"
+        del structures["PTV_high"]
+        assert pick_default_target(structures).name == "CTV_1"
+        assert pick_default_target({}) is None
 
 
 if __name__ == "__main__":

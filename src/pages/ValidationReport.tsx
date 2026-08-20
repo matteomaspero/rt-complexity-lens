@@ -20,6 +20,7 @@ import {
   PER_PLAN_PYCOMPLEXITY,
   UCOMX_AUDIT_STATUS,
   KNOWN_GAPS,
+  CONFORMALITY_VALIDATION,
 } from '@/lib/validation-data';
 
 function StatusBadge({ passed }: { passed: boolean }) {
@@ -425,6 +426,74 @@ export default function ValidationReport() {
               ))}
             </CardContent>
           </Card>
+
+          {/* ── Section B6: Conformality (RTSTRUCT) analytic validation ── */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FlaskConical className="h-5 w-5 text-primary" />
+                Conformality Metrics — Analytic Validation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <p className="text-muted-foreground leading-relaxed">
+                {CONFORMALITY_VALIDATION.note}
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground">Metrics</div>
+                  <div className="font-mono font-semibold">{CONFORMALITY_VALIDATION.metrics.length}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground">TS test cases</div>
+                  <div className="font-mono font-semibold">{CONFORMALITY_VALIDATION.tsCaseCount}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground">Python test cases</div>
+                  <div className="font-mono font-semibold">{CONFORMALITY_VALIDATION.pyCaseCount}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <div className="text-xs text-muted-foreground">Last validated</div>
+                  <div className="font-mono font-semibold">{CONFORMALITY_VALIDATION.lastValidated}</div>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {CONFORMALITY_VALIDATION.metrics.map((m) => (
+                  <Badge key={m} variant="outline" className="font-mono text-xs">{m}</Badge>
+                ))}
+              </div>
+              <div className="rounded-lg border-l-4 border-amber-500 bg-amber-500/5 p-3 text-xs text-muted-foreground flex items-start gap-2">
+                <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <span>
+                  The TG-119 audit corpus ships RTPLAN files without matching RTSTRUCTs, so
+                  conformality is not part of the numeric TS↔Python audit table. Instead, both
+                  implementations ({CONFORMALITY_VALIDATION.tsBackend} in TypeScript,{' '}
+                  {CONFORMALITY_VALIDATION.pyBackend} in Python) are pinned by the same analytic
+                  geometry cases. Educational tool — conformality output is not clinically validated.
+                </span>
+              </div>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader className="bg-muted/60">
+                    <TableRow>
+                      <TableHead className="font-semibold">Analytic case</TableHead>
+                      <TableHead className="font-semibold">Expected</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {CONFORMALITY_VALIDATION.cases.map((c) => (
+                      <TableRow key={c.name}>
+                        <TableCell className="text-sm">{c.name}</TableCell>
+                        <TableCell className="font-mono text-xs">{c.expected}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+
 
 
 

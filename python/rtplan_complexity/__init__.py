@@ -7,7 +7,7 @@ producing results identical to the web application.
 Features:
 - Comprehensive UCoMX-based complexity metrics (MCS, LSV, AAV, LT, etc.)
 - Deliverability metrics (MUCA, LTMU, LTNLMU, LNA, NL, LTAL, mDRV, etc.)
-- Target-based aperture modulation (PAM/BAM) with RTSTRUCT support
+- RTSTRUCT conformality: polygon-based BAM/PAM plus TCOV, ATR, MARG, MARGMIN
 - Electron beam detection and proper handling
 - Machine-specific delivery time estimation
 - Batch processing and statistical analysis
@@ -32,7 +32,7 @@ Target-Based Analysis:
     target = get_structure_by_name(structures, "PTV")
     
     metrics = calculate_plan_metrics(plan, structure=target)
-    print(f"PAM: {metrics.PAM:.4f}")
+    print(f"PAM: {metrics.PAM:.4f}  TCOV: {metrics.TCOV:.4f}")
 """
 
 from .types import (
@@ -51,14 +51,19 @@ from .types import (
     ExtendedStatistics,
     BoxPlotData,
 )
-from .parser import parse_rtplan
+from .parser import parse_rtplan, parse_rtstruct, get_structure_by_name
+from .conformality import (
+    calculate_beam_conformality,
+    calculate_plan_conformality,
+    pick_default_target,
+)
 from .metrics import (
     calculate_plan_metrics,
     calculate_beam_metrics,
     calculate_control_point_metrics,
 )
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 __all__ = [
     # Types
     "RTPlan",
@@ -77,6 +82,11 @@ __all__ = [
     "BoxPlotData",
     # Core functions
     "parse_rtplan",
+    "parse_rtstruct",
+    "get_structure_by_name",
+    "pick_default_target",
+    "calculate_beam_conformality",
+    "calculate_plan_conformality",
     "calculate_plan_metrics",
     "calculate_beam_metrics",
     "calculate_control_point_metrics",

@@ -112,6 +112,7 @@ class Beam:
     number_of_leaves: int = 60
     beam_description: Optional[str] = None
     source_skin_distance: Optional[float] = None
+    source_axis_distance: Optional[float] = None  # SAD in mm (DICOM 300A,00B4), defaults to 1000
     # Energy fields (DICOM 300A,0114)
     nominal_beam_energy: Optional[float] = None  # Energy in MeV
     energy_label: Optional[str] = None  # Clinical label (e.g., '6X', '10FFF', '9E')
@@ -211,7 +212,12 @@ class ControlPointMetrics:
     meterset_weight: float
     aperture_perimeter: Optional[float] = None  # mm
     small_aperture_flags: Optional[SmallApertureFlags] = None
-    PAM: Optional[float] = None  # Plan Aperture Modulation (per control point)
+    PAM: Optional[float] = None  # Aperture Modulation at this control point
+    # RTSTRUCT conformality (per control point, requires a target structure)
+    TCOV: Optional[float] = None  # Target coverage fraction [0, 1]
+    ATR: Optional[float] = None  # Aperture area / projected target area
+    MARG: Optional[float] = None  # Mean aperture-edge to target-edge distance (mm)
+    MARGMIN: Optional[float] = None  # Minimum aperture-edge to target-edge distance (mm)
 
 
 @dataclass
@@ -303,6 +309,10 @@ class BeamMetrics:
     EM: Optional[float] = None  # Edge Metric
     PI: Optional[float] = None  # Plan Irregularity
     BAM: Optional[float] = None  # Beam Aperture Modulation (target-specific)
+    TCOV: Optional[float] = None  # Target coverage fraction (MU-weighted) [0, 1]
+    ATR: Optional[float] = None  # Aperture / projected target area ratio (MU-weighted)
+    MARG: Optional[float] = None  # Mean aperture-to-target margin (mm, MU-weighted)
+    MARGMIN: Optional[float] = None  # Minimum aperture-to-target margin across control points (mm)
     
     # Per-control-point data
     control_point_metrics: List[ControlPointMetrics] = field(default_factory=list)
@@ -376,6 +386,11 @@ class PlanMetrics:
     EM: Optional[float] = None
     PI: Optional[float] = None
     PAM: Optional[float] = None  # Plan Aperture Modulation (target-specific)
+    TCOV: Optional[float] = None  # Target coverage fraction (MU-weighted across beams) [0, 1]
+    ATR: Optional[float] = None  # Aperture / projected target area ratio (MU-weighted across beams)
+    MARG: Optional[float] = None  # Mean aperture-to-target margin (mm)
+    MARGMIN: Optional[float] = None  # Minimum aperture-to-target margin (mm)
+    target_structure_name: Optional[str] = None  # ROI used for conformality metrics
     
     # Plan-level delivery metrics (aggregated)
     mu_per_degree: Optional[float] = None  # Total MU / total gantry travel (MU/°)

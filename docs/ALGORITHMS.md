@@ -633,91 +633,83 @@ Where:
 
 ---
 
-## Target-Specific Metrics
+## Target-Specific (Conformality) Metrics
 
-### BAM (Beam Aperture Modulation)
+Requires an RTSTRUCT upload and a selected target ROI. Implemented in
+`src/lib/dicom/conformality.ts` (TypeScript, `polygon-clipping`) and
+`python/rtplan_complexity/conformality.py` (Python, `shapely`).
 
-Quantifies the average fraction of a target's projected area that is blocked by MLC/jaws for a single beam.
+### Beam's-eye-view (BEV) projection
 
-**Definition:**
-
-Aperture Modulation (AM) at a control point:
-```
-AM_j = A_blocked / A_target
-```
-
-Where:
-- `A_target` = total target projection area in Beam's Eye View (BEV)
-- `A_blocked` = target projection area outside the beam aperture
-
-Beam Aperture Modulation (BAM):
-```
-BAM = Σ(AM_j × ΔMU) / Σ(ΔMU)
-```
-
-- **Range**: 0–1 (0 = no modulation, target always fully within aperture; 1 = target fully blocked)
-- **Aggregation**: MU-weighted average across all control points in the beam
-- **Requires**: RTSTRUCT file with target structure
-- **BEV Coordinate System**: 3D patient coordinates are projected onto 2D Beam's Eye View plane using gantry angle rotation
-
-**Geometric Projection:**
-
-1. For each control point with gantry angle θ:
-   - Transform 3D target contour points to 2D BEV coordinates:
-     ```
-     x_bev = z × sin(θ) + x × cos(θ)
-     y_bev = y
-     ```
-   - Create 2D polygon from projected contour points
-
-2. Create 2D aperture polygon from MLC and jaw positions at that control point
-
-3. Calculate AM as intersection/difference of target and aperture polygons
-
-4. Weight AM values by MU delivered at that control point
-
-**Implementation**: Uses Shapely library for precise 2D polygon operations (union, intersection, difference, area calculation).
-
-### PAM (Plan Aperture Modulation)
-
-Quantifies the average fraction of a target's projected area that is blocked across the entire treatment plan.
-
-**Definition:**
+For each control point, patient coordinates are mapped to the isocentre plane
+through the IEC 61217 chain, then scaled by beam divergence:
 
 ```
-PAM = Σ_beams(BAM_i × MU_i) / Σ_beams(MU_i)
+1. couch:      rotate about patient Y by −patientSupportAngle
+2. gantry:     x_iso = X·cos G − Z·sin G
+               y_iso = Y_sup                (patient superior axis)
+               depth = −(X·sin G + Z·cos G) (along the beam axis, + downstream)
+3. divergence: scale = SAD / (SAD − depth)
+4. collimator: rotate (x_iso, y_iso) by −collimatorAngle into the MLC frame
 ```
 
-Where:
-- `BAM_i` = Beam Aperture Modulation for beam i
-- `MU_i` = total MU delivered to beam i
+`SAD` is taken per beam from DICOM `SourceAxisDistance` (300A,00B4), default
+1000 mm.
 
-- **Range**: 0–1
-- **Interpretation**: Weighted average fraction of target projection blocked by aperture across all beams and control points
-- **Aggregation**: MU-weighted average from all beams
-- **Requires**: RTSTRUCT file with target structure
+**Target silhouette**: every contour point of the selected ROI is projected,
+and the per-control-point **convex hull** of the projected cloud is used as the
+target outline. This is an approximation — concave targets are over-estimated;
+a slice-wise union is a possible later refinement.
 
-**Key Features:**
+**Aperture polygon**: built from open MLC leaf-pair spans (per-pair Y extent
+from `LeafPositionBoundaries`) clipped by the X and Y jaws, then unioned. This
+reuses the same leaf-boundary and jaw-clipping conventions as the aperture area
+used by AAV / EM / perimeter, so aperture quantities stay mutually consistent.
 
-- **Dimensionless**: Pure geometric metric, independent of dose or fractionation
-- **Target-Specific**: Computed separately for each target structure (e.g., different PAM for PTV70 vs PTV56)
-- **Intuitive**: Values directly represent fraction of target blocked (0 = no modulation, 1 = target fully blocked)
-- **Geometrically Precise**: Uses exact polygon-based calculations rather than approximations
+### Per-control-point quantities
 
-**Assumptions & Limitations:**
+With `A_t` = projected target area, `A_a` = aperture area,
+`A_∩` = intersection area:
 
-1. Assumes perfect MLC/jaw positioning (no delivery deviations)
-2. Does not account for:
-   - Transmission through MLC leaves
-   - Field boundaries beyond DICOM-specified jaws
-   - Couch angle effects on projection (currently assumes couch_angle = 0)
-   - Non-uniform target density or heterogeneities
-3. Entire contour projected as continuous region (no slice-by-slice analysis)
-4. BEV projection assumes isocentric geometry at specified gantry angles
+| Symbol | Definition |
+|---|---|
+| `AM` (aperture modulation) | `(A_t − A_∩) / A_t` — blocked target fraction |
+| `TCOV` (target coverage) | `A_∩ / A_t` = `1 − AM` |
+| `ATR` (aperture/target ratio) | `A_a / A_t` |
+| `MARG` (mean margin) | mean distance from sampled aperture-edge points to the target outline (mm at isocentre) |
+| `MARGMIN` (minimum margin) | minimum of those distances (mm at isocentre) |
 
-**Reference:**
+Margins are signed by construction only in magnitude: they are point-to-segment
+distances from the aperture boundary to the target boundary, so they describe
+edge separation, not inclusion.
 
-[To be filled with actual publication DOI: 10.1002/mp.70144]
+### Aggregation
+
+Beam level, MU-weighted over control-point intervals (ΔMU from
+`CumulativeMetersetWeight`):
+
+```
+BAM  = Σ(AM_j · ΔMU_j) / Σ(ΔMU_j)
+TCOV = Σ(TCOV_j · ΔMU_j) / Σ(ΔMU_j)     (likewise ATR, MARG, MARGMIN)
+```
+
+Plan level, MU-weighted over beams:
+
+```
+PAM = Σ_beams(BAM_i · MU_i) / Σ_beams(MU_i)
+```
+
+- `BAM`/`PAM`/`TCOV` range 0–1; `ATR` ≥ 0; `MARG`/`MARGMIN` in mm.
+- All conformality fields are `undefined` (Python `None`) when no RTSTRUCT/ROI
+  is selected — they are never silently zero.
+
+**Assumptions & limitations**
+
+1. Perfect MLC/jaw positioning; no leaf transmission or penumbra.
+2. Convex-hull target silhouette (no slice-wise union, no concavity).
+3. Rigid geometry: no intra-fraction motion or deformation.
+4. Educational use only — conformality output is not clinically validated.
+
 
 ---
 
@@ -886,3 +878,31 @@ from the TypeScript pipeline.
 Remaining gaps (`notImplementedUCoMxMetrics` in `validation-data.ts`):
 `MIt`, `MIs`, `MIa` (Park 2014 modulation indices), `psmall_20mm`,
 `psmall_30mm`, `SAS25mm`, `SAS50mm`.
+
+---
+
+## 2026-08-14 — RTSTRUCT conformality (v1.4.0)
+
+The former BAM/PAM placeholder (jaw bounding box only, MLC ignored, no beam
+divergence) is replaced by true polygon geometry, and three new conformality
+metrics are added.
+
+| Metric | Definition | Status |
+|---|---|---|
+| **BAM / PAM** | MU-weighted blocked target fraction (see above) | Rewritten on polygon geometry (TS `polygon-clipping`, Python `shapely`) |
+| **TCOV** | Target coverage fraction `A_∩ / A_t` | New |
+| **ATR** | Aperture / projected-target area ratio | New |
+| **MARG / MARGMIN** | Mean / minimum aperture-edge-to-target-edge distance (mm) | New |
+
+Parity: geometry and aggregation are mirrored function-for-function between
+`src/lib/dicom/conformality.ts` and `python/rtplan_complexity/conformality.py`.
+Both sides are pinned by the same analytic unit tests
+(`src/test/conformality.test.ts`, `python/tests/test_pam.py`): isocentre
+mapping, divergence scaling at 100 mm depth, gantry 90°, collimator 90°,
+20 mm cube silhouette, jaw-clipped aperture area, concentric-square coverage
+(TCOV = 1, ATR = 2.25, MARGMIN = 10 mm), half-overlap coverage (TCOV = 0.5,
+ATR = 1.0), and closed/open-aperture beam aggregation.
+
+The TG-119 audit corpus ships RTPLAN files without matching RTSTRUCTs, so
+conformality is **not** part of the numeric `audit_all.py` cross-validation
+table; it is validated by the shared analytic test suite instead.

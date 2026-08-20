@@ -497,6 +497,7 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
         nominal_beam_energy=nominal_beam_energy,
         energy_label=energy_label,
         treatment_machine_name=beam_machine_name,
+        source_axis_distance=_get_float(beam_ds, "SourceAxisDistance") or None,
     )
 
 

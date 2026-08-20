@@ -17,6 +17,18 @@ import numpy as np
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
+from .conformality import (
+    DEFAULT_SAD,
+    BeamConformality,
+    build_aperture_polygon,
+    calculate_beam_conformality,
+    calculate_plan_conformality,
+    compute_conformality,
+    pick_default_target,
+    project_patient_point_to_bev,
+    project_target_to_bev,
+)
+
 from .types import (
     RTPlan,
     Beam,
@@ -1041,10 +1053,30 @@ def calculate_beam_metrics(
         normalized_lt = LT / (num_leaves * num_cps)
         MI = normalized_lt
     
-    # BAM - Beam Aperture Modulation (if structure provided)
+    # RTSTRUCT conformality (polygon-based BEV geometry); None without a target
     BAM: Optional[float] = None
-    if structure is not None:
-        BAM = calculate_pam_beam(structure, beam, couch_angle)
+    TCOV: Optional[float] = None
+    ATR: Optional[float] = None
+    MARG: Optional[float] = None
+    MARGMIN: Optional[float] = None
+    conformality: Optional[BeamConformality] = calculate_beam_conformality(
+        beam, structure, beam.source_axis_distance or DEFAULT_SAD, leaf_bounds
+    )
+    if conformality is not None:
+        BAM = conformality.BAM
+        TCOV = conformality.TCOV
+        ATR = conformality.ATR
+        MARG = conformality.MARG
+        MARGMIN = conformality.MARGMIN
+        for i, res in enumerate(conformality.per_control_point):
+            if res is None or i >= len(control_point_metrics):
+                continue
+            cpm = control_point_metrics[i]
+            cpm.PAM = res.blocked_fraction
+            cpm.TCOV = res.coverage
+            cpm.ATR = res.aperture_target_ratio
+            cpm.MARG = res.margin_mean
+            cpm.MARGMIN = res.margin_min
     
     return BeamMetrics(
         beam_number=beam.beam_number,
@@ -1109,6 +1141,10 @@ def calculate_beam_metrics(
         EM=EM,
         PI=PI,
         BAM=BAM,
+        TCOV=TCOV,
+        ATR=ATR,
+        MARG=MARG,
+        MARGMIN=MARGMIN,
         control_point_metrics=control_point_metrics,
     )
 
@@ -1193,6 +1229,11 @@ def calculate_plan_metrics(
         EM = weighted_avg("EM")
         PI = weighted_avg("PI")
         PAM = weighted_avg("BAM")  # PAM is the MU-weighted average of BAM
+        TCOV = weighted_avg("TCOV")
+        ATR = weighted_avg("ATR")
+        MARG = weighted_avg("MARG")
+        margins = [bm.MARGMIN for bm in beam_metrics if bm.MARGMIN is not None]
+        MARGMIN = min(margins) if margins else None
         MCSv = weighted_avg("MCSv")
         BJAR = weighted_avg("BJAR")
         LTNL = weighted_avg("LTNL")
@@ -1204,6 +1245,7 @@ def calculate_plan_metrics(
         MCSv = BJAR = LTNL = None
         SAS2 = SAS5 = SAS10 = SAS20 = EM = PI = None
         PAM = None
+        TCOV = ATR = MARG = MARGMIN = None
         LTMU_plan = None
     
     # Total metrics (sum, not weighted average)
@@ -1278,95 +1320,68 @@ def calculate_plan_metrics(
         EM=EM,
         PI=PI,
         PAM=PAM,
+        TCOV=TCOV,
+        ATR=ATR,
+        MARG=MARG,
+        MARGMIN=MARGMIN,
+        target_structure_name=structure.name if structure is not None else None,
         mu_per_degree=mu_per_degree,
         avg_dose_rate=avg_dose_rate,
         beam_metrics=beam_metrics,
     )
 
+# ============================================================================
+# Plan Aperture Modulation (PAM) / conformality wrappers
+# ============================================================================
+# The geometry now lives in rtplan_complexity.conformality (polygon-based BEV
+# projection with beam divergence, collimator and couch rotations). These thin
+# wrappers are kept for API stability and mirror the TypeScript wrappers in
+# src/lib/dicom/metrics.ts.
 
-# ============================================================================
-# Plan Aperture Modulation (PAM) Functions
-# ============================================================================
 
 def project_point_to_bev(
     point_3d: Tuple[float, float, float],
     gantry_angle_deg: float,
     couch_angle_deg: float = 0.0,
+    collimator_angle_deg: float = 0.0,
+    isocenter: Optional[Tuple[float, float, float]] = None,
+    sad: float = DEFAULT_SAD,
 ) -> Tuple[float, float]:
-    """
-    Project a 3D patient point to the 2D Beam's Eye View (BEV) plane.
-    
-    The BEV coordinate system is defined with origin at isocenter:
-    - X-axis (horizontal): perpendicular to gantry rotation, positive to right
-    - Y-axis (vertical): along gantry rotation axis, positive up
-    - Z-axis (along beam): positive from target toward gantry
-    
-    Args:
-        point_3d: (x, y, z) patient coordinates (mm), at isocenter z=0
-        gantry_angle_deg: Gantry angle in degrees (0-360)
-        couch_angle_deg: Couch angle in degrees (not yet implemented)
-    
-    Returns:
-        (x_bev, y_bev): 2D BEV coordinates in mm
-    """
-    x, y, z = point_3d
-    
-    # Convert angles to radians
-    gantry_rad = math.radians(gantry_angle_deg)
-    
-    # Rotate around Y-axis by gantry angle (BEV projection plane is perpendicular to beam)
-    # After rotation: X stays same (horizontal), Y stays same (vertical)
-    # Z component maps to BEV X (depth direction)
-    x_bev = z * math.sin(gantry_rad) + x * math.cos(gantry_rad)
-    y_bev = y
-    
-    return (x_bev, y_bev)
+    """Project a patient point (DICOM LPS, mm) to the BEV plane at the isocentre."""
+    return project_patient_point_to_bev(
+        point_3d,
+        gantry_angle=gantry_angle_deg,
+        collimator_angle=collimator_angle_deg,
+        patient_support_angle=couch_angle_deg,
+        isocenter=isocenter,
+        sad=sad,
+    )
 
 
 def contour_to_bev_polygon(
     contour_points_3d: List[Tuple[float, float, float]],
     gantry_angle_deg: float,
     couch_angle_deg: float = 0.0,
+    collimator_angle_deg: float = 0.0,
+    isocenter: Optional[Tuple[float, float, float]] = None,
+    sad: float = DEFAULT_SAD,
 ) -> Optional[Polygon]:
-    """
-    Convert a 3D contour to a 2D BEV Polygon.
-    
-    Projects all 3D contour points to BEV plane and creates a 2D polygon.
-    Handles degenerate cases (collinear points, empty contours).
-    
-    Args:
-        contour_points_3d: List of (x, y, z) points in patient coordinates
-        gantry_angle_deg: Gantry angle in degrees
-        couch_angle_deg: Couch angle in degrees
-    
-    Returns:
-        Shapely Polygon if valid, None if contour is degenerate
-    """
+    """Convex-hull silhouette of projected 3D contour points in the BEV/MLC frame."""
     if not contour_points_3d or len(contour_points_3d) < 3:
         return None
-    
-    # Project all points to BEV
-    bev_points = [
-        project_point_to_bev(pt, gantry_angle_deg, couch_angle_deg)
+    from shapely.geometry import MultiPoint
+
+    projected = [
+        project_point_to_bev(
+            pt, gantry_angle_deg, couch_angle_deg, collimator_angle_deg, isocenter, sad
+        )
         for pt in contour_points_3d
     ]
-    
     try:
-        # Create polygon (Shapely automatically handles orientation)
-        poly = Polygon(bev_points)
-        
-        # Check if valid
-        if not poly.is_valid:
-            # Try to fix with buffer(0) convex hull
-            poly = poly.convex_hull
-        
-        # Return only if it's a valid polygon with area
-        if isinstance(poly, Polygon) and poly.area > 1e-6:
-            return poly
+        hull = MultiPoint(projected).convex_hull
     except Exception:
-        pass
-    
-    return None
+        return None
+    return hull if isinstance(hull, Polygon) and hull.area > 1e-9 else None
 
 
 def get_aperture_polygon(
@@ -1374,113 +1389,34 @@ def get_aperture_polygon(
     jaw_positions: JawPositions,
     leaf_boundaries: List[float],
 ) -> Optional[Polygon]:
-    """
-    Create a 2D aperture polygon from MLC and jaw positions in BEV.
-    
-    The aperture defines the opening where radiation passes through.
-    Each leaf pair contributes a rectangular opening between its bank_a and bank_b positions.
-    The aperture is further clipped by jaw positions.
-    
-    Args:
-        mlc_positions: MLC leaf positions for both banks
-        jaw_positions: X and Y jaw positions
-        leaf_boundaries: Leaf Y-boundaries (N+1 values for N leaf pairs)
-    
-    Returns:
-        Shapely Polygon representing aperture, or None if aperture is empty
-    """
-    try:
-        # X-axis aperture: between jaw_x1 and jaw_x2
-        x_min = jaw_positions.x1
-        x_max = jaw_positions.x2
-        
-        # Y-axis aperture: between jaw_y1 and jaw_y2
-        y_min = jaw_positions.y1
-        y_max = jaw_positions.y2
-        
-        # Collect all aperture rectangles from active leaves
-        aperture_rects = []
-        n_pairs = min(len(mlc_positions.bank_a), len(mlc_positions.bank_b), len(leaf_boundaries) - 1)
-        
-        for k in range(n_pairs):
-            y_lower = leaf_boundaries[k]
-            y_upper = leaf_boundaries[k + 1]
-            
-            # Skip leaves fully outside jaw opening
-            if y_upper < y_min or y_lower > y_max:
-                continue
-            
-            # Clip leaf opening to jaw Y boundaries
-            y_lower_clipped = max(y_lower, y_min)
-            y_upper_clipped = min(y_upper, y_max)
-            
-            # Leaf opening in X direction
-            x_left = mlc_positions.bank_a[k]
-            x_right = mlc_positions.bank_b[k]
-            
-            # Clip to jaw X boundaries
-            x_left_clipped = max(x_left, x_min)
-            x_right_clipped = min(x_right, x_max)
-            
-            # If valid opening, add rectangle
-            if x_left_clipped < x_right_clipped and y_lower_clipped < y_upper_clipped:
-                rect = Polygon([
-                    (x_left_clipped, y_lower_clipped),
-                    (x_right_clipped, y_lower_clipped),
-                    (x_right_clipped, y_upper_clipped),
-                    (x_left_clipped, y_upper_clipped),
-                ])
-                aperture_rects.append(rect)
-        
-        if not aperture_rects:
-            return None
-        
-        # Union all rectangles into single aperture polygon
-        if len(aperture_rects) == 1:
-            aperture_poly = aperture_rects[0]
-        else:
-            aperture_poly = unary_union(aperture_rects)
-        
-        return aperture_poly if isinstance(aperture_poly, Polygon) else None
-    
-    except Exception:
-        return None
+    """MLC + jaw aperture polygon for one control point (union of open leaf spans)."""
+    cp = ControlPoint(
+        index=0,
+        gantry_angle=0.0,
+        gantry_rotation_direction="NONE",
+        beam_limiting_device_angle=0.0,
+        cumulative_meterset_weight=0.0,
+        mlc_positions=mlc_positions,
+        jaw_positions=jaw_positions,
+    )
+    n = min(len(mlc_positions.bank_a), len(mlc_positions.bank_b))
+    widths = None
+    if leaf_boundaries and len(leaf_boundaries) == n + 1:
+        bounds = list(leaf_boundaries)
+    else:
+        bounds = None
+    return build_aperture_polygon(cp, bounds, widths)
 
 
 def calculate_aperture_modulation(
     target_polygon: Polygon,
-    aperture_polygon: Polygon,
+    aperture_polygon: Optional[Polygon],
 ) -> float:
-    """
-    Calculate Aperture Modulation (AM) as the ratio of blocked target area to total target area.
-    
-    AM = (Target area outside aperture) / (Total target area)
-    
-    Ranges from 0 (target fully within aperture) to 1 (target fully blocked).
-    
-    Args:
-        target_polygon: 2D target projection polygon in BEV
-        aperture_polygon: 2D aperture polygon in BEV
-    
-    Returns:
-        AM value in [0, 1]
-    """
-    if not target_polygon.is_valid or target_polygon.area < 1e-6:
+    """Aperture Modulation: fraction of the projected target blocked by MLC/jaws."""
+    result = compute_conformality(aperture_polygon, target_polygon)
+    if result is None:
         return 0.0
-    
-    if not aperture_polygon.is_valid or aperture_polygon.area < 1e-6:
-        # Aperture is empty, entire target is blocked
-        return 1.0
-    
-    # Calculate blocked area = target - (target AND aperture)
-    intersection = target_polygon.intersection(aperture_polygon)
-    unblocked_area = intersection.area
-    total_area = target_polygon.area
-    
-    am = 1.0 - (unblocked_area / total_area) if total_area > 0 else 1.0
-    
-    # Clamp to [0, 1]
-    return max(0.0, min(1.0, am))
+    return result.blocked_fraction
 
 
 def calculate_pam_control_point(
@@ -1489,45 +1425,26 @@ def calculate_pam_control_point(
     cp_index: int,
     couch_angle: float = 0.0,
 ) -> Optional[float]:
-    """
-    Calculate Aperture Modulation (AM) at a single control point.
-    
-    This is the per-control-point aperture modulation, before MU-weighting.
-    
-    Args:
-        structure: Target structure with 3D contours
-        beam: Beam containing control point
-        cp_index: Index of control point in beam.control_points
-        couch_angle: Couch angle in degrees
-    
-    Returns:
-        AM value in [0, 1], or None if calculation fails
-    """
-    if not structure or not structure.contours or cp_index < 0 or cp_index >= len(beam.control_points):
+    """Aperture Modulation at a single control point (blocked target fraction)."""
+    if (
+        structure is None
+        or not structure.contours
+        or cp_index < 0
+        or cp_index >= len(beam.control_points)
+    ):
         return None
-    
     cp = beam.control_points[cp_index]
-    
-    # Get all contour points from structure
-    all_contour_points = structure.get_all_points()
-    if not all_contour_points or len(all_contour_points) < 3:
+    sad = beam.source_axis_distance or DEFAULT_SAD
+    target = project_target_to_bev(structure, cp, sad)
+    if target is None:
         return None
-    
-    # Create target projection polygon
-    target_poly = contour_to_bev_polygon(all_contour_points, cp.gantry_angle, couch_angle)
-    if not target_poly or target_poly.area < 1e-6:
-        return None
-    
-    # Create aperture polygon
-    leaf_boundaries = get_effective_leaf_boundaries(beam)
-    aperture_poly = get_aperture_polygon(cp.mlc_positions, cp.jaw_positions, leaf_boundaries)
-    if not aperture_poly:
-        # No aperture opening = fully blocked
+    aperture = build_aperture_polygon(
+        cp, get_effective_leaf_boundaries(beam), beam.mlc_leaf_widths
+    )
+    if aperture is None or aperture.is_empty:
         return 1.0
-    
-    # Calculate AM
-    am = calculate_aperture_modulation(target_poly, aperture_poly)
-    return am
+    result = compute_conformality(aperture, target)
+    return result.blocked_fraction if result else None
 
 
 def calculate_pam_beam(
@@ -1535,91 +1452,31 @@ def calculate_pam_beam(
     beam: Beam,
     couch_angle: float = 0.0,
 ) -> Optional[float]:
-    """
-    Calculate Beam Aperture Modulation (BAM) for a single beam.
-    
-    BAM is the MU-weighted average of AM across all control points in the beam.
-    This follows the existing CA (Control Arc) midpoint interpolation pattern
-    used for other beam metrics.
-    
-    Args:
-        structure: Target structure
-        beam: Beam to analyze
-        couch_angle: Couch angle in degrees
-    
-    Returns:
-        BAM value in [0, 1], or None if calculation fails
-    """
-    if not structure or not beam.control_points or len(beam.control_points) < 2:
-        return None
-    
-    cps = beam.control_points
-    n_cps = len(cps)
-    
-    # Calculate AM for each control point and accumulate weighted sum
-    total_weighted_am = 0.0
-    total_mu = 0.0
-    
-    for i in range(n_cps):
-        am = calculate_pam_control_point(structure, beam, i, couch_angle)
-        if am is None:
-            continue
-        
-        # Get MU weight for this control point
-        # Use difference from previous CP (except for first CP which uses its own weight)
-        if i == 0:
-            delta_mu = cps[i].cumulative_meterset_weight
-        else:
-            delta_mu = cps[i].cumulative_meterset_weight - cps[i - 1].cumulative_meterset_weight
-        
-        total_weighted_am += am * delta_mu
-        total_mu += delta_mu
-    
-    if total_mu > 1e-6:
-        bam = total_weighted_am / total_mu
-        return max(0.0, min(1.0, bam))
-    
-    return None
+    """Beam Aperture Modulation (BAM): MU-weighted mean blocked target fraction."""
+    conf = calculate_beam_conformality(
+        beam,
+        structure,
+        beam.source_axis_distance or DEFAULT_SAD,
+        get_effective_leaf_boundaries(beam),
+    )
+    return conf.BAM if conf else None
 
 
 def calculate_pam_plan(
     rtplan: RTPlan,
-    structure: Structure,
+    structure: Optional[Structure],
 ) -> Optional[float]:
-    """
-    Calculate Plan Aperture Modulation (PAM) for the entire treatment plan.
-    
-    PAM is the MU-weighted average of BAM across all beams.
-    This represents the average fraction of target projection that is blocked
-    by MLC/jaws across the entire plan.
-    
-    Args:
-        rtplan: Complete RT plan
-        structure: Target structure
-    
-    Returns:
-        PAM value in [0, 1], or None if calculation fails
-    """
-    if not rtplan or not rtplan.beams or not structure:
+    """Plan Aperture Modulation (PAM): MU-weighted mean BAM across beams."""
+    if not rtplan or not rtplan.beams or structure is None:
         return None
-    
-    total_weighted_pam = 0.0
-    total_mu = 0.0
-    
+    beam_results = []
     for beam in rtplan.beams:
-        bam = calculate_pam_beam(structure, beam)
-        if bam is None:
-            continue
-        
-        # Get total MU for this beam
-        beam_mu = beam.final_cumulative_meterset_weight
-        
-        total_weighted_pam += bam * beam_mu
-        total_mu += beam_mu
-    
-    if total_mu > 1e-6:
-        pam = total_weighted_pam / total_mu
-        return max(0.0, min(1.0, pam))
-    
-    return None
-
+        conf = calculate_beam_conformality(
+            beam,
+            structure,
+            beam.source_axis_distance or DEFAULT_SAD,
+            get_effective_leaf_boundaries(beam),
+        )
+        beam_results.append((beam.final_cumulative_meterset_weight, conf))
+    plan_conf = calculate_plan_conformality(rtplan, beam_results)
+    return plan_conf.PAM if plan_conf else None

@@ -185,6 +185,48 @@ export const KNOWN_GAPS = [
   },
 ] as const;
 
+// ---------- Conformality (RTSTRUCT) analytic validation ----------
+// Conformality cannot enter the numeric TS↔Python audit table because the
+// TG-119 audit corpus ships RTPLAN files without matching RTSTRUCTs.
+// Instead, both implementations are pinned by the SAME analytic unit tests.
+
+export interface ConformalityCase {
+  name: string;
+  expected: string;
+}
+
+export const CONFORMALITY_VALIDATION = {
+  metrics: ["BAM", "PAM", "TCOV", "ATR", "MARG", "MARGMIN"],
+  tsModule: "src/lib/dicom/conformality.ts",
+  pyModule: "python/rtplan_complexity/conformality.py",
+  tsTest: "src/test/conformality.test.ts",
+  pyTest: "python/tests/test_pam.py",
+  tsBackend: "polygon-clipping",
+  pyBackend: "shapely",
+  tsCaseCount: 18,
+  pyCaseCount: 22,
+  lastValidated: "2026-08-14",
+  note:
+    "BAM/PAM were rewritten from a jaw-bounding-box placeholder to true MLC+jaw " +
+    "polygon geometry with divergent BEV projection (IEC 61217). The target " +
+    "silhouette is the per-control-point convex hull of the projected ROI cloud — " +
+    "an approximation that over-estimates concave targets.",
+  cases: [
+    { name: "Isocentre maps to BEV origin", expected: "(0, 0)" },
+    { name: "Divergence at 100 mm upstream depth", expected: "scale = SAD / 900" },
+    { name: "Gantry 90° in-plane point", expected: "x = 0, y = 20 · SAD/990" },
+    { name: "Collimator 90° rotation", expected: "(10, 20) → (20, −10)" },
+    { name: "20 mm cube silhouette area", expected: "≈ 400 mm² (±5%)" },
+    { name: "Two symmetric leaf pairs, jaw-clipped", expected: "400 mm²" },
+    { name: "Concentric squares (60 vs 40 mm)", expected: "TCOV = 1, ATR = 2.25, MARGMIN = 10 mm" },
+    { name: "Half-overlapping aperture", expected: "TCOV = 0.5, ATR = 1.0" },
+    { name: "Closed aperture, MU-weighted beam", expected: "TCOV = 0, BAM = 1" },
+    { name: "No RTSTRUCT / ROI selected", expected: "undefined (never 0)" },
+  ] as ConformalityCase[],
+} as const;
+
+
+
 
 
 // ---------- Third-party Benchmark: ApertureComplexity ----------
@@ -280,6 +322,22 @@ export const SOURCE_FILES = [
     path: "src/test/export-metrics-json.test.ts",
   },
   {
+    label: "Conformality geometry (TypeScript)",
+    path: "src/lib/dicom/conformality.ts",
+  },
+  {
+    label: "Conformality geometry (Python)",
+    path: "python/rtplan_complexity/conformality.py",
+  },
+  {
+    label: "Conformality tests (TypeScript)",
+    path: "src/test/conformality.test.ts",
+  },
+  {
+    label: "Conformality tests (Python)",
+    path: "python/tests/test_pam.py",
+  },
+  {
     label: "Tolerance definitions",
     path: "src/lib/validation-data.ts",
   },
@@ -301,4 +359,7 @@ export const SHARED_ALGORITHMS = [
   "MAD reference axis = jaw center (X1+X2)/2, not isocenter",
   "TGI (Webb 2001 / Younge 2016): Σ(|ΔbankA|+|ΔbankB|) / Σ(gap_i + gap_{i+1})",
   "Independent third-source benchmark: python/tests/external_reference.py",
+  "Conformality BEV: IEC 61217 couch→gantry→collimator chain + SAD/(SAD−depth) divergence",
+  "Conformality aperture: MLC leaf spans unioned and clipped by X/Y jaws (same convention as AAV/EM)",
+  "Conformality target: per-CP convex hull of the projected ROI contour cloud",
 ] as const;
