@@ -17,7 +17,7 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
-from shapely.geometry import MultiPolygon, Point, Polygon
+from shapely.geometry import MultiPoint, MultiPolygon, Point, Polygon
 from shapely.ops import unary_union
 
 from .types import Beam, ControlPoint, RTPlan, Structure
@@ -143,9 +143,8 @@ def project_target_to_bev(
             )
     if len(projected) < 3:
         return None
-    hull = MultiPolygon() if False else Polygon()
     try:
-        hull = unary_union([Point(p) for p in projected]).convex_hull
+        hull = MultiPoint(projected).convex_hull
     except Exception:
         return None
     if isinstance(hull, Polygon) and hull.area > 1e-9:
