@@ -322,6 +322,22 @@ export const SOURCE_FILES = [
     path: "src/test/export-metrics-json.test.ts",
   },
   {
+    label: "Conformality geometry (TypeScript)",
+    path: "src/lib/dicom/conformality.ts",
+  },
+  {
+    label: "Conformality geometry (Python)",
+    path: "python/rtplan_complexity/conformality.py",
+  },
+  {
+    label: "Conformality tests (TypeScript)",
+    path: "src/test/conformality.test.ts",
+  },
+  {
+    label: "Conformality tests (Python)",
+    path: "python/tests/test_pam.py",
+  },
+
     label: "Tolerance definitions",
     path: "src/lib/validation-data.ts",
   },
