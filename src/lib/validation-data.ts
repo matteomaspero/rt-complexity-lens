@@ -337,7 +337,7 @@ export const SOURCE_FILES = [
     label: "Conformality tests (Python)",
     path: "python/tests/test_pam.py",
   },
-
+  {
     label: "Tolerance definitions",
     path: "src/lib/validation-data.ts",
   },
