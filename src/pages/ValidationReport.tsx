@@ -20,6 +20,7 @@ import {
   PER_PLAN_PYCOMPLEXITY,
   UCOMX_AUDIT_STATUS,
   KNOWN_GAPS,
+  CONFORMALITY_VALIDATION,
 } from '@/lib/validation-data';
 
 function StatusBadge({ passed }: { passed: boolean }) {
