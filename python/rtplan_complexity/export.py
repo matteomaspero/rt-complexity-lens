@@ -336,6 +336,23 @@ def _build_columns(plan: RTPlan, metrics: PlanMetrics) -> List[ColumnDef]:
         ColumnDef("mDRV", "mDRV (MU/min)", "Deliverability", 2,
                   lambda p, m: m.mDRV,
                   lambda bm: bm.mDRV),
+
+        # ── Conformality (requires an RTSTRUCT target) ──
+        ColumnDef("BAM", "BAM/PAM", "Conformality", 4,
+                  lambda p, m: m.PAM,
+                  lambda bm: bm.BAM),
+        ColumnDef("TCOV", "TCOV", "Conformality", 4,
+                  lambda p, m: m.TCOV,
+                  lambda bm: bm.TCOV),
+        ColumnDef("ATR", "ATR", "Conformality", 4,
+                  lambda p, m: m.ATR,
+                  lambda bm: bm.ATR),
+        ColumnDef("MARG", "MARG (mm)", "Conformality", 2,
+                  lambda p, m: m.MARG,
+                  lambda bm: bm.MARG),
+        ColumnDef("MARGMIN", "MARGMIN (mm)", "Conformality", 2,
+                  lambda p, m: m.MARGMIN,
+                  lambda bm: bm.MARGMIN),
     ]
 
 
