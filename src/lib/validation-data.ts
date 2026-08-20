@@ -359,4 +359,7 @@ export const SHARED_ALGORITHMS = [
   "MAD reference axis = jaw center (X1+X2)/2, not isocenter",
   "TGI (Webb 2001 / Younge 2016): Σ(|ΔbankA|+|ΔbankB|) / Σ(gap_i + gap_{i+1})",
   "Independent third-source benchmark: python/tests/external_reference.py",
+  "Conformality BEV: IEC 61217 couch→gantry→collimator chain + SAD/(SAD−depth) divergence",
+  "Conformality aperture: MLC leaf spans unioned and clipped by X/Y jaws (same convention as AAV/EM)",
+  "Conformality target: per-CP convex hull of the projected ROI contour cloud",
 ] as const;
