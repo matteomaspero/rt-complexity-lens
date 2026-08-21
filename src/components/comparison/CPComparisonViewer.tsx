@@ -231,74 +231,83 @@ export function CPComparisonViewer({
 
           {/* Side-by-side View */}
           <TabsContent value="side-by-side" className="mt-0">
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Plan A */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-[hsl(var(--chart-comparison-a))]">Plan A</span>
-                  <span className="text-xs text-muted-foreground">{beamA.beamName}</span>
-                </div>
-                {cpA && (
-                  <>
-                    <div className="flex justify-center rounded-lg border bg-muted/30 p-2">
-                      <MLCApertureViewer
-                        mlcPositions={cpA.mlcPositions}
-                        leafWidths={beamA.mlcLeafWidths}
-                        jawPositions={cpA.jawPositions}
-                        width={180}
-                        height={160}
-                      />
+            <FocusPanel size={{ width: 400, height: 200 }} footer={transport}>
+              {(size) => (
+                <div className="grid w-full gap-4 md:grid-cols-2">
+                  {/* Plan A */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-[hsl(var(--chart-comparison-a))]">Plan A</span>
+                      <span className="text-xs text-muted-foreground">{beamA.beamName}</span>
                     </div>
-                    <CPDetails cp={cpA} label="A" />
-                  </>
-                )}
-              </div>
+                    {cpA && (
+                      <>
+                        <div className="flex justify-center rounded-lg border bg-muted/30 p-2">
+                          <MLCApertureViewer
+                            mlcPositions={cpA.mlcPositions}
+                            leafWidths={beamA.mlcLeafWidths}
+                            jawPositions={cpA.jawPositions}
+                            width={Math.round(size.width / 2) - 20}
+                            height={Math.round((size.width / 2 - 20) * 0.89)}
+                          />
+                        </div>
+                        <CPDetails cp={cpA} label="A" />
+                      </>
+                    )}
+                  </div>
 
-              {/* Plan B */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-[hsl(var(--chart-comparison-b))]">Plan B</span>
-                  <span className="text-xs text-muted-foreground">{beamB.beamName}</span>
-                </div>
-                {cpB && (
-                  <>
-                    <div className="flex justify-center rounded-lg border bg-muted/30 p-2">
-                      <MLCApertureViewer
-                        mlcPositions={cpB.mlcPositions}
-                        leafWidths={beamB.mlcLeafWidths}
-                        jawPositions={cpB.jawPositions}
-                        width={180}
-                        height={160}
-                      />
+                  {/* Plan B */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-[hsl(var(--chart-comparison-b))]">Plan B</span>
+                      <span className="text-xs text-muted-foreground">{beamB.beamName}</span>
                     </div>
-                    <CPDetails cp={cpB} label="B" />
-                  </>
-                )}
-              </div>
-            </div>
+                    {cpB && (
+                      <>
+                        <div className="flex justify-center rounded-lg border bg-muted/30 p-2">
+                          <MLCApertureViewer
+                            mlcPositions={cpB.mlcPositions}
+                            leafWidths={beamB.mlcLeafWidths}
+                            jawPositions={cpB.jawPositions}
+                            width={Math.round(size.width / 2) - 20}
+                            height={Math.round((size.width / 2 - 20) * 0.89)}
+                          />
+                        </div>
+                        <CPDetails cp={cpB} label="B" />
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </FocusPanel>
           </TabsContent>
 
           {/* Difference Overlay View */}
           <TabsContent value="difference" className="mt-0">
             {cpA && cpB && (
-              <div className="flex flex-col items-center gap-3">
-                <MLCDifferenceViewer
-                  mlcPositionsA={cpA.mlcPositions}
-                  mlcPositionsB={cpB.mlcPositions}
-                  leafWidths={beamA.mlcLeafWidths}
-                  jawPositionsA={cpA.jawPositions}
-                  jawPositionsB={cpB.jawPositions}
-                  width={340}
-                  height={280}
-                />
-                <div className="grid w-full grid-cols-2 gap-4 text-sm">
-                  <CPDetails cp={cpA} label="A" />
-                  <CPDetails cp={cpB} label="B" />
-                </div>
-              </div>
+              <FocusPanel size={{ width: 340, height: 280 }} footer={transport}>
+                {(size) => (
+                  <div className="flex flex-col items-center gap-3">
+                    <MLCDifferenceViewer
+                      mlcPositionsA={cpA.mlcPositions}
+                      mlcPositionsB={cpB.mlcPositions}
+                      leafWidths={beamA.mlcLeafWidths}
+                      jawPositionsA={cpA.jawPositions}
+                      jawPositionsB={cpB.jawPositions}
+                      width={size.width}
+                      height={size.height}
+                    />
+                    <div className="grid w-full grid-cols-2 gap-4 text-sm">
+                      <CPDetails cp={cpA} label="A" />
+                      <CPDetails cp={cpB} label="B" />
+                    </div>
+                  </div>
+                )}
+              </FocusPanel>
             )}
           </TabsContent>
         </Tabs>
+
 
         {/* Difference indicators */}
         {cpA && cpB && (
