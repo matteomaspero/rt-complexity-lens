@@ -10,6 +10,12 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
+import {
+  ChartFocusButton,
+  ChartFocusOverlay,
+  useChartFocus,
+} from '@/components/ui/chart-focus';
+import { cn } from '@/lib/utils';
 import type { ControlPoint } from '@/lib/dicom/types';
 
 interface CumulativeMUChartProps {
@@ -26,6 +32,8 @@ export function CumulativeMUChart({
   height = 200,
 }: CumulativeMUChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { isFocused, toggle, close, focusClassName, focusHeightClassName } =
+    useChartFocus();
 
   const chartData = useMemo(() => {
     return controlPoints.map((cp, index) => ({
@@ -38,7 +46,12 @@ export function CumulativeMUChart({
   const currentMU = chartData[currentIndex]?.cumulativeMU ?? 0;
 
   return (
-    <div ref={chartRef} className="rounded-lg border bg-card p-4">
+    <>
+    <ChartFocusOverlay open={isFocused} onClose={close} />
+    <div
+      ref={chartRef}
+      className={cn('rounded-lg border bg-card p-4', focusClassName)}
+    >
       <div className="mb-2 flex items-baseline justify-between">
         <h4 className="text-sm font-medium">Cumulative MU</h4>
         <div className="flex items-center gap-2">
@@ -46,10 +59,15 @@ export function CumulativeMUChart({
             {currentMU.toFixed(1)} <span className="text-sm text-muted-foreground">MU</span>
           </span>
           <ChartExportButton chartRef={chartRef} filename="cumulative_mu" />
+          <ChartFocusButton isFocused={isFocused} onToggle={toggle} />
         </div>
       </div>
       
-      <ResponsiveContainer width="100%" height={height}>
+      <div
+        className={cn(focusHeightClassName)}
+        style={isFocused ? undefined : { height }}
+      >
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <CartesianGrid 
             strokeDasharray="3 3" 
@@ -94,7 +112,9 @@ export function CumulativeMUChart({
           />
         </LineChart>
       </ResponsiveContainer>
+      </div>
     </div>
+    </>
   );
 }
 
@@ -110,6 +130,8 @@ export function GantrySpeedChart({
   height = 200,
 }: GantrySpeedChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
+  const { isFocused, toggle, close, focusClassName, focusHeightClassName } =
+    useChartFocus();
 
   const chartData = useMemo(() => {
     const data: Array<{ index: number; speed: number; angle: number }> = [];
@@ -143,7 +165,12 @@ export function GantrySpeedChart({
   const currentSpeed = chartData[currentIndex]?.speed ?? 0;
 
   return (
-    <div ref={chartRef} className="rounded-lg border bg-card p-4">
+    <>
+    <ChartFocusOverlay open={isFocused} onClose={close} />
+    <div
+      ref={chartRef}
+      className={cn('rounded-lg border bg-card p-4', focusClassName)}
+    >
       <div className="mb-2 flex items-baseline justify-between">
         <h4 className="text-sm font-medium">Gantry Speed (relative)</h4>
         <div className="flex items-center gap-2">
@@ -151,10 +178,15 @@ export function GantrySpeedChart({
             {currentSpeed.toFixed(1)}
           </span>
           <ChartExportButton chartRef={chartRef} filename="gantry_speed" />
+          <ChartFocusButton isFocused={isFocused} onToggle={toggle} />
         </div>
       </div>
       
-      <ResponsiveContainer width="100%" height={height}>
+      <div
+        className={cn(focusHeightClassName)}
+        style={isFocused ? undefined : { height }}
+      >
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <CartesianGrid 
             strokeDasharray="3 3" 
@@ -198,6 +230,8 @@ export function GantrySpeedChart({
           />
         </LineChart>
       </ResponsiveContainer>
+      </div>
     </div>
+    </>
   );
 }

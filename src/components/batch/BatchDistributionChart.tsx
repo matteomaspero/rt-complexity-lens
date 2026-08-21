@@ -12,6 +12,12 @@ import {
   Cell,
 } from 'recharts';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
+import {
+  ChartFocusButton,
+  ChartFocusOverlay,
+  useChartFocus,
+} from '@/components/ui/chart-focus';
+import { cn } from '@/lib/utils';
 
 interface DistributionData {
   range: string;
@@ -55,6 +61,7 @@ function createHistogram(
 
 export function BatchDistributionChart() {
   const chartRef = useRef<HTMLDivElement>(null);
+  const focus_chartRef = useChartFocus();
   const { plans } = useBatch();
 
   const successfulPlans = useMemo(
@@ -74,16 +81,19 @@ export function BatchDistributionChart() {
   }
 
   return (
-    <Card ref={chartRef}>
+    <Card ref={chartRef} className={focus_chartRef.focusClassName}>
+      <ChartFocusOverlay open={focus_chartRef.isFocused} onClose={focus_chartRef.close} />
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">MCS Distribution</CardTitle>
           <ChartExportButton chartRef={chartRef} filename="mcs_distribution" />
+          <ChartFocusButton isFocused={focus_chartRef.isFocused} onToggle={focus_chartRef.toggle} />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
+      <CardContent className={cn(focus_chartRef.focusContentClassName)}>
+        <div className={cn(focus_chartRef.isFocused ? "flex flex-1 flex-col" : "h-[280px]")}>
+          <div className={cn(focus_chartRef.focusHeightClassName)} style={focus_chartRef.isFocused ? undefined : { height: "100%" }}>
+            <ResponsiveContainer width="100%" height="100%">
             <BarChart data={mcsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--chart-grid))" />
               <XAxis 
@@ -131,6 +141,7 @@ export function BatchDistributionChart() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </CardContent>
     </Card>

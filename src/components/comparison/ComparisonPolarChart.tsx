@@ -11,6 +11,12 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
+import {
+  ChartFocusButton,
+  ChartFocusOverlay,
+  useChartFocus,
+} from '@/components/ui/chart-focus';
+import { cn } from '@/lib/utils';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
 import {
   calculateControlPointSegments,
@@ -34,6 +40,7 @@ export function ComparisonPolarChart({
   machineParams = DEFAULT_MACHINE_PARAMS,
 }: ComparisonPolarChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
+  const focus_chartRef = useChartFocus();
   // Calculate segments and bins for both plans
   const segmentsA = useMemo(
     () => calculateControlPointSegments(beamA, controlPointMetricsA, machineParams),
@@ -85,11 +92,13 @@ export function ComparisonPolarChart({
   }, [binsA, binsB]);
 
   return (
-    <Card ref={chartRef}>
+    <Card ref={chartRef} className={focus_chartRef.focusClassName}>
+      <ChartFocusOverlay open={focus_chartRef.isFocused} onClose={focus_chartRef.close} />
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">MU Distribution by Gantry Angle</CardTitle>
           <ChartExportButton chartRef={chartRef} filename="mu_distribution_comparison" />
+          <ChartFocusButton isFocused={focus_chartRef.isFocused} onToggle={focus_chartRef.toggle} />
         </div>
         <div className="flex gap-4 text-xs text-muted-foreground">
           <span>
@@ -102,9 +111,10 @@ export function ComparisonPolarChart({
           </span>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className={cn("pt-0", focus_chartRef.focusContentClassName)}>
         <div className="flex justify-center">
-          <ResponsiveContainer width="100%" height={280}>
+          <div className={cn(focus_chartRef.focusHeightClassName)} style={focus_chartRef.isFocused ? undefined : { height: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={polarData} cx="50%" cy="50%" outerRadius="65%">
               <PolarGrid stroke="hsl(var(--chart-grid))" />
               <PolarAngleAxis
@@ -150,6 +160,7 @@ export function ComparisonPolarChart({
               />
             </RadarChart>
           </ResponsiveContainer>
+          </div>
         </div>
         <p className="mt-1 text-center text-xs text-muted-foreground">
           0° = Superior (IEC 61217) · 15° bins

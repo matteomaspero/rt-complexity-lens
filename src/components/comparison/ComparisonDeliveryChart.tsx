@@ -13,6 +13,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
+import {
+  ChartFocusButton,
+  ChartFocusOverlay,
+  useChartFocus,
+} from '@/components/ui/chart-focus';
+import { cn } from '@/lib/utils';
 import type { Beam, BeamMetrics } from '@/lib/dicom/types';
 
 interface ComparisonDeliveryChartProps {
@@ -35,6 +41,7 @@ export function ComparisonDeliveryChart({
   height = 180,
 }: ComparisonDeliveryChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
+  const focus_chartRef = useChartFocus();
   // Prepare aperture area data
   const apertureData = useMemo(() => {
     const maxCPs = Math.max(
@@ -122,14 +129,16 @@ export function ComparisonDeliveryChart({
   };
 
   return (
-    <Card ref={chartRef}>
+    <Card ref={chartRef} className={focus_chartRef.focusClassName}>
+      <ChartFocusOverlay open={focus_chartRef.isFocused} onClose={focus_chartRef.close} />
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">Delivery Comparison</CardTitle>
           <ChartExportButton chartRef={chartRef} filename="delivery_comparison" />
+          <ChartFocusButton isFocused={focus_chartRef.isFocused} onToggle={focus_chartRef.toggle} />
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className={cn("pt-0", focus_chartRef.focusContentClassName)}>
         <Tabs defaultValue="aperture" className="w-full">
           <TabsList className="mb-2 h-8">
             <TabsTrigger value="aperture" className="text-xs">Aperture</TabsTrigger>
@@ -139,7 +148,8 @@ export function ComparisonDeliveryChart({
 
           {/* Aperture Area Chart */}
           <TabsContent value="aperture" className="mt-0">
-            <ResponsiveContainer width="100%" height={height}>
+            <div className={cn(focus_chartRef.focusHeightClassName)} style={focus_chartRef.isFocused ? undefined : { height: height }}>
+              <ResponsiveContainer width="100%" height="100%">
               <LineChart data={apertureData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -215,11 +225,13 @@ export function ComparisonDeliveryChart({
                 )}
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </TabsContent>
 
           {/* Gantry Angle Chart */}
           <TabsContent value="gantry" className="mt-0">
-            <ResponsiveContainer width="100%" height={height}>
+            <div className={cn(focus_chartRef.focusHeightClassName)} style={focus_chartRef.isFocused ? undefined : { height: height }}>
+              <ResponsiveContainer width="100%" height="100%">
               <LineChart data={gantryData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -289,11 +301,13 @@ export function ComparisonDeliveryChart({
                 )}
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </TabsContent>
 
           {/* Complexity (LSV) Chart */}
           <TabsContent value="complexity" className="mt-0">
-            <ResponsiveContainer width="100%" height={height}>
+            <div className={cn(focus_chartRef.focusHeightClassName)} style={focus_chartRef.isFocused ? undefined : { height: height }}>
+              <ResponsiveContainer width="100%" height="100%">
               <LineChart data={complexityData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -389,6 +403,7 @@ export function ComparisonDeliveryChart({
                 )}
               </LineChart>
             </ResponsiveContainer>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
