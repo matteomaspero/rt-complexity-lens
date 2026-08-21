@@ -134,6 +134,19 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     setIsPlaying((prev) => !prev);
   }, [currentCPIndex, totalCPs]);
 
+  // Compact transport reused inside every enlarged geometry panel
+  const cpTransport = (
+    <ControlPointNavigator
+      compact
+      currentIndex={currentCPIndex}
+      totalPoints={totalCPs}
+      isPlaying={isPlaying}
+      onIndexChange={setCurrentCPIndex}
+      onPlayToggle={handlePlayToggle}
+    />
+  );
+
+
   // Handle closing plan and returning to home
   const handleClosePlan = useCallback(() => {
     setSessionPlan(null);
