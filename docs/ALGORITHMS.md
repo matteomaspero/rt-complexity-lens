@@ -906,3 +906,32 @@ ATR = 1.0), and closed/open-aperture beam aggregation.
 The TG-119 audit corpus ships RTPLAN files without matching RTSTRUCTs, so
 conformality is **not** part of the numeric `audit_all.py` cross-validation
 table; it is validated by the shared analytic test suite instead.
+
+## 2026-08-21 — Visualization focus mode (UI only)
+
+No metric definition, geometry, or aggregation logic changed in this revision.
+
+Focus ("enlarge") mode, previously available for Recharts plots only, now also
+applies to the SVG geometry panels:
+
+| Panel | Component | Focused behaviour |
+|---|---|---|
+| MLC Aperture | `MLCApertureViewer` | Re-rendered at viewport-derived width/height (aspect preserved) |
+| Gantry Position | `GantryViewer` | Re-rendered at a larger square `size` |
+| Collimator & Jaws | `CollimatorViewer` | Re-rendered at a larger square `size` |
+| Compare side-by-side / difference | `MLCApertureViewer`, `MLCDifferenceViewer` | Both apertures scaled together |
+
+Implementation notes:
+
+- `src/components/ui/focus-panel.tsx` (`FocusPanel`) wraps a panel and exposes
+  the current render size through a render prop, so the SVG is **redrawn** at
+  the larger pixel size rather than CSS-scaled (no stroke blurring).
+- `FocusPanel` reuses `useChartFocus()` from `src/components/ui/chart-focus.tsx`,
+  so the container is only restyled (components stay mounted) — refs used by
+  PNG export and Recharts tooltips keep working, and `Esc`/backdrop click exit.
+- `ControlPointNavigator` gained a `compact` variant (single-row transport:
+  first/prev/play-pause/next/last + slider + `CP n / N`) that is rendered inside
+  every enlarged geometry panel, so control-point stepping and playback remain
+  available while zoomed in. On the Compare page the compact transport drives
+  the existing synced navigation, plus a second row for Plan B when independent
+  navigation is enabled.
