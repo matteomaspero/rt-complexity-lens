@@ -30,6 +30,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { calculatePlanMetrics } from '@/lib/dicom';
 import { projectTargetToBEV, pickDefaultTargetIndex } from '@/lib/dicom/conformality';
 import { StructureSelector } from '@/components/viewer/StructureSelector';
+import { FocusPanel } from '@/components/ui/focus-panel';
+
 
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAllPresetIds } from '@/lib/machine-mapping';
@@ -131,6 +133,19 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     }
     setIsPlaying((prev) => !prev);
   }, [currentCPIndex, totalCPs]);
+
+  // Compact transport reused inside every enlarged geometry panel
+  const cpTransport = (
+    <ControlPointNavigator
+      compact
+      currentIndex={currentCPIndex}
+      totalPoints={totalCPs}
+      isPlaying={isPlaying}
+      onIndexChange={setCurrentCPIndex}
+      onPlayToggle={handlePlayToggle}
+    />
+  );
+
 
   // Handle closing plan and returning to home
   const handleClosePlan = useCallback(() => {
@@ -410,51 +425,59 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   onPlayToggle={handlePlayToggle}
                 />
 
+
+
                 {/* Gantry and Collimator Row */}
                 <div className="grid gap-6 md:grid-cols-3">
                   {/* Gantry View */}
-                  <div className="rounded-lg border bg-card p-4">
-                    <h4 className="mb-4 text-sm font-medium flex items-center gap-2">
-                      <span className="w-1 h-4 bg-primary rounded-full" />
-                      Gantry Position
-                    </h4>
-                    <div className="flex justify-center">
+                  <FocusPanel
+                    title="Gantry Position"
+                    size={{ width: 160, height: 160 }}
+                    footer={cpTransport}
+                  >
+                    {(size) => (
                       <GantryViewer
                         gantryAngle={currentCP.gantryAngle}
                         direction={currentCP.gantryRotationDirection}
-                        size={160}
+                        size={size.width}
                       />
-                    </div>
-                  </div>
+                    )}
+                  </FocusPanel>
 
                   {/* Collimator View */}
-                  <div className="rounded-lg border bg-card p-4">
-                    <div className="flex justify-center">
+                  <FocusPanel
+                    title="Collimator & Jaws"
+                    size={{ width: 160, height: 160 }}
+                    footer={cpTransport}
+                  >
+                    {(size) => (
                       <CollimatorViewer
                         collimatorAngle={currentCP.beamLimitingDeviceAngle}
                         jawPositions={currentCP.jawPositions}
-                        size={160}
+                        size={size.width}
                       />
-                    </div>
-                  </div>
+                    )}
+                  </FocusPanel>
 
                   {/* MLC Aperture */}
-                  <div className="rounded-lg border bg-card p-4">
-                    <h4 className="mb-4 text-sm font-medium flex items-center gap-2">
-                      <span className="w-1 h-4 bg-primary rounded-full" />
-                      MLC Aperture
-                    </h4>
-                    <MLCApertureViewer
-                      mlcPositions={currentCP.mlcPositions}
-                      leafWidths={currentBeam.mlcLeafWidths}
-                      jawPositions={currentCP.jawPositions}
-                      targetOutline={targetOutline}
-                      width={200}
-                      height={180}
-                    />
-
-                  </div>
+                  <FocusPanel
+                    title="MLC Aperture"
+                    size={{ width: 200, height: 180 }}
+                    footer={cpTransport}
+                  >
+                    {(size) => (
+                      <MLCApertureViewer
+                        mlcPositions={currentCP.mlcPositions}
+                        leafWidths={currentBeam.mlcLeafWidths}
+                        jawPositions={currentCP.jawPositions}
+                        targetOutline={targetOutline}
+                        width={size.width}
+                        height={size.height}
+                      />
+                    )}
+                  </FocusPanel>
                 </div>
+
 
                 {/* Charts */}
                 <div className="grid gap-6 md:grid-cols-2" data-chart-section="MU & Gantry Speed">

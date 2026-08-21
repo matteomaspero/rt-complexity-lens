@@ -10,6 +10,8 @@ interface ControlPointNavigatorProps {
   isPlaying: boolean;
   onIndexChange: (index: number) => void;
   onPlayToggle: () => void;
+  /** Single-row transport without card chrome — used inside enlarged panels. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -19,8 +21,10 @@ export function ControlPointNavigator({
   isPlaying,
   onIndexChange,
   onPlayToggle,
+  compact = false,
   className,
 }: ControlPointNavigatorProps) {
+
   const handleSliderChange = useCallback(
     (value: number[]) => {
       onIndexChange(value[0]);
@@ -42,6 +46,76 @@ export function ControlPointNavigator({
   if (totalPoints === 0) {
     return null;
   }
+
+  if (compact) {
+    return (
+      <div className={cn('flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2', className)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={goToFirst}
+          disabled={currentIndex === 0}
+          aria-label="Go to first control point"
+        >
+          <SkipBack className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={goToPrev}
+          disabled={currentIndex === 0}
+          aria-label="Previous control point"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="default"
+          size="icon"
+          className="h-7 w-7"
+          onClick={onPlayToggle}
+          aria-label={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={goToNext}
+          disabled={currentIndex === totalPoints - 1}
+          aria-label="Next control point"
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={goToLast}
+          disabled={currentIndex === totalPoints - 1}
+          aria-label="Go to last control point"
+        >
+          <SkipForward className="h-3.5 w-3.5" />
+        </Button>
+        <Slider
+          value={[currentIndex]}
+          min={0}
+          max={totalPoints - 1}
+          step={1}
+          onValueChange={handleSliderChange}
+          className="mx-2 flex-1"
+          aria-label="Control point"
+        />
+        <span className="font-mono text-xs tabular-nums whitespace-nowrap">
+          CP {currentIndex + 1} <span className="text-muted-foreground">/ {totalPoints}</span>
+        </span>
+      </div>
+    );
+  }
+
+
 
   return (
     <div className={cn('flex flex-col gap-3 rounded-lg border bg-card p-4', className)}>
