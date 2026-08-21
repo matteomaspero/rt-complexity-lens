@@ -100,12 +100,22 @@ Population-level statistical analysis with clustering:
 | **Complexity Heatmaps** | ⚠️ | Per-CP visualization (values may not match UCoMX exactly) |
 | **MU Distribution** | ✅ | Polar chart showing MU per gantry angle |
 | **Angular Binning** | ✅ | Distribution of complexity metrics by gantry sector |
+| **Enlarge (focus) mode** | ✅ | Any chart, plus the MLC Aperture, Gantry Position and Collimator panels, can be maximized full-screen |
+
+### Enlarge (focus) mode
+
+- Click the ⤢ (maximize) icon in the top-right of a chart or geometry panel to bring it to the front, full-screen.
+- Geometry panels (MLC Aperture, Gantry Position, Collimator & Jaws) are **redrawn** at the larger size, so leaf and jaw edges stay crisp.
+- While enlarged, a compact control-point transport is pinned below the drawing: play/pause, first/previous/next/last and a slider, so you can step through control points without leaving focus mode.
+- On the Compare page, both the side-by-side and difference-overlay MLC views can be enlarged; the transport drives the active (synced or independent) navigation.
+- Press `Esc`, click the backdrop, or click the ⤡ (restore) icon to exit. Charts remain fully interactive (tooltips, PNG export) while enlarged.
 
 ### Export Options
 
 - **CSV Export**: Download metrics for spreadsheet analysis
-- **Chart PNG Export**: Save any visualization as an image (click 📷 icon)
+- **Chart PNG Export**: Save any visualization as an image (click 📷 icon), also available while enlarged
 - **JSON Export**: Machine-readable format for automation
+
 
 ### Target-Based Analysis (PAM/BAM)
 
