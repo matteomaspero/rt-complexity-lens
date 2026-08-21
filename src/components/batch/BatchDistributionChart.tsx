@@ -90,8 +90,8 @@ export function BatchDistributionChart() {
           <ChartFocusButton isFocused={focus_chartRef.isFocused} onToggle={focus_chartRef.toggle} />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="h-[280px]">
+      <CardContent className={cn(focus_chartRef.focusContentClassName)}>
+        <div className={cn(focus_chartRef.isFocused ? "flex flex-1 flex-col" : "h-[280px]")}>
           <div className={cn(focus_chartRef.focusHeightClassName)} style={focus_chartRef.isFocused ? undefined : { height: "100%" }}>
             <ResponsiveContainer width="100%" height="100%">
             <BarChart data={mcsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>

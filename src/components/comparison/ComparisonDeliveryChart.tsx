@@ -138,7 +138,7 @@ export function ComparisonDeliveryChart({
           <ChartFocusButton isFocused={focus_chartRef.isFocused} onToggle={focus_chartRef.toggle} />
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className={cn("pt-0", focus_chartRef.focusContentClassName)}>
         <Tabs defaultValue="aperture" className="w-full">
           <TabsList className="mb-2 h-8">
             <TabsTrigger value="aperture" className="text-xs">Aperture</TabsTrigger>

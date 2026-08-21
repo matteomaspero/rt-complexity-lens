@@ -93,7 +93,7 @@ export function ComparisonMUChart({
           </span>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className={cn("pt-0", focus_chartRef.focusContentClassName)}>
         <div className={cn(focus_chartRef.focusHeightClassName)} style={focus_chartRef.isFocused ? undefined : { height: height }}>
           <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 10 }}>

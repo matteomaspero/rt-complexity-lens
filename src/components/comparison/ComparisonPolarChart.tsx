@@ -111,7 +111,7 @@ export function ComparisonPolarChart({
           </span>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className={cn("pt-0", focus_chartRef.focusContentClassName)}>
         <div className="flex justify-center">
           <div className={cn(focus_chartRef.focusHeightClassName)} style={focus_chartRef.isFocused ? undefined : { height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
