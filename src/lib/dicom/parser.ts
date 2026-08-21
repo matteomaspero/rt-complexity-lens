@@ -722,10 +722,13 @@ export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): 
     const REFERENCED_ROI_NUM = 'x30060084';
     const CONTOUR_SEQ = 'x30060040';
     const CONTOUR_DATA = 'x30060050';
-    const ROI_NAME = 'x300a0004';
     const STRUCTURE_SET_ROI_SEQ = 'x30060020';
-    const ROI_NUMBER = 'x300a0022';
-    
+    const ROI_NUMBER = 'x30060022'; // (3006,0022) ROI Number
+    const ROI_NAME = 'x30060026'; // (3006,0026) ROI Name
+
+    const cleanName = (value: string): string =>
+      value.replace(/\0/g, '').trim();
+
     // Build map of ROI numbers to names
     const roiNameMap = new Map<number, string>();
     try {
@@ -733,7 +736,7 @@ export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): 
       if (ssRoiSeq && ssRoiSeq.items) {
         for (const item of ssRoiSeq.items) {
           const roiNum = parseInt(getString(item.dataSet, ROI_NUMBER)) || 0;
-          const roiName = getString(item.dataSet, ROI_NAME) || `ROI_${roiNum}`;
+          const roiName = cleanName(getString(item.dataSet, ROI_NAME) || '') || `ROI_${roiNum}`;
           roiNameMap.set(roiNum, roiName);
         }
       }
@@ -747,7 +750,15 @@ export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): 
       if (roiContourSeq && roiContourSeq.items) {
         for (const item of roiContourSeq.items) {
           const refROINum = parseInt(getString(item.dataSet, REFERENCED_ROI_NUM)) || 0;
-          const structName = roiNameMap.get(refROINum) || `ROI_${refROINum}`;
+          const baseName = roiNameMap.get(refROINum) || `ROI_${refROINum}`;
+          // Distinct ROIs may share a name; keep both instead of overwriting
+          let structName = baseName;
+          let suffix = 2;
+          while (structures.has(structName)) {
+            structName = `${baseName} (${suffix})`;
+            suffix += 1;
+          }
+
           
           const contours = [];
           const contourSeq = item.dataSet.elements[CONTOUR_SEQ];
