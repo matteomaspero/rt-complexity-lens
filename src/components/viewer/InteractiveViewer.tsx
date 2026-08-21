@@ -30,6 +30,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { calculatePlanMetrics } from '@/lib/dicom';
 import { projectTargetToBEV, pickDefaultTargetIndex } from '@/lib/dicom/conformality';
 import { StructureSelector } from '@/components/viewer/StructureSelector';
+import { FocusPanel } from '@/components/ui/focus-panel';
+
 
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAllPresetIds } from '@/lib/machine-mapping';
