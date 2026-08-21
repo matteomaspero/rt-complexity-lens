@@ -39,7 +39,10 @@ export function useChartFocus() {
       : '',
     /** Apply to the element wrapping the ResponsiveContainer. */
     focusHeightClassName: isFocused ? 'flex-1 min-h-[60vh]' : '',
+    /** Apply to an intermediate container (e.g. CardContent) so children can grow. */
+    focusContentClassName: isFocused ? 'flex flex-1 flex-col gap-4 overflow-auto' : '',
   };
+
 }
 
 interface ChartFocusButtonProps {
