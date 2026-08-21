@@ -17,6 +17,12 @@ import {
   ComposedChart,
 } from 'recharts';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
+import {
+  ChartFocusButton,
+  ChartFocusOverlay,
+  useChartFocus,
+} from '@/components/ui/chart-focus';
+import { cn } from '@/lib/utils';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
 import {
   calculateControlPointSegments,
@@ -52,6 +58,8 @@ export function AngularDistributionChart({
 }: AngularDistributionChartProps) {
   const polarRef = useRef<HTMLDivElement>(null);
   const doseRateRef = useRef<HTMLDivElement>(null);
+  const focus_polarRef = useChartFocus();
+  const focus_doseRateRef = useChartFocus();
 
   // Calculate segments and bins
   const segments = useMemo(() => 
@@ -98,7 +106,8 @@ export function AngularDistributionChart({
   return (
     <div className="space-y-4">
       {/* Polar MU Distribution */}
-      <div ref={polarRef} className="rounded-lg border bg-card p-4">
+      <div ref={polarRef} className={cn("rounded-lg border bg-card p-4", focus_polarRef.focusClassName)}>
+        <ChartFocusOverlay open={focus_polarRef.isFocused} onClose={focus_polarRef.close} />
         <div className="mb-3 flex items-center justify-between">
           <h4 className="text-sm font-medium">MU Distribution by Angle</h4>
           <div className="flex items-center gap-2">
@@ -106,10 +115,12 @@ export function AngularDistributionChart({
               Current: <span className="font-mono">{currentAngle.toFixed(1)}°</span>
             </span>
             <ChartExportButton chartRef={polarRef} filename="mu_distribution_polar" />
+            <ChartFocusButton isFocused={focus_polarRef.isFocused} onToggle={focus_polarRef.toggle} />
           </div>
         </div>
         <div className="flex justify-center">
-          <ResponsiveContainer width="100%" height={220}>
+          <div className={cn(focus_polarRef.focusHeightClassName)} style={focus_polarRef.isFocused ? undefined : { height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={polarData} cx="50%" cy="50%" outerRadius="70%">
               <PolarGrid stroke="hsl(var(--chart-grid))" />
               <PolarAngleAxis
@@ -130,6 +141,7 @@ export function AngularDistributionChart({
               />
             </RadarChart>
           </ResponsiveContainer>
+          </div>
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">
           0° = Superior (IEC 61217)
@@ -137,7 +149,8 @@ export function AngularDistributionChart({
       </div>
 
       {/* Dose Rate vs Gantry Angle - Multi-Rotation */}
-      <div ref={doseRateRef} className="rounded-lg border bg-card p-4">
+      <div ref={doseRateRef} className={cn("rounded-lg border bg-card p-4", focus_doseRateRef.focusClassName)}>
+        <ChartFocusOverlay open={focus_doseRateRef.isFocused} onClose={focus_doseRateRef.close} />
         <div className="mb-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">Dose Rate vs Gantry Angle</h4>
@@ -146,6 +159,7 @@ export function AngularDistributionChart({
                 {doseRateData[Math.min(currentIndex, doseRateData.length - 1)]?.doseRate.toFixed(0) ?? 0} MU/min
               </span>
               <ChartExportButton chartRef={doseRateRef} filename="dose_rate_vs_angle" />
+              <ChartFocusButton isFocused={focus_doseRateRef.isFocused} onToggle={focus_doseRateRef.toggle} />
             </div>
           </div>
           
@@ -169,7 +183,8 @@ export function AngularDistributionChart({
           )}
         </div>
 
-        <ResponsiveContainer width="100%" height={200}>
+        <div className={cn(focus_doseRateRef.focusHeightClassName)} style={focus_doseRateRef.isFocused ? undefined : { height: 200 }}>
+          <ResponsiveContainer width="100%" height="100%">
           <LineChart data={doseRateData} margin={{ top: 5, right: 5, bottom: 30, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -243,6 +258,7 @@ export function AngularDistributionChart({
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
 
         {/* Legend for rotations */}
         {uniqueRotations.length > 1 && (

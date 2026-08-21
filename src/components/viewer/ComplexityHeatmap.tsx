@@ -12,6 +12,12 @@ import {
   AreaChart,
 } from 'recharts';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
+import {
+  ChartFocusButton,
+  ChartFocusOverlay,
+  useChartFocus,
+} from '@/components/ui/chart-focus';
+import { cn } from '@/lib/utils';
 import type { Beam, ControlPointMetrics } from '@/lib/dicom/types';
 
 interface ComplexityHeatmapProps {
@@ -28,6 +34,9 @@ export function ComplexityHeatmap({
   const lsvRef = useRef<HTMLDivElement>(null);
   const aavRef = useRef<HTMLDivElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
+  const focus_lsvRef = useChartFocus();
+  const focus_aavRef = useChartFocus();
+  const focus_areaRef = useChartFocus();
 
   // Build chart data with angle and complexity metrics
   const chartData = useMemo(() => {
@@ -58,7 +67,8 @@ export function ComplexityHeatmap({
   return (
     <div className="space-y-3">
       {/* LSV Chart Card */}
-      <div ref={lsvRef} className="rounded-lg border bg-card p-3">
+      <div ref={lsvRef} className={cn("rounded-lg border bg-card p-3", focus_lsvRef.focusClassName)}>
+        <ChartFocusOverlay open={focus_lsvRef.isFocused} onClose={focus_lsvRef.close} />
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">
             LSV (Leaf Sequence Variability)
@@ -68,9 +78,11 @@ export function ComplexityHeatmap({
               {currentLSV.toFixed(4)}
             </span>
             <ChartExportButton chartRef={lsvRef} filename="lsv_chart" />
+            <ChartFocusButton isFocused={focus_lsvRef.isFocused} onToggle={focus_lsvRef.toggle} />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={140}>
+        <div className={cn(focus_lsvRef.focusHeightClassName)} style={focus_lsvRef.isFocused ? undefined : { height: 140 }}>
+          <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -116,10 +128,12 @@ export function ComplexityHeatmap({
             />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* AAV Chart Card */}
-      <div ref={aavRef} className="rounded-lg border bg-card p-3">
+      <div ref={aavRef} className={cn("rounded-lg border bg-card p-3", focus_aavRef.focusClassName)}>
+        <ChartFocusOverlay open={focus_aavRef.isFocused} onClose={focus_aavRef.close} />
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">
             AAV (Aperture Area Variability)
@@ -129,9 +143,11 @@ export function ComplexityHeatmap({
               {currentAAV.toFixed(4)}
             </span>
             <ChartExportButton chartRef={aavRef} filename="aav_chart" />
+            <ChartFocusButton isFocused={focus_aavRef.isFocused} onToggle={focus_aavRef.toggle} />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={140}>
+        <div className={cn(focus_aavRef.focusHeightClassName)} style={focus_aavRef.isFocused ? undefined : { height: 140 }}>
+          <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -176,10 +192,12 @@ export function ComplexityHeatmap({
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Aperture Area Chart Card */}
-      <div ref={areaRef} className="rounded-lg border bg-card p-3">
+      <div ref={areaRef} className={cn("rounded-lg border bg-card p-3", focus_areaRef.focusClassName)}>
+        <ChartFocusOverlay open={focus_areaRef.isFocused} onClose={focus_areaRef.close} />
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">
             Aperture Area
@@ -189,9 +207,11 @@ export function ComplexityHeatmap({
               {currentArea.toFixed(1)} cm²
             </span>
             <ChartExportButton chartRef={areaRef} filename="aperture_area" />
+            <ChartFocusButton isFocused={focus_areaRef.isFocused} onToggle={focus_areaRef.toggle} />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={140}>
+        <div className={cn(focus_areaRef.focusHeightClassName)} style={focus_areaRef.isFocused ? undefined : { height: 140 }}>
+          <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -232,6 +252,7 @@ export function ComplexityHeatmap({
             />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

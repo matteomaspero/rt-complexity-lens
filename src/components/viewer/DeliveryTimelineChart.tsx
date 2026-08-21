@@ -13,6 +13,12 @@ import {
   Cell,
 } from 'recharts';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
+import {
+  ChartFocusButton,
+  ChartFocusOverlay,
+  useChartFocus,
+} from '@/components/ui/chart-focus';
+import { cn } from '@/lib/utils';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
 import { calculateControlPointSegments } from '@/lib/dicom/angular-binning';
 import { DEFAULT_MACHINE_PARAMS } from '@/lib/threshold-definitions';
@@ -40,6 +46,10 @@ export function DeliveryTimelineChart({
   const doseRateRef = useRef<HTMLDivElement>(null);
   const gantryRef = useRef<HTMLDivElement>(null);
   const mlcRef = useRef<HTMLDivElement>(null);
+  const focus_durationRef = useChartFocus();
+  const focus_doseRateRef = useChartFocus();
+  const focus_gantryRef = useChartFocus();
+  const focus_mlcRef = useChartFocus();
 
   const segments = useMemo(
     () => calculateControlPointSegments(beam, controlPointMetrics, machineParams),
@@ -117,7 +127,8 @@ export function DeliveryTimelineChart({
       </div>
 
       {/* Segment Duration Bar Chart */}
-      <div ref={durationRef} className="rounded-lg border bg-card p-3">
+      <div ref={durationRef} className={cn("rounded-lg border bg-card p-3", focus_durationRef.focusClassName)}>
+        <ChartFocusOverlay open={focus_durationRef.isFocused} onClose={focus_durationRef.close} />
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">
             Segment Duration (colored by limiting factor)
@@ -127,9 +138,11 @@ export function DeliveryTimelineChart({
               {currentSegment?.duration.toFixed(2) ?? 0}s
             </span>
             <ChartExportButton chartRef={durationRef} filename="segment_duration" />
+            <ChartFocusButton isFocused={focus_durationRef.isFocused} onToggle={focus_durationRef.toggle} />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={chartHeight}>
+        <div className={cn(focus_durationRef.focusHeightClassName)} style={focus_durationRef.isFocused ? undefined : { height: chartHeight }}>
+          <ResponsiveContainer width="100%" height="100%">
           <BarChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -172,10 +185,12 @@ export function DeliveryTimelineChart({
             />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Dose Rate Chart */}
-      <div ref={doseRateRef} className="rounded-lg border bg-card p-3">
+      <div ref={doseRateRef} className={cn("rounded-lg border bg-card p-3", focus_doseRateRef.focusClassName)}>
+        <ChartFocusOverlay open={focus_doseRateRef.isFocused} onClose={focus_doseRateRef.close} />
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">Dose Rate</h4>
           <div className="flex items-center gap-2">
@@ -183,9 +198,11 @@ export function DeliveryTimelineChart({
               {currentSegment?.doseRate.toFixed(0) ?? 0} MU/min
             </span>
             <ChartExportButton chartRef={doseRateRef} filename="dose_rate" />
+            <ChartFocusButton isFocused={focus_doseRateRef.isFocused} onToggle={focus_doseRateRef.toggle} />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={chartHeight}>
+        <div className={cn(focus_doseRateRef.focusHeightClassName)} style={focus_doseRateRef.isFocused ? undefined : { height: chartHeight }}>
+          <ResponsiveContainer width="100%" height="100%">
           <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -226,11 +243,13 @@ export function DeliveryTimelineChart({
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Gantry Speed Chart (only for arcs) */}
       {beam.isArc && (
-        <div ref={gantryRef} className="rounded-lg border bg-card p-3">
+        <div ref={gantryRef} className={cn("rounded-lg border bg-card p-3", focus_gantryRef.focusClassName)}>
+          <ChartFocusOverlay open={focus_gantryRef.isFocused} onClose={focus_gantryRef.close} />
           <div className="mb-2 flex items-center justify-between">
             <h4 className="text-xs font-medium text-muted-foreground">Gantry Speed</h4>
             <div className="flex items-center gap-2">
@@ -238,9 +257,11 @@ export function DeliveryTimelineChart({
                 {currentSegment?.gantrySpeed.toFixed(1) ?? 0} °/s
               </span>
               <ChartExportButton chartRef={gantryRef} filename="gantry_speed" />
+              <ChartFocusButton isFocused={focus_gantryRef.isFocused} onToggle={focus_gantryRef.toggle} />
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={chartHeight}>
+          <div className={cn(focus_gantryRef.focusHeightClassName)} style={focus_gantryRef.isFocused ? undefined : { height: chartHeight }}>
+            <ResponsiveContainer width="100%" height="100%">
             <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -281,11 +302,13 @@ export function DeliveryTimelineChart({
               />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
       )}
 
       {/* MLC Speed Chart */}
-      <div ref={mlcRef} className="rounded-lg border bg-card p-3">
+      <div ref={mlcRef} className={cn("rounded-lg border bg-card p-3", focus_mlcRef.focusClassName)}>
+        <ChartFocusOverlay open={focus_mlcRef.isFocused} onClose={focus_mlcRef.close} />
         <div className="mb-2 flex items-center justify-between">
           <h4 className="text-xs font-medium text-muted-foreground">Max MLC Speed</h4>
           <div className="flex items-center gap-2">
@@ -293,9 +316,11 @@ export function DeliveryTimelineChart({
               {currentSegment?.mlcSpeed.toFixed(1) ?? 0} mm/s
             </span>
             <ChartExportButton chartRef={mlcRef} filename="mlc_speed" />
+            <ChartFocusButton isFocused={focus_mlcRef.isFocused} onToggle={focus_mlcRef.toggle} />
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={chartHeight}>
+        <div className={cn(focus_mlcRef.focusHeightClassName)} style={focus_mlcRef.isFocused ? undefined : { height: chartHeight }}>
+          <ResponsiveContainer width="100%" height="100%">
           <LineChart data={timelineData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <CartesianGrid
               strokeDasharray="3 3"
@@ -336,6 +361,7 @@ export function DeliveryTimelineChart({
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
