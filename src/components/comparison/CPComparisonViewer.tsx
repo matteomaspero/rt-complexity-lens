@@ -99,6 +99,51 @@ export function CPComparisonViewer({
     ? Math.abs(cpA.cumulativeMetersetWeight - cpB.cumulativeMetersetWeight) * 100
     : 0;
 
+  // Playback for the transport shown inside enlarged panels
+  const [isPlaying, setIsPlaying] = useState(false);
+  const navMax = independentNav ? maxCPsA : minCPs;
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const id = setInterval(() => {
+      if (safeIndexA >= navMax - 1) {
+        setIsPlaying(false);
+        return;
+      }
+      onCPIndexChange(safeIndexA + 1);
+    }, 120);
+    return () => clearInterval(id);
+  }, [isPlaying, safeIndexA, navMax, onCPIndexChange]);
+
+  const handlePlayToggle = useCallback(() => {
+    if (safeIndexA >= navMax - 1) onCPIndexChange(0);
+    setIsPlaying(prev => !prev);
+  }, [safeIndexA, navMax, onCPIndexChange]);
+
+  const transport = (
+    <div className="space-y-2">
+      <ControlPointNavigator
+        compact
+        currentIndex={safeIndexA}
+        totalPoints={navMax}
+        isPlaying={isPlaying}
+        onIndexChange={onCPIndexChange}
+        onPlayToggle={handlePlayToggle}
+      />
+      {independentNav && (
+        <ControlPointNavigator
+          compact
+          currentIndex={safeIndexB}
+          totalPoints={maxCPsB}
+          isPlaying={false}
+          onIndexChange={onCPIndexBChange}
+          onPlayToggle={handlePlayToggle}
+        />
+      )}
+    </div>
+  );
+
+
   return (
     <Card>
       <CardHeader className="pb-3">
