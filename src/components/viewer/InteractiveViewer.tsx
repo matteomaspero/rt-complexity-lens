@@ -412,6 +412,8 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   onPlayToggle={handlePlayToggle}
                 />
 
+                {(() => null)()}
+
                 {/* Gantry and Collimator Row */}
                 <div className="grid gap-6 md:grid-cols-3">
                   {/* Gantry View */}
