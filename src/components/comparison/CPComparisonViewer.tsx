@@ -9,6 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Crosshair, Link2 } from 'lucide-react';
 import { MLCApertureViewer } from '@/components/viewer/MLCApertureViewer';
 import { MLCDifferenceViewer } from './MLCDifferenceViewer';
+import { FocusPanel } from '@/components/ui/focus-panel';
+import { ControlPointNavigator } from '@/components/viewer/ControlPointNavigator';
+
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { Beam, ControlPoint } from '@/lib/dicom/types';
 import { cn } from '@/lib/utils';
