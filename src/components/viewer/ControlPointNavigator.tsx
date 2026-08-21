@@ -10,6 +10,8 @@ interface ControlPointNavigatorProps {
   isPlaying: boolean;
   onIndexChange: (index: number) => void;
   onPlayToggle: () => void;
+  /** Single-row transport without card chrome — used inside enlarged panels. */
+  compact?: boolean;
   className?: string;
 }
 
@@ -19,8 +21,10 @@ export function ControlPointNavigator({
   isPlaying,
   onIndexChange,
   onPlayToggle,
+  compact = false,
   className,
 }: ControlPointNavigatorProps) {
+
   const handleSliderChange = useCallback(
     (value: number[]) => {
       onIndexChange(value[0]);
