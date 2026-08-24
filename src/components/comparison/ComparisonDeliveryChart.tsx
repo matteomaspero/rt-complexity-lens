@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
 import {
   ChartFocusButton,
+  ChartFocusFooter,
   ChartFocusOverlay,
   useChartFocus,
 } from '@/components/ui/chart-focus';
@@ -406,6 +407,7 @@ export function ComparisonDeliveryChart({
             </div>
           </TabsContent>
         </Tabs>
+        <ChartFocusFooter isFocused={focus_chartRef.isFocused} />
       </CardContent>
     </Card>
   );

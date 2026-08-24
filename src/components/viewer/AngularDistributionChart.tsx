@@ -19,6 +19,7 @@ import {
 import { ChartExportButton } from '@/components/ui/exportable-chart';
 import {
   ChartFocusButton,
+  ChartFocusFooter,
   ChartFocusOverlay,
   useChartFocus,
 } from '@/components/ui/chart-focus';
@@ -142,6 +143,7 @@ export function AngularDistributionChart({
             </RadarChart>
           </ResponsiveContainer>
           </div>
+          <ChartFocusFooter isFocused={focus_polarRef.isFocused} />
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">
           0° = Superior (IEC 61217)
@@ -259,6 +261,7 @@ export function AngularDistributionChart({
           </LineChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_doseRateRef.isFocused} />
 
         {/* Legend for rotations */}
         {uniqueRotations.length > 1 && (
