@@ -29,6 +29,7 @@ import { matchBeams } from '@/lib/comparison/beam-matcher';
 import { generateComparePDF, type PDFChartRef } from '@/lib/pdf-report';
 import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAllPresetIds } from '@/lib/machine-mapping';
 import { toast } from 'sonner';
+import { ControlPointPlaybackProvider } from '@/contexts/ControlPointPlaybackContext';
 
 export default function ComparePlans() {
   const [planA, setPlanA] = useState<SessionPlan | null>(null);
@@ -38,6 +39,7 @@ export default function ComparePlans() {
   const [independentNav, setIndependentNav] = useState(false);
   const [cpIndexB, setCpIndexB] = useState(0);
   const [gantrySync, setGantrySync] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
   const compareContentRef = useRef<HTMLDivElement>(null);
@@ -258,6 +260,24 @@ export default function ComparePlans() {
 
         {/* Comparison Content */}
         {bothLoaded && (
+          <ControlPointPlaybackProvider
+            currentIndex={currentCPIndex}
+            totalPoints={cpTotalA}
+            isPlaying={isPlaying}
+            setIndex={setCurrentCPIndex}
+            togglePlay={handleCPPlayToggle}
+            onPlaybackEnd={stopCPPlayback}
+            secondary={
+              independentNav && selectedBeams
+                ? {
+                    index: cpIndexB,
+                    totalPoints: selectedBeams.beamB.controlPoints.length,
+                    setIndex: setCpIndexB,
+                    label: 'Plan B',
+                  }
+                : undefined
+            }
+          >
           <div className="grid gap-6 lg:grid-cols-2" ref={compareContentRef}>
             {/* Left Column */}
             <div className="space-y-6">
@@ -341,6 +361,7 @@ export default function ComparePlans() {
               )}
             </div>
           </div>
+          </ControlPointPlaybackProvider>
         )}
 
         {/* Empty state */}

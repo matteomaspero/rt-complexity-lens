@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,6 @@ import { Crosshair, Link2 } from 'lucide-react';
 import { MLCApertureViewer } from '@/components/viewer/MLCApertureViewer';
 import { MLCDifferenceViewer } from './MLCDifferenceViewer';
 import { FocusPanel } from '@/components/ui/focus-panel';
-import { ControlPointNavigator } from '@/components/viewer/ControlPointNavigator';
 
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import type { Beam, ControlPoint } from '@/lib/dicom/types';
@@ -98,50 +97,6 @@ export function CPComparisonViewer({
   const metersetDiff = cpA && cpB
     ? Math.abs(cpA.cumulativeMetersetWeight - cpB.cumulativeMetersetWeight) * 100
     : 0;
-
-  // Playback for the transport shown inside enlarged panels
-  const [isPlaying, setIsPlaying] = useState(false);
-  const navMax = independentNav ? maxCPsA : minCPs;
-
-  useEffect(() => {
-    if (!isPlaying) return;
-    const id = setInterval(() => {
-      if (safeIndexA >= navMax - 1) {
-        setIsPlaying(false);
-        return;
-      }
-      onCPIndexChange(safeIndexA + 1);
-    }, 120);
-    return () => clearInterval(id);
-  }, [isPlaying, safeIndexA, navMax, onCPIndexChange]);
-
-  const handlePlayToggle = useCallback(() => {
-    if (safeIndexA >= navMax - 1) onCPIndexChange(0);
-    setIsPlaying(prev => !prev);
-  }, [safeIndexA, navMax, onCPIndexChange]);
-
-  const transport = (
-    <div className="space-y-2">
-      <ControlPointNavigator
-        compact
-        currentIndex={safeIndexA}
-        totalPoints={navMax}
-        isPlaying={isPlaying}
-        onIndexChange={onCPIndexChange}
-        onPlayToggle={handlePlayToggle}
-      />
-      {independentNav && (
-        <ControlPointNavigator
-          compact
-          currentIndex={safeIndexB}
-          totalPoints={maxCPsB}
-          isPlaying={false}
-          onIndexChange={onCPIndexBChange}
-          onPlayToggle={handlePlayToggle}
-        />
-      )}
-    </div>
-  );
 
 
   return (
@@ -279,7 +234,7 @@ export function CPComparisonViewer({
 
           {/* Side-by-side View */}
           <TabsContent value="side-by-side" className="mt-0">
-            <FocusPanel size={{ width: 400, height: 200 }} footer={transport}>
+            <FocusPanel size={{ width: 400, height: 200 }}>
               {(size) => (
                 <div className="grid w-full gap-4 md:grid-cols-2">
                   {/* Plan A */}
@@ -333,7 +288,7 @@ export function CPComparisonViewer({
           {/* Difference Overlay View */}
           <TabsContent value="difference" className="mt-0">
             {cpA && cpB && (
-              <FocusPanel size={{ width: 340, height: 280 }} footer={transport}>
+              <FocusPanel size={{ width: 340, height: 280 }}>
                 {(size) => (
                   <div className="flex flex-col items-center gap-3">
                     <MLCDifferenceViewer
