@@ -1,5 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ChartFocusButton, ChartFocusOverlay, useChartFocus } from '@/components/ui/chart-focus';
+import {
+  ChartFocusButton,
+  ChartFocusFooter,
+  ChartFocusOverlay,
+  useChartFocus,
+} from '@/components/ui/chart-focus';
 import { cn } from '@/lib/utils';
 
 export interface FocusPanelSize {
@@ -13,7 +18,10 @@ interface FocusPanelProps {
   actions?: ReactNode;
   /** Base (unfocused) render size of the SVG child. */
   size: FocusPanelSize;
-  /** Rendered below the child only while focused (e.g. control-point transport). */
+  /**
+   * Rendered below the child only while focused. Defaults to the shared
+   * control-point transport so every enlarged panel steps in lockstep.
+   */
   footer?: ReactNode;
   className?: string;
   children: (size: FocusPanelSize, isFocused: boolean) => ReactNode;
@@ -55,7 +63,7 @@ export function FocusPanel({
 
   const aspect = size.width / size.height;
   const maxWidth = viewport.width * FOCUS_VIEWPORT_FRACTION;
-  const maxHeight = viewport.height * (footer ? 0.62 : FOCUS_VIEWPORT_FRACTION);
+  const maxHeight = viewport.height * 0.62;
   const focusedWidth = Math.max(size.width, Math.min(maxWidth, maxHeight * aspect));
   const renderSize: FocusPanelSize = isFocused
     ? { width: Math.round(focusedWidth), height: Math.round(focusedWidth / aspect) }
@@ -82,7 +90,11 @@ export function FocusPanel({
         <div className={cn('flex justify-center', isFocused && 'flex-1 items-center overflow-auto')}>
           {children(renderSize, isFocused)}
         </div>
-        {isFocused && footer && <div className="mt-4 shrink-0">{footer}</div>}
+        {isFocused && footer ? (
+          <div className="mt-4 shrink-0">{footer}</div>
+        ) : (
+          <ChartFocusFooter isFocused={isFocused} />
+        )}
       </div>
     </>
   );
