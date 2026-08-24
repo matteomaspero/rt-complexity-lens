@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartExportButton } from '@/components/ui/exportable-chart';
 import {
   ChartFocusButton,
+  ChartFocusFooter,
   ChartFocusOverlay,
   useChartFocus,
 } from '@/components/ui/chart-focus';
@@ -172,6 +173,7 @@ export function ComparisonMUChart({
           </LineChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_chartRef.isFocused} />
       </CardContent>
     </Card>
   );

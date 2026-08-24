@@ -29,6 +29,7 @@ import { matchBeams } from '@/lib/comparison/beam-matcher';
 import { generateComparePDF, type PDFChartRef } from '@/lib/pdf-report';
 import { matchMachineToPreset, loadMachineMappings, loadAutoSelectEnabled, getAllPresetIds } from '@/lib/machine-mapping';
 import { toast } from 'sonner';
+import { ControlPointPlaybackProvider } from '@/contexts/ControlPointPlaybackContext';
 
 export default function ComparePlans() {
   const [planA, setPlanA] = useState<SessionPlan | null>(null);
@@ -38,6 +39,7 @@ export default function ComparePlans() {
   const [independentNav, setIndependentNav] = useState(false);
   const [cpIndexB, setCpIndexB] = useState(0);
   const [gantrySync, setGantrySync] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
   const compareContentRef = useRef<HTMLDivElement>(null);
@@ -79,6 +81,22 @@ export default function ComparePlans() {
       beamB: planB.plan.beams[match.indexB],
     };
   }, [bothLoaded, planA, planB, beamMatches, selectedBeamMatch]);
+
+  // Synced-mode navigation is clamped to the shorter beam
+  const cpTotalA = useMemo(() => {
+    if (!selectedBeams) return 0;
+    const a = selectedBeams.beamA.controlPoints.length;
+    const b = selectedBeams.beamB.controlPoints.length;
+    return independentNav ? a : Math.min(a, b);
+  }, [selectedBeams, independentNav]);
+
+  const stopCPPlayback = useCallback(() => setIsPlaying(false), []);
+
+  const handleCPPlayToggle = useCallback(() => {
+    if (currentCPIndex >= cpTotalA - 1) setCurrentCPIndex(0);
+    setIsPlaying((prev) => !prev);
+  }, [currentCPIndex, cpTotalA]);
+
 
   const handleBeamMatchSelect = useCallback((index: number) => {
     setSelectedBeamMatch(index);
@@ -258,6 +276,24 @@ export default function ComparePlans() {
 
         {/* Comparison Content */}
         {bothLoaded && (
+          <ControlPointPlaybackProvider
+            currentIndex={currentCPIndex}
+            totalPoints={cpTotalA}
+            isPlaying={isPlaying}
+            setIndex={setCurrentCPIndex}
+            togglePlay={handleCPPlayToggle}
+            onPlaybackEnd={stopCPPlayback}
+            secondary={
+              independentNav && selectedBeams
+                ? {
+                    index: cpIndexB,
+                    totalPoints: selectedBeams.beamB.controlPoints.length,
+                    setIndex: setCpIndexB,
+                    label: 'Plan B',
+                  }
+                : undefined
+            }
+          >
           <div className="grid gap-6 lg:grid-cols-2" ref={compareContentRef}>
             {/* Left Column */}
             <div className="space-y-6">
@@ -341,6 +377,7 @@ export default function ComparePlans() {
               )}
             </div>
           </div>
+          </ControlPointPlaybackProvider>
         )}
 
         {/* Empty state */}

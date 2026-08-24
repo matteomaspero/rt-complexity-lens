@@ -15,6 +15,7 @@ import {
 import { ChartExportButton } from '@/components/ui/exportable-chart';
 import {
   ChartFocusButton,
+  ChartFocusFooter,
   ChartFocusOverlay,
   useChartFocus,
 } from '@/components/ui/chart-focus';
@@ -186,6 +187,7 @@ export function DeliveryTimelineChart({
           </BarChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_durationRef.isFocused} />
       </div>
 
       {/* Dose Rate Chart */}
@@ -244,6 +246,7 @@ export function DeliveryTimelineChart({
           </LineChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_doseRateRef.isFocused} />
       </div>
 
       {/* Gantry Speed Chart (only for arcs) */}
@@ -303,6 +306,7 @@ export function DeliveryTimelineChart({
             </LineChart>
           </ResponsiveContainer>
           </div>
+          <ChartFocusFooter isFocused={focus_gantryRef.isFocused} />
         </div>
       )}
 
@@ -362,6 +366,7 @@ export function DeliveryTimelineChart({
           </LineChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_mlcRef.isFocused} />
       </div>
     </div>
   );

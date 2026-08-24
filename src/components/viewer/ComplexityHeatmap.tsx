@@ -14,6 +14,7 @@ import {
 import { ChartExportButton } from '@/components/ui/exportable-chart';
 import {
   ChartFocusButton,
+  ChartFocusFooter,
   ChartFocusOverlay,
   useChartFocus,
 } from '@/components/ui/chart-focus';
@@ -129,6 +130,7 @@ export function ComplexityHeatmap({
           </AreaChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_lsvRef.isFocused} />
       </div>
 
       {/* AAV Chart Card */}
@@ -193,6 +195,7 @@ export function ComplexityHeatmap({
           </LineChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_aavRef.isFocused} />
       </div>
 
       {/* Aperture Area Chart Card */}
@@ -253,6 +256,7 @@ export function ComplexityHeatmap({
           </AreaChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_areaRef.isFocused} />
       </div>
     </div>
   );

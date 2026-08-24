@@ -19,6 +19,7 @@ import {
 import { ChartExportButton } from '@/components/ui/exportable-chart';
 import {
   ChartFocusButton,
+  ChartFocusFooter,
   ChartFocusOverlay,
   useChartFocus,
 } from '@/components/ui/chart-focus';
@@ -146,7 +147,9 @@ export function AngularDistributionChart({
         <p className="mt-2 text-center text-xs text-muted-foreground">
           0° = Superior (IEC 61217)
         </p>
+        <ChartFocusFooter isFocused={focus_polarRef.isFocused} />
       </div>
+
 
       {/* Dose Rate vs Gantry Angle - Multi-Rotation */}
       <div ref={doseRateRef} className={cn("rounded-lg border bg-card p-4", focus_doseRateRef.focusClassName)}>
@@ -259,6 +262,7 @@ export function AngularDistributionChart({
           </LineChart>
         </ResponsiveContainer>
         </div>
+        <ChartFocusFooter isFocused={focus_doseRateRef.isFocused} />
 
         {/* Legend for rotations */}
         {uniqueRotations.length > 1 && (

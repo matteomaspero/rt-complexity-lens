@@ -12,6 +12,7 @@ import {
 import { ChartExportButton } from '@/components/ui/exportable-chart';
 import {
   ChartFocusButton,
+  ChartFocusFooter,
   ChartFocusOverlay,
   useChartFocus,
 } from '@/components/ui/chart-focus';
@@ -113,6 +114,7 @@ export function CumulativeMUChart({
         </LineChart>
       </ResponsiveContainer>
       </div>
+      <ChartFocusFooter isFocused={isFocused} />
     </div>
     </>
   );
@@ -231,6 +233,7 @@ export function GantrySpeedChart({
         </LineChart>
       </ResponsiveContainer>
       </div>
+      <ChartFocusFooter isFocused={isFocused} />
     </div>
     </>
   );

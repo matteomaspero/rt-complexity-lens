@@ -9,6 +9,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useControlPointPlayback } from '@/contexts/ControlPointPlaybackContext';
+import { ControlPointNavigator } from '@/components/viewer/ControlPointNavigator';
 
 /**
  * Focus mode keeps the chart mounted in place and only restyles its container,
@@ -96,5 +98,43 @@ export function ChartFocusOverlay({
       aria-hidden="true"
     />,
     document.body
+  );
+}
+
+/**
+ * Control-point transport rendered inside enlarged panels. Reads the shared
+ * playback state, so every focused panel steps to the same control point.
+ */
+export function ChartFocusFooter({
+  isFocused,
+  className,
+}: {
+  isFocused: boolean;
+  className?: string;
+}) {
+  const playback = useControlPointPlayback();
+  if (!isFocused || !playback || playback.totalPoints === 0) return null;
+
+  return (
+    <div className={cn('mt-4 shrink-0 space-y-2', className)}>
+      <ControlPointNavigator
+        compact
+        currentIndex={playback.currentIndex}
+        totalPoints={playback.totalPoints}
+        isPlaying={playback.isPlaying}
+        onIndexChange={playback.setIndex}
+        onPlayToggle={playback.togglePlay}
+      />
+      {playback.secondary && playback.secondary.totalPoints > 0 && (
+        <ControlPointNavigator
+          compact
+          currentIndex={playback.secondary.index}
+          totalPoints={playback.secondary.totalPoints}
+          isPlaying={false}
+          onIndexChange={playback.secondary.setIndex}
+          onPlayToggle={playback.togglePlay}
+        />
+      )}
+    </div>
   );
 }

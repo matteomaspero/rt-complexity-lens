@@ -31,6 +31,7 @@ import { calculatePlanMetrics } from '@/lib/dicom';
 import { projectTargetToBEV, pickDefaultTargetIndex } from '@/lib/dicom/conformality';
 import { StructureSelector } from '@/components/viewer/StructureSelector';
 import { FocusPanel } from '@/components/ui/focus-panel';
+import { ControlPointPlaybackProvider } from '@/contexts/ControlPointPlaybackContext';
 
 
 import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
@@ -46,7 +47,6 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadedStructures, setLoadedStructures] = useState<Structure[] | null>(null);
   const [selectedStructureIndex, setSelectedStructureIndex] = useState<number | null>(null);
-  const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const { setPreset, setEnabled, userPresets, getPresetName: _getPresetName } = useThresholdConfig();
 
@@ -101,31 +101,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     setIsPlaying(false);
   }, []);
 
-  // Handle playback
-  useEffect(() => {
-    if (isPlaying && currentBeam) {
-      playIntervalRef.current = setInterval(() => {
-        setCurrentCPIndex((prev) => {
-          if (prev >= totalCPs - 1) {
-            setIsPlaying(false);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 100); // 10 FPS playback
-    } else {
-      if (playIntervalRef.current) {
-        clearInterval(playIntervalRef.current);
-        playIntervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (playIntervalRef.current) {
-        clearInterval(playIntervalRef.current);
-      }
-    };
-  }, [isPlaying, currentBeam, totalCPs]);
+  const stopPlayback = useCallback(() => setIsPlaying(false), []);
 
   const handlePlayToggle = useCallback(() => {
     if (currentCPIndex >= totalCPs - 1) {
@@ -134,17 +110,6 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     setIsPlaying((prev) => !prev);
   }, [currentCPIndex, totalCPs]);
 
-  // Compact transport reused inside every enlarged geometry panel
-  const cpTransport = (
-    <ControlPointNavigator
-      compact
-      currentIndex={currentCPIndex}
-      totalPoints={totalCPs}
-      isPlaying={isPlaying}
-      onIndexChange={setCurrentCPIndex}
-      onPlayToggle={handlePlayToggle}
-    />
-  );
 
 
   // Handle closing plan and returning to home
@@ -406,6 +371,14 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
         {/* Viewer Content */}
         <div className="flex-1 overflow-auto p-6">
           {currentBeam && currentCP && (
+            <ControlPointPlaybackProvider
+              currentIndex={currentCPIndex}
+              totalPoints={totalCPs}
+              isPlaying={isPlaying}
+              setIndex={setCurrentCPIndex}
+              togglePlay={handlePlayToggle}
+              onPlaybackEnd={stopPlayback}
+            >
             <div className="grid gap-6 lg:grid-cols-[1fr,360px]">
               {/* Left Column - Visualizations */}
               <div className="space-y-6 min-w-0" ref={chartContainerRef}>
@@ -433,7 +406,6 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   <FocusPanel
                     title="Gantry Position"
                     size={{ width: 160, height: 160 }}
-                    footer={cpTransport}
                   >
                     {(size) => (
                       <GantryViewer
@@ -448,7 +420,6 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   <FocusPanel
                     title="Collimator & Jaws"
                     size={{ width: 160, height: 160 }}
-                    footer={cpTransport}
                   >
                     {(size) => (
                       <CollimatorViewer
@@ -463,7 +434,6 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   <FocusPanel
                     title="MLC Aperture"
                     size={{ width: 200, height: 180 }}
-                    footer={cpTransport}
                   >
                     {(size) => (
                       <MLCApertureViewer
@@ -585,6 +555,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 />
               </div>
             </div>
+            </ControlPointPlaybackProvider>
           )}
         </div>
       </div>
