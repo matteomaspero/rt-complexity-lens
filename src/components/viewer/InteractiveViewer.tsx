@@ -47,7 +47,6 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadedStructures, setLoadedStructures] = useState<Structure[] | null>(null);
   const [selectedStructureIndex, setSelectedStructureIndex] = useState<number | null>(null);
-  const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const { setPreset, setEnabled, userPresets, getPresetName: _getPresetName } = useThresholdConfig();
 
@@ -372,6 +371,14 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
         {/* Viewer Content */}
         <div className="flex-1 overflow-auto p-6">
           {currentBeam && currentCP && (
+            <ControlPointPlaybackProvider
+              currentIndex={currentCPIndex}
+              totalPoints={totalCPs}
+              isPlaying={isPlaying}
+              setIndex={setCurrentCPIndex}
+              togglePlay={handlePlayToggle}
+              onPlaybackEnd={stopPlayback}
+            >
             <div className="grid gap-6 lg:grid-cols-[1fr,360px]">
               {/* Left Column - Visualizations */}
               <div className="space-y-6 min-w-0" ref={chartContainerRef}>
@@ -548,6 +555,7 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                 />
               </div>
             </div>
+            </ControlPointPlaybackProvider>
           )}
         </div>
       </div>
