@@ -143,12 +143,13 @@ export function AngularDistributionChart({
             </RadarChart>
           </ResponsiveContainer>
           </div>
-          <ChartFocusFooter isFocused={focus_polarRef.isFocused} />
         </div>
         <p className="mt-2 text-center text-xs text-muted-foreground">
           0° = Superior (IEC 61217)
         </p>
+        <ChartFocusFooter isFocused={focus_polarRef.isFocused} />
       </div>
+
 
       {/* Dose Rate vs Gantry Angle - Multi-Rotation */}
       <div ref={doseRateRef} className={cn("rounded-lg border bg-card p-4", focus_doseRateRef.focusClassName)}>
