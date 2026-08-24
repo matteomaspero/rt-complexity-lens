@@ -82,6 +82,22 @@ export default function ComparePlans() {
     };
   }, [bothLoaded, planA, planB, beamMatches, selectedBeamMatch]);
 
+  // Synced-mode navigation is clamped to the shorter beam
+  const cpTotalA = useMemo(() => {
+    if (!selectedBeams) return 0;
+    const a = selectedBeams.beamA.controlPoints.length;
+    const b = selectedBeams.beamB.controlPoints.length;
+    return independentNav ? a : Math.min(a, b);
+  }, [selectedBeams, independentNav]);
+
+  const stopCPPlayback = useCallback(() => setIsPlaying(false), []);
+
+  const handleCPPlayToggle = useCallback(() => {
+    if (currentCPIndex >= cpTotalA - 1) setCurrentCPIndex(0);
+    setIsPlaying((prev) => !prev);
+  }, [currentCPIndex, cpTotalA]);
+
+
   const handleBeamMatchSelect = useCallback((index: number) => {
     setSelectedBeamMatch(index);
     setCurrentCPIndex(0);
