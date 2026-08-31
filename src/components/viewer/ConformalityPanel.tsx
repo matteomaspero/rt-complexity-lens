@@ -70,8 +70,10 @@ export function ConformalityPanel({
             structures={structures}
             selectedIndex={selectedIndex}
             onSelect={handleSelect}
+            isocenter={isocenter}
           />
         )}
+
       </div>
     </div>
   );
