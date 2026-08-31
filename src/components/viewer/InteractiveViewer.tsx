@@ -122,11 +122,25 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
     setSelectedStructureIndex(null);
   }, []);
 
+  // Plan isocentre (patient coordinates) used for isocentre-aware ROI picking
+  const planIsocenter = useMemo(
+    () =>
+      sessionPlan?.plan.beams[0]?.controlPoints[0]?.isocenterPosition ??
+      null,
+    [sessionPlan]
+  );
+
   // Handle structures loaded from RTStructUploadZone
-  const handleStructuresLoaded = useCallback((structures: Structure[]) => {
-    setLoadedStructures(structures);
-    setSelectedStructureIndex(structures.length > 0 ? pickDefaultTargetIndex(structures) : null);
-  }, []);
+  const handleStructuresLoaded = useCallback(
+    (structures: Structure[]) => {
+      setLoadedStructures(structures);
+      setSelectedStructureIndex(
+        structures.length > 0 ? pickDefaultTargetIndex(structures, planIsocenter) : null
+      );
+    },
+    [planIsocenter]
+  );
+
 
   // Projected target silhouette (BEV) for the current control point
   const targetOutline = useMemo(() => {
