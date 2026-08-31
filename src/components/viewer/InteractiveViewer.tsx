@@ -363,9 +363,11 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   structures={loadedStructures}
                   selectedIndex={selectedStructureIndex}
                   onSelect={setSelectedStructureIndex}
+                  isocenter={planIsocenter}
                   className="w-56"
                 />
               )}
+
 
             </div>
           </div>
