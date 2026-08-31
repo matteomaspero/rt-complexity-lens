@@ -25,6 +25,20 @@ from .types import (
 
 # DICOM RT Plan SOP Class UID
 RT_PLAN_SOP_CLASS = "1.2.840.10008.5.1.4.1.1.481.5"
+RT_STRUCT_SOP_CLASS = "1.2.840.10008.5.1.4.1.1.481.3"
+
+
+def _read_dataset(file_path) -> Dataset:
+    """Read a DICOM file tolerantly.
+
+    Some TPS exports (e.g. Elekta Monaco) omit the Part-10 preamble and
+    file-meta group; those raw datasets are read as Implicit VR Little Endian.
+    """
+    ds = pydicom.dcmread(file_path, force=True)
+    if not getattr(ds.file_meta, "TransferSyntaxUID", None):
+        ds.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
+    return ds
+
 
 
 def _get_string(ds: Dataset, keyword: str, default: str = "") -> str:
@@ -604,7 +618,7 @@ def parse_rtplan(file_path: str) -> RTPlan:
         ValueError: If file is not a valid RT Plan
         FileNotFoundError: If file does not exist
     """
-    ds = pydicom.dcmread(file_path)
+    ds = _read_dataset(file_path)
     
     # Validate SOP Class (optional - some files may not have it)
     sop_class = _get_string(ds, "SOPClassUID")
@@ -714,13 +728,13 @@ def parse_rtstruct(file_path: str) -> dict:
         ValueError: If file is not a valid RTSTRUCT.
     """
     try:
-        ds = pydicom.dcmread(file_path)
+        ds = _read_dataset(file_path)
     except Exception as e:
         raise ValueError(f"Failed to read DICOM file: {e}")
     
     # Verify this is an RTSTRUCT
     sop_class_uid = _get_string(ds, "SOPClassUID")
-    if sop_class_uid != "1.2.840.10008.5.1.4.1.1.481.4":  # RTSTRUCT SOP Class UID
+    if sop_class_uid and sop_class_uid != RT_STRUCT_SOP_CLASS:
         raise ValueError(f"File is not an RTSTRUCT (SOP Class: {sop_class_uid})")
     
     structures: dict = {}
@@ -729,17 +743,25 @@ def parse_rtstruct(file_path: str) -> dict:
     roi_map = {}
     if hasattr(ds, "StructureSetROISequence"):
         for roi in ds.StructureSetROISequence:
-            roi_number = int(roi.ReferencedROINumber)
-            roi_name = str(roi.ROIName)
-            roi_map[roi_number] = roi_name
+            # (3006,0022) ROI Number / (3006,0026) ROI Name
+            roi_number = int(getattr(roi, "ROINumber", getattr(roi, "ReferencedROINumber", 0)))
+            roi_name = str(getattr(roi, "ROIName", "") or f"ROI_{roi_number}").replace("\x00", "").strip()
+            roi_map[roi_number] = roi_name or f"ROI_{roi_number}"
+
     
     # Parse ROI Contour Sequence
     if hasattr(ds, "ROIContourSequence"):
         for roi_contour in ds.ROIContourSequence:
             referenced_roi_num = int(roi_contour.ReferencedROINumber)
             
-            # Get structure name
-            structure_name = roi_map.get(referenced_roi_num, f"ROI_{referenced_roi_num}")
+            # Get structure name; distinct ROIs may share a name, keep both
+            base_name = roi_map.get(referenced_roi_num, f"ROI_{referenced_roi_num}")
+            structure_name = base_name
+            suffix = 2
+            while structure_name in structures:
+                structure_name = f"{base_name} ({suffix})"
+                suffix += 1
+
             
             # Parse contours
             contours = []

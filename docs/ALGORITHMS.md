@@ -935,3 +935,50 @@ Implementation notes:
   available while zoomed in. On the Compare page the compact transport drives
   the existing synced navigation, plus a second row for Plan B when independent
   navigation is enabled.
+
+## 2026-08-31 — Headerless DICOM support (parser)
+
+Some TPS exports (observed with Elekta Monaco / Elekta Solutions AB) write a raw
+DICOM dataset with **no Part-10 preamble, no `DICM` marker and no file-meta
+group**. The data itself is valid; only the container is missing.
+
+Both readers now detect this:
+
+- **TypeScript** (`src/lib/dicom/parser.ts`, `readDicomDataSet()`): when bytes
+  128–131 are not `DICM`, parsing is retried with an explicit transfer syntax —
+  Implicit VR Little Endian (`1.2.840.10008.1.2`) first, then Explicit VR Little
+  Endian (`1.2.840.10008.1.2.1`). Part-10 files keep the standard path.
+- **Python** (`python/rtplan_complexity/parser.py`, `_read_dataset()`): uses
+  `pydicom.dcmread(..., force=True)` and defaults a missing
+  `TransferSyntaxUID` to Implicit VR Little Endian.
+
+Both `parseRTPlan()`/`parse_rtplan()` and `parseRTSTRUCT()`/`parse_rtstruct()`
+route through these helpers, so headerless plans and structure sets can be used
+together for conformality analysis.
+
+Additional validation added at the same time:
+
+- Uploading an RT Structure Set as a plan raises a clear message pointing to the
+  conformality panel (SOP Class `1.2.840.10008.5.1.4.1.1.481.3` / Modality
+  `RTSTRUCT`).
+- A dataset with no `BeamSequence` is rejected instead of returning an empty plan.
+- Python ROI naming now reads `ROIName (3006,0026)` keyed on
+  `ROINumber (3006,0022)` (previously `ReferencedROINumber`, which is absent in
+  `StructureSetROISequence`), matching the TypeScript parser, and duplicate ROI
+  names are disambiguated with a numeric suffix.
+- The Python RTSTRUCT SOP Class check used `...481.4`; corrected to `...481.3`.
+
+Verified on a headerless Monaco VMAT plan (137 control points, 80 MLCX leaf
+pairs) with its 35-ROI structure set, target `CTV_6000_20251027`:
+
+| Metric | TypeScript | Python |
+| --- | --- | --- |
+| MCS | 0.204603 | 0.204603 |
+| EM | 0.115672 | 0.115672 |
+| TCOV | 0.022814 | 0.022814 |
+| ATR | 0.327520 | 0.327520 |
+| PAM | 0.977186 | 0.977186 |
+| MARG (mm) | 21.582 | 21.524 |
+
+MARG differs by 0.27 %, within the documented convex-hull/polygon-clipping
+tolerance between `polygon-clipping` (TS) and `shapely` (Python).

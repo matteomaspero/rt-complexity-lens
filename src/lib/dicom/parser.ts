@@ -1,5 +1,5 @@
 import * as dicomParser from 'dicom-parser';
-import type { RTPlan, Beam, ControlPoint, FractionGroup, MLCLeafPositions, DoseReference } from './types';
+import type { RTPlan, Beam, ControlPoint, FractionGroup, MLCLeafPositions, DoseReference, Structure } from './types';
 
 // DICOM Tags for RT Plan
 const TAGS = {
@@ -609,9 +609,62 @@ function parseDoseReferences(dataSet: dicomParser.DataSet): DoseReference[] {
   return doseRefs;
 }
 
+const IMPLICIT_VR_LE = '1.2.840.10008.1.2';
+const EXPLICIT_VR_LE = '1.2.840.10008.1.2.1';
+
+function hasPart10Header(byteArray: Uint8Array): boolean {
+  if (byteArray.length < 132) return false;
+  return (
+    byteArray[128] === 0x44 && // D
+    byteArray[129] === 0x49 && // I
+    byteArray[130] === 0x43 && // C
+    byteArray[131] === 0x4d // M
+  );
+}
+
+/**
+ * Parse a DICOM byte array tolerantly.
+ *
+ * Some TPS exports (e.g. Elekta Monaco) write a raw dataset with no Part-10
+ * preamble / file-meta group. Those files are still valid DICOM data, so fall
+ * back to an explicit transfer syntax instead of rejecting them.
+ */
+export function readDicomDataSet(byteArray: Uint8Array): dicomParser.DataSet {
+  const attempts: Array<() => dicomParser.DataSet> = hasPart10Header(byteArray)
+    ? [() => dicomParser.parseDicom(byteArray)]
+    : [
+        () => dicomParser.parseDicom(byteArray, { TransferSyntaxUID: IMPLICIT_VR_LE }),
+        () => dicomParser.parseDicom(byteArray, { TransferSyntaxUID: EXPLICIT_VR_LE }),
+      ];
+
+  let lastError: unknown;
+  for (const attempt of attempts) {
+    try {
+      return attempt();
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  const detail = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(
+    `Unable to read DICOM data: the file is neither a DICOM Part-10 file nor a readable raw dataset (${detail})`
+  );
+}
+
 export function parseRTPlan(arrayBuffer: ArrayBuffer, fileName: string): RTPlan {
   const byteArray = new Uint8Array(arrayBuffer);
-  const dataSet = dicomParser.parseDicom(byteArray);
+  const dataSet = readDicomDataSet(byteArray);
+
+  const sopClass = getString(dataSet, 'x00080016') || '';
+  const modality = (getString(dataSet, 'x00080060') || '').trim().toUpperCase();
+  if (sopClass === '1.2.840.10008.5.1.4.1.1.481.3' || modality === 'RTSTRUCT') {
+    throw new Error('This file is an RT Structure Set, not an RT Plan. Upload it in the conformality (RTSTRUCT) panel.');
+  }
+  if (!dataSet.elements[TAGS.BeamSequence] && !dataSet.elements['x300a03a2']) {
+    throw new Error('No beam data found — this does not appear to be a DICOM RT Plan.');
+  }
+
   
   // Parse beams
   const beams: Beam[] = [];
@@ -710,12 +763,12 @@ export function parseRTPlan(arrayBuffer: ArrayBuffer, fileName: string): RTPlan 
  * @param fileName - Original file name for labeling
  * @returns Map of structure names to Structure objects
  */
-export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): Map<string, any> {
+export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): Map<string, Structure> {
   try {
     const byteArray = new Uint8Array(arrayBuffer);
-    const dataSet = dicomParser.parseDicom(byteArray);
+    const dataSet = readDicomDataSet(byteArray);
     
-    const structures = new Map<string, any>();
+    const structures = new Map<string, Structure>();
     
     // DICOM tags for RTSTRUCT
     const ROI_CONTOUR_SEQ = 'x30060039';
@@ -809,7 +862,7 @@ export function parseRTSTRUCT(arrayBuffer: ArrayBuffer, fileName: string = ''): 
 /**
  * Get a structure by name from parsed structures (case-insensitive)
  */
-export function getStructureByName(structures: Map<string, any>, label: string): any | undefined {
+export function getStructureByName(structures: Map<string, Structure>, label: string): Structure | undefined {
   // Try exact match first
   if (structures.has(label)) {
     return structures.get(label);
