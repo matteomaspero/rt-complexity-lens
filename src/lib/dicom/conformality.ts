@@ -441,8 +441,45 @@ export function calculatePlanConformality(
   };
 }
 
-/** Heuristic pick of the most likely target ROI (PTV > CTV > GTV > largest). */
-export function pickDefaultTargetIndex(structures: Structure[]): number {
+/** Centroid of all contour points of a structure (patient coordinates, mm). */
+export function structureCentroid(structure: Structure): [number, number, number] | null {
+  let n = 0;
+  let sx = 0;
+  let sy = 0;
+  let sz = 0;
+  for (const contour of structure.contours) {
+    for (const [x, y, z] of contour.points) {
+      sx += x;
+      sy += y;
+      sz += z;
+      n++;
+    }
+  }
+  if (n === 0) return null;
+  return [sx / n, sy / n, sz / n];
+}
+
+/** 3D distance (mm) from a structure centroid to the plan isocentre, or null when unknown. */
+export function structureDistanceToIsocenter(
+  structure: Structure,
+  isocenter?: [number, number, number] | null
+): number | null {
+  if (!isocenter) return null;
+  const c = structureCentroid(structure);
+  if (!c) return null;
+  return Math.hypot(c[0] - isocenter[0], c[1] - isocenter[1], c[2] - isocenter[2]);
+}
+
+/**
+ * Heuristic pick of the most likely target ROI (PTV > CTV > GTV > largest).
+ * When the plan isocentre is known, the candidate whose centroid is closest to
+ * the isocentre wins — multi-target structure sets often contain targets that
+ * belong to other plans.
+ */
+export function pickDefaultTargetIndex(
+  structures: Structure[],
+  isocenter?: [number, number, number] | null
+): number {
   if (structures.length === 0) return -1;
   const score = (name: string): number => {
     const n = name.toUpperCase();
@@ -451,10 +488,33 @@ export function pickDefaultTargetIndex(structures: Structure[]): number {
     if (n.includes('GTV')) return 1;
     return 0;
   };
+
   let best = 0;
   let bestScore = -1;
+  let bestDistance = Infinity;
   structures.forEach((s, i) => {
-    const sc = score(s.name) * 1000 + s.contours.length;
+    const nameScore = score(s.name);
+    if (nameScore === 0 && isocenter) {
+      // Non-target ROIs stay ineligible when a target-like ROI exists
+      if (bestScore > 0) return;
+    }
+    const distance = structureDistanceToIsocenter(s, isocenter);
+    const sc = nameScore * 1000 + s.contours.length;
+    if (isocenter && distance !== null) {
+      // Prefer name class first, then proximity to isocentre
+      if (nameScore > Math.floor(bestScore / 1000)) {
+        bestScore = sc;
+        bestDistance = distance;
+        best = i;
+        return;
+      }
+      if (nameScore === Math.floor(bestScore / 1000) && distance < bestDistance) {
+        bestScore = sc;
+        bestDistance = distance;
+        best = i;
+      }
+      return;
+    }
     if (sc > bestScore) {
       bestScore = sc;
       best = i;
@@ -462,3 +522,4 @@ export function pickDefaultTargetIndex(structures: Structure[]): number {
   });
   return best;
 }
+
