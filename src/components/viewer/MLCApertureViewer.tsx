@@ -138,94 +138,110 @@ export function MLCApertureViewer({
         className="fill-muted/30"
       />
 
-      {/* Jaw outline (only when jaw data is available) */}
-      {hasValidJaws && (
-        <rect
-          x={jawPositions.x1}
-          y={jawPositions.y1}
-          width={jawPositions.x2 - jawPositions.x1}
-          height={jawPositions.y2 - jawPositions.y1}
-          fill="none"
-          stroke="hsl(var(--foreground))"
-          strokeWidth="1"
-          strokeDasharray="4 2"
-          opacity="0.3"
-        />
-      )}
-
-      {/* Leaf pairs */}
-      {leafPairs.map((pair) => (
-        <g key={pair.index}>
-          {/* Bank A leaf (left side, extending from far left to leaf position) */}
+      {/* Geometry is flipped vertically so cranial (+Y in the MLC frame) is up */}
+      <g transform={`translate(0, ${viewBox.minY + viewBox.maxY}) scale(1, -1)`}>
+        {/* Jaw outline (only when jaw data is available) */}
+        {hasValidJaws && (
           <rect
-            x={viewBox.minX}
-            y={pair.y}
-            width={pair.bankAX - viewBox.minX}
-            height={pair.height - 0.5}
-            className="fill-[hsl(var(--mlc-bank-a))]"
-            opacity="0.85"
+            x={jawPositions.x1}
+            y={jawPositions.y1}
+            width={jawPositions.x2 - jawPositions.x1}
+            height={jawPositions.y2 - jawPositions.y1}
+            fill="none"
+            stroke="hsl(var(--foreground))"
+            strokeWidth="1"
+            strokeDasharray="4 2"
+            opacity="0.3"
           />
+        )}
 
-          {/* Bank B leaf (right side, extending from leaf position to far right) */}
-          <rect
-            x={pair.bankBX}
-            y={pair.y}
-            width={viewBox.maxX - pair.bankBX}
-            height={pair.height - 0.5}
-            className="fill-[hsl(var(--mlc-bank-b))]"
-            opacity="0.85"
-          />
-
-          {/* Aperture opening highlight */}
-          {pair.opening > 0 && (
+        {/* Leaf pairs */}
+        {leafPairs.map((pair) => (
+          <g key={pair.index}>
+            {/* Bank A leaf (left side, extending from far left to leaf position) */}
             <rect
-              x={pair.bankAX}
+              x={viewBox.minX}
               y={pair.y}
-              width={pair.opening}
+              width={pair.bankAX - viewBox.minX}
               height={pair.height - 0.5}
-              className="fill-[hsl(var(--mlc-aperture))]"
-              opacity="0.2"
+              className="fill-[hsl(var(--mlc-bank-a))]"
+              opacity="0.85"
             />
-          )}
-        </g>
-      ))}
 
-      {/* Projected target outline (RTSTRUCT BEV silhouette) */}
-      {targetOutline?.map((poly, pi) =>
-        poly.map((ring, ri) => (
-          <polygon
-            key={`t-${pi}-${ri}`}
-            points={ring.map(([x, y]) => `${x},${y}`).join(' ')}
-            fill="hsl(var(--primary))"
-            fillOpacity="0.12"
-            stroke="hsl(var(--primary))"
-            strokeWidth="1.2"
-          />
-        ))
-      )}
+            {/* Bank B leaf (right side, extending from leaf position to far right) */}
+            <rect
+              x={pair.bankBX}
+              y={pair.y}
+              width={viewBox.maxX - pair.bankBX}
+              height={pair.height - 0.5}
+              className="fill-[hsl(var(--mlc-bank-b))]"
+              opacity="0.85"
+            />
 
-      {/* Center crosshair */}
-      <line
-        x1="0"
-        y1={viewBox.minY}
-        x2="0"
-        y2={viewBox.maxY}
-        stroke="hsl(var(--foreground))"
-        strokeWidth="0.5"
-        opacity="0.2"
-      />
-      <line
-        x1={viewBox.minX}
-        y1="0"
-        x2={viewBox.maxX}
-        y2="0"
-        stroke="hsl(var(--foreground))"
-        strokeWidth="0.5"
-        opacity="0.2"
-      />
+            {/* Aperture opening highlight */}
+            {pair.opening > 0 && (
+              <rect
+                x={pair.bankAX}
+                y={pair.y}
+                width={pair.opening}
+                height={pair.height - 0.5}
+                className="fill-[hsl(var(--mlc-aperture))]"
+                opacity="0.2"
+              />
+            )}
+          </g>
+        ))}
+
+        {/* Projected target outline (RTSTRUCT BEV silhouette) */}
+        {targetOutline?.map((poly, pi) =>
+          poly.map((ring, ri) => (
+            <polygon
+              key={`t-${pi}-${ri}`}
+              points={ring.map(([x, y]) => `${x},${y}`).join(' ')}
+              fill="hsl(var(--primary))"
+              fillOpacity="0.12"
+              stroke="hsl(var(--primary))"
+              strokeWidth="1.2"
+            />
+          ))
+        )}
+
+        {/* Center crosshair */}
+        <line
+          x1="0"
+          y1={viewBox.minY}
+          x2="0"
+          y2={viewBox.maxY}
+          stroke="hsl(var(--foreground))"
+          strokeWidth="0.5"
+          opacity="0.2"
+        />
+        <line
+          x1={viewBox.minX}
+          y1="0"
+          x2={viewBox.maxX}
+          y2="0"
+          stroke="hsl(var(--foreground))"
+          strokeWidth="0.5"
+          opacity="0.2"
+        />
+      </g>
+
+      {/* Axis labels (unflipped) */}
+      <text x={viewBox.minX + 6} y={viewBox.minY + 12} className="fill-muted-foreground text-[8px]">
+        Y+ cranial
+      </text>
+      <text
+        x={viewBox.maxX - 6}
+        y={viewBox.maxY - 6}
+        textAnchor="end"
+        className="fill-muted-foreground text-[8px]"
+      >
+        X leaf travel (mm)
+      </text>
 
       {/* Legend */}
-      <g transform={`translate(${viewBox.minX + 10}, ${viewBox.maxY - 40})`}>
+      <g transform={`translate(${viewBox.minX + 10}, ${viewBox.maxY - 60})`}>
         <rect width="12" height="12" className="fill-[hsl(var(--mlc-bank-a))]" opacity="0.85" />
         <text x="16" y="10" className="fill-foreground text-[8px]">Bank A</text>
         
@@ -252,3 +268,4 @@ export function MLCApertureViewer({
     </svg>
   );
 }
+
