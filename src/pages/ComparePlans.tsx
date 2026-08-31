@@ -272,7 +272,9 @@ export default function ComparePlans() {
           onTargetChange={handleTargetChange}
           description="Optional: load one RTSTRUCT and pick a target ROI to compute conformality metrics (TCOV, ATR, MARG) for both plans."
           className="max-w-xl"
+          isocenter={planA?.plan.beams[0]?.controlPoints[0]?.isocenterPosition ?? null}
         />
+
 
         {/* Comparison Content */}
         {bothLoaded && (

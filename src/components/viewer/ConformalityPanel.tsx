@@ -10,12 +10,15 @@ interface ConformalityPanelProps {
   onTargetChange: (structure: Structure | null) => void;
   description?: string;
   className?: string;
+  /** Plan isocentre (patient coordinates, mm); enables isocentre-aware ROI picking. */
+  isocenter?: [number, number, number] | null;
 }
 
 export function ConformalityPanel({
   onTargetChange,
   description = 'Optional: load an RTSTRUCT to compute conformality metrics (TCOV, ATR, MARG) against the plan apertures.',
   className,
+  isocenter,
 }: ConformalityPanelProps) {
   const [structures, setStructures] = useState<Structure[] | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -25,13 +28,14 @@ export function ConformalityPanel({
     (loaded: Structure[], name: string) => {
       setStructures(loaded);
       setFileName(name);
-      const picked = pickDefaultTargetIndex(loaded);
+      const picked = pickDefaultTargetIndex(loaded, isocenter);
       const defaultIndex = picked >= 0 ? picked : null;
       setSelectedIndex(defaultIndex);
       onTargetChange(defaultIndex !== null ? loaded[defaultIndex] : null);
     },
-    [onTargetChange]
+    [onTargetChange, isocenter]
   );
+
 
   const handleClear = useCallback(() => {
     setStructures(null);
@@ -66,8 +70,10 @@ export function ConformalityPanel({
             structures={structures}
             selectedIndex={selectedIndex}
             onSelect={handleSelect}
+            isocenter={isocenter}
           />
         )}
+
       </div>
     </div>
   );
