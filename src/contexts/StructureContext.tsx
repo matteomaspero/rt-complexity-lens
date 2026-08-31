@@ -7,7 +7,11 @@ interface StructureContextType {
   fileName: string | null;
   selectedIndex: number | null;
   selectedStructure: Structure | undefined;
-  setStructures: (structures: Structure[], fileName: string) => void;
+  setStructures: (
+    structures: Structure[],
+    fileName: string,
+    isocenter?: [number, number, number] | null
+  ) => void;
   setSelectedIndex: (index: number | null) => void;
   clearStructures: () => void;
 }
@@ -19,11 +23,15 @@ export function StructureProvider({ children }: { children: React.ReactNode }) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  const setStructures = useCallback((next: Structure[], name: string) => {
-    setStructuresState(next);
-    setFileName(name);
-    setSelectedIndex(next.length > 0 ? pickDefaultTargetIndex(next) : null);
-  }, []);
+  const setStructures = useCallback(
+    (next: Structure[], name: string, isocenter?: [number, number, number] | null) => {
+      setStructuresState(next);
+      setFileName(name);
+      setSelectedIndex(next.length > 0 ? pickDefaultTargetIndex(next, isocenter) : null);
+    },
+    []
+  );
+
 
   const clearStructures = useCallback(() => {
     setStructuresState(null);
