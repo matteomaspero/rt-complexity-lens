@@ -56,8 +56,23 @@ export function MLCApertureViewer({
     minY = -totalHeight / 2 - 20;
     maxY = totalHeight / 2 + 20;
 
+    // Include the projected target silhouette so it is never clipped out of view
+    if (targetOutline) {
+      for (const poly of targetOutline) {
+        for (const ring of poly) {
+          for (const [x, y] of ring) {
+            minX = Math.min(minX, x - 10);
+            maxX = Math.max(maxX, x + 10);
+            minY = Math.min(minY, y - 10);
+            maxY = Math.max(maxY, y + 10);
+          }
+        }
+      }
+    }
+
     return { minX, maxX, minY, maxY };
-  }, [bankA, bankB, leafWidths, jawPositions, hasValidJaws]);
+  }, [bankA, bankB, leafWidths, jawPositions, hasValidJaws, targetOutline]);
+
 
   // Generate leaf pair rectangles
   const leafPairs = useMemo(() => {
