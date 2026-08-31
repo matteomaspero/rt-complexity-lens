@@ -703,12 +703,29 @@ PAM = Σ_beams(BAM_i · MU_i) / Σ_beams(MU_i)
 - All conformality fields are `undefined` (Python `None`) when no RTSTRUCT/ROI
   is selected — they are never silently zero.
 
+### ROI selection and display conventions
+
+- **Default ROI pick** (`pickDefaultTargetIndex`) scores names (PTV > CTV > GTV)
+  and, when the plan isocentre is available, breaks ties by the smallest 3D
+  distance between the ROI centroid and the isocentre. Multi-target structure
+  sets frequently contain targets belonging to other plans of the same course;
+  proximity to the isocentre identifies the target this plan actually treats.
+- The ROI picker lists the centroid-to-isocentre distance per ROI, and warns when
+  the selected ROI centroid lies more than 30 mm from the isocentre — conformality
+  values for such an ROI are geometrically valid but clinically meaningless for
+  that plan.
+- **BEV display**: the MLC aperture view is drawn cranial-up (`+Y` of the MLC
+  frame at the top), and its view extent includes the projected target silhouette
+  so an off-field target is never clipped out of view. Display orientation has no
+  effect on any computed quantity.
+
 **Assumptions & limitations**
 
 1. Perfect MLC/jaw positioning; no leaf transmission or penumbra.
 2. Convex-hull target silhouette (no slice-wise union, no concavity).
 3. Rigid geometry: no intra-fraction motion or deformation.
 4. Educational use only — conformality output is not clinically validated.
+
 
 
 ---
