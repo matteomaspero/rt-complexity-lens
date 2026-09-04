@@ -116,6 +116,11 @@ class Beam:
     # Energy fields (DICOM 300A,0114)
     nominal_beam_energy: Optional[float] = None  # Energy in MeV
     energy_label: Optional[str] = None  # Clinical label (e.g., '6X', '10FFF', '9E')
+    # Primary Fluence Mode Sequence (3002,0050): FluenceMode (3002,0051) / FluenceModeID (3002,0052)
+    fluence_mode: Optional[str] = None  # 'STANDARD' | 'NON_STANDARD'
+    fluence_mode_id: Optional[str] = None  # e.g. 'FFF', 'SRS'
+    is_fff: bool = False  # Flattening-filter-free, derived from the fluence mode tags
+    dose_rate_set: Optional[float] = None  # Planned dose rate (300A,0115), MU/min
     treatment_machine_name: Optional[str] = None  # Treatment machine name per beam (DICOM 300A,00B2)
 
 
@@ -250,6 +255,11 @@ class BeamMetrics:
     radiation_type: Optional[str] = None  # 'PHOTON', 'ELECTRON', 'PROTON', 'NEUTRON', 'ION'
     nominal_beam_energy: Optional[float] = None  # Energy in MeV
     energy_label: Optional[str] = None  # Clinical label (e.g., '6X', '10FFF', '9E')
+    fluence_mode: Optional[str] = None  # 'STANDARD' | 'NON_STANDARD' (3002,0051)
+    fluence_mode_id: Optional[str] = None  # e.g. 'FFF' (3002,0052)
+    is_fff: bool = False  # Flattening-filter-free beam
+    max_dose_rate_used: Optional[float] = None  # MU/min used for the delivery-time estimate
+    dose_rate_source: Optional[str] = None  # 'plan' | 'preset'
     
     # UCoMX Accuracy Metrics
     LG: Optional[float] = None  # Leaf Gap (mm)
@@ -406,7 +416,8 @@ class PlanMetrics:
 class MachineDeliveryParams:
     """Machine delivery parameters for time estimation."""
     max_dose_rate: float = 600.0  # MU/min
-    max_dose_rate_fff: Optional[float] = None  # MU/min for FFF beams
+    max_dose_rate_fff: Optional[float] = None  # MU/min for FFF beams (legacy fallback)
+    energy_dose_rates: Optional[Dict[str, float]] = None  # e.g. {'6FFF': 1400, '10X': 600}
     max_gantry_speed: float = 4.8  # deg/s
     max_mlc_speed: float = 25.0  # mm/s
     mlc_type: str = "MLCX"  # 'MLCX', 'MLCY', 'DUAL'
