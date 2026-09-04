@@ -81,7 +81,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const plan = parseRTPlan(arrayBuffer, file.name);
-        const metrics = calculatePlanMetrics(plan, undefined, targetStructureRef.current ?? undefined);
+        const metrics = calculatePlanMetrics(plan, deliveryParamsRef.current, targetStructureRef.current ?? undefined);
 
         setPlans(prev => prev.map(p => 
           p.id === planId 
@@ -144,7 +144,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
     setPlans(prev =>
       prev.map(p =>
         p.status === 'success'
-          ? { ...p, metrics: calculatePlanMetrics(p.plan, undefined, structure ?? undefined) }
+          ? { ...p, metrics: calculatePlanMetrics(p.plan, deliveryParamsRef.current, structure ?? undefined) }
           : p
       )
     );
