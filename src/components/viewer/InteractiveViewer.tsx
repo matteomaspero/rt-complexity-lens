@@ -48,7 +48,17 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   const [loadedStructures, setLoadedStructures] = useState<Structure[] | null>(null);
   const [selectedStructureIndex, setSelectedStructureIndex] = useState<number | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const { setPreset, setEnabled, userPresets, getPresetName: _getPresetName } = useThresholdConfig();
+  const {
+    setPreset,
+    setEnabled,
+    userPresets,
+    getPresetName: _getPresetName,
+    getCurrentDeliveryParams,
+  } = useThresholdConfig();
+
+  // Machine delivery parameters of the selected preset (dose rates per energy, speeds)
+  const deliveryParams = useMemo(() => getCurrentDeliveryParams(), [getCurrentDeliveryParams]);
+
 
   // Get current beam and control point
   const currentBeam: Beam | null = sessionPlan?.plan.beams[selectedBeamIndex] ?? null;
