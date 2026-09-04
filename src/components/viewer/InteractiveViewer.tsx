@@ -161,20 +161,22 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   }, [currentCP, currentBeam, loadedStructures, selectedStructureIndex]);
 
 
-  // Recalculate metrics when structure is selected
+  // Recalculate metrics when the target structure or the machine preset changes
   useEffect(() => {
-    if (sessionPlan && selectedStructureIndex !== null && loadedStructures) {
-      const selectedStructure = loadedStructures[selectedStructureIndex];
-      const updatedMetrics = calculatePlanMetrics(
-        sessionPlan.plan,
-        undefined,
-        selectedStructure
-      );
-      setSessionPlan((prev) =>
-        prev ? { ...prev, metrics: updatedMetrics } : null
-      );
-    }
-  }, [selectedStructureIndex, loadedStructures]);
+    if (!sessionPlan) return;
+    const selectedStructure =
+      selectedStructureIndex !== null && loadedStructures
+        ? loadedStructures[selectedStructureIndex]
+        : undefined;
+    const updatedMetrics = calculatePlanMetrics(
+      sessionPlan.plan,
+      deliveryParams,
+      selectedStructure
+    );
+    setSessionPlan((prev) => (prev ? { ...prev, metrics: updatedMetrics } : null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStructureIndex, loadedStructures, deliveryParams, sessionPlan?.id]);
+
 
   // No plan loaded - show upload zone
   if (!sessionPlan) {
