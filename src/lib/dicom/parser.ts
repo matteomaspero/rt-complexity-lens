@@ -427,22 +427,50 @@ function getLeafWidths(beamDataSet: dicomParser.DataSet): { widths: number[]; bo
 }
 
 /**
+ * Read Primary Fluence Mode Sequence (3002,0050).
+ * NON_STANDARD + FluenceModeID (e.g. 'FFF', 'SRS') marks an unflattened beam.
+ */
+function parseFluenceMode(beamDataSet: dicomParser.DataSet): {
+  fluenceMode?: string;
+  fluenceModeID?: string;
+  isFFF: boolean;
+} {
+  const seq = beamDataSet.elements[TAGS.PrimaryFluenceModeSequence];
+  const item = seq?.items?.[0]?.dataSet;
+  if (!item) return { isFFF: false };
+
+  const fluenceMode = getString(item, TAGS.FluenceMode)?.trim().toUpperCase() || undefined;
+  const fluenceModeID = getString(item, TAGS.FluenceModeID)?.trim().toUpperCase() || undefined;
+  const isFFF = fluenceMode === 'NON_STANDARD' && !!fluenceModeID && /FFF/.test(fluenceModeID);
+
+  return { fluenceMode, fluenceModeID, isFFF };
+}
+
+/**
  * Generate clinical energy label from radiation type and energy value
  * Per DICOM standard nomenclature:
  * - Photons: 6X, 10X, 15X, 6FFF, 10FFF (X = MV, FFF = Flattening Filter Free)
  * - Electrons: 6E, 9E, 12E, 15E, 18E (E = MeV)
  * - Protons/Ions: Numeric MeV value
+ *
+ * FFF is taken from the Primary Fluence Mode tags; the beam name is only a
+ * fallback for exports that omit (3002,0050).
  */
-function generateEnergyLabel(radiationType: string, energy: number | undefined, beamName: string): string | undefined {
+function generateEnergyLabel(
+  radiationType: string,
+  energy: number | undefined,
+  beamName: string,
+  isFFFFromTag?: boolean
+): string | undefined {
   if (energy === undefined || energy === 0) return undefined;
   
   const upperRadType = radiationType.toUpperCase();
   
   if (upperRadType === 'PHOTON') {
-    // Check for FFF (Flattening Filter Free) - detected from beam name
-    const isFFF = /FFF|SRS|SBRT/i.test(beamName);
+    const isFFF = isFFFFromTag ?? /FFF/i.test(beamName);
     return isFFF ? `${Math.round(energy)}FFF` : `${Math.round(energy)}X`;
   }
+
   
   if (upperRadType === 'ELECTRON') {
     return `${Math.round(energy)}E`;
