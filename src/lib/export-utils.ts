@@ -137,6 +137,11 @@ export const PLAN_COLUMNS: ColumnDef[] = [
   { key: 'cpCount', header: 'CP Count', category: 'Plan Info', decimals: 0, extract: p => p.plan.beams?.reduce((s, b) => s + (b.numberOfControlPoints || 0), 0) ?? 0, extractBeam: bm => bm.numberOfControlPoints },
   { key: 'radiationType', header: 'Radiation Type', category: 'Plan Info', decimals: 0, extract: p => getDominantRadiationType(p.plan), extractBeam: bm => bm.radiationType ?? '' },
   { key: 'energy', header: 'Energy', category: 'Plan Info', decimals: 0, extract: p => getDominantEnergy(p.plan), extractBeam: bm => bm.energyLabel ?? (bm.nominalBeamEnergy !== undefined ? `${bm.nominalBeamEnergy} MeV` : '') },
+  { key: 'fluenceMode', header: 'Fluence Mode', category: 'Plan Info', decimals: 0, extract: () => undefined, extractBeam: bm => bm.fluenceModeID ?? bm.fluenceMode ?? '' },
+  { key: 'isFFF', header: 'FFF', category: 'Plan Info', decimals: 0, extract: () => undefined, extractBeam: bm => (bm.isFFF ? 'YES' : 'NO') },
+  { key: 'maxDoseRateUsed', header: 'Max Dose Rate Used (MU/min)', category: 'Plan Info', decimals: 0, extract: () => undefined, extractBeam: bm => bm.maxDoseRateUsed },
+  { key: 'doseRateSource', header: 'Dose Rate Source', category: 'Plan Info', decimals: 0, extract: () => undefined, extractBeam: bm => bm.doseRateSource ?? '' },
+
   { key: 'machine', header: 'Machine', category: 'Plan Info', decimals: 0, extract: p => p.plan.treatmentMachineName ?? '', extractBeam: () => undefined },
   { key: 'institution', header: 'Institution', category: 'Plan Info', decimals: 0, extract: p => p.plan.institutionName ?? '', extractBeam: () => undefined },
 
