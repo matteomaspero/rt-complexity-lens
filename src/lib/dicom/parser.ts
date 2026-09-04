@@ -584,8 +584,12 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     sourceAxisDistance: getFloat(beamDataSet, TAGS.SourceAxisDistance) || undefined,
     nominalBeamEnergy,
     energyLabel,
-
+    fluenceMode,
+    fluenceModeID,
+    isFFF,
+    doseRateSet,
     treatmentMachineName,
+
   };
 }
 
