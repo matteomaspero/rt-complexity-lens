@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
 import type { RTPlan, PlanMetrics, Structure } from '@/lib/dicom/types';
+import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import { 
   generateClusters,
   generateMultiDimensionalClusters,
@@ -141,6 +142,11 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
   const [secondaryDimension, setSecondaryDimension] = useState<ClusterDimension>('complexity');
   const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
   const targetStructureRef = useRef<Structure | null>(null);
+  // Machine delivery parameters of the active preset (energy-specific dose rates)
+  const { getCurrentDeliveryParams } = useThresholdConfig();
+  const deliveryParamsRef = useRef(getCurrentDeliveryParams());
+  deliveryParamsRef.current = getCurrentDeliveryParams();
+
 
   // Get only successful plans
   const successfulPlans = useMemo(() => 
