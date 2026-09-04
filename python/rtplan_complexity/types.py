@@ -8,7 +8,7 @@ consistent data structures between implementations.
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 # ============================================================================
