@@ -224,7 +224,9 @@ export interface BeamMetrics {
   maxDoseRateUsed?: number; // MU/min actually used for the delivery-time estimate
   doseRateSource?: 'plan' | 'preset'; // Where maxDoseRateUsed came from
 
+  // Collimator info
   collimatorAngleStart?: number;
+
   collimatorAngleEnd?: number;
   
   // Beam geometry (from first control point)
