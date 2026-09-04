@@ -501,6 +501,8 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
   
   // Extract nominal beam energy from first control point (per DICOM standard)
   let nominalBeamEnergy: number | undefined;
+  // Planned dose rate (300A,0115): first non-zero value across control points
+  let doseRateSet: number | undefined;
   
   if (cpSeq && cpSeq.items) {
     for (let i = 0; i < cpSeq.items.length; i++) {
@@ -513,6 +515,11 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
             nominalBeamEnergy = energy;
           }
         }
+
+        if (doseRateSet === undefined) {
+          const dr = getFloat(cpItem.dataSet, TAGS.DoseRateSet);
+          if (dr > 0) doseRateSet = dr;
+        }
         
         const previousCP = i > 0 ? controlPoints[i - 1] : undefined;
         const cp = parseControlPoint(cpItem.dataSet, beamDataSet, i, previousCP);
@@ -521,8 +528,17 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     }
   }
   
+  // Fluence mode (3002,0050) — authoritative FFF flag
+  const { fluenceMode, fluenceModeID, isFFF } = parseFluenceMode(beamDataSet);
+
   // Generate clinical energy label
-  const energyLabel = generateEnergyLabel(radiationType, nominalBeamEnergy, beamName);
+  const energyLabel = generateEnergyLabel(
+    radiationType,
+    nominalBeamEnergy,
+    beamName,
+    fluenceMode ? isFFF : undefined
+  );
+
   
   // Determine if arc based on gantry rotation direction and angle span
   const gantryAngles = controlPoints.map(cp => cp.gantryAngle);
