@@ -63,7 +63,7 @@ from .metrics import (
     calculate_control_point_metrics,
 )
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __all__ = [
     # Types
     "RTPlan",
