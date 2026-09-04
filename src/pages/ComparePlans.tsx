@@ -44,7 +44,11 @@ export default function ComparePlans() {
   const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
   const compareContentRef = useRef<HTMLDivElement>(null);
   
-  const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
+  const { selectedPreset, setPreset, userPresets, getPresetName, getCurrentDeliveryParams } =
+    useThresholdConfig();
+  // Machine delivery parameters of the active preset (energy-specific dose rates)
+  const deliveryParams = useMemo(() => getCurrentDeliveryParams(), [getCurrentDeliveryParams]);
+
 
   const bothLoaded = planA && planB;
 
@@ -146,19 +150,22 @@ export default function ComparePlans() {
     setTargetStructure(structure);
     const recompute = (plan: SessionPlan | null): SessionPlan | null =>
       plan
-        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, undefined, structure ?? undefined) }
+        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, deliveryParams, structure ?? undefined) }
         : null;
     setPlanA((prev) => recompute(prev));
     setPlanB((prev) => recompute(prev));
-  }, []);
+  }, [deliveryParams]);
 
+  // Always recompute with the active machine preset so energy-specific (FFF)
+  // dose rates apply to plans parsed with default parameters.
   const withTarget = useCallback(
-    (plan: SessionPlan): SessionPlan =>
-      targetStructure
-        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, undefined, targetStructure) }
-        : plan,
-    [targetStructure]
+    (plan: SessionPlan): SessionPlan => ({
+      ...plan,
+      metrics: calculatePlanMetrics(plan.plan, deliveryParams, targetStructure ?? undefined),
+    }),
+    [targetStructure, deliveryParams]
   );
+
 
   const handlePlanALoaded = useCallback((plan: SessionPlan) => setPlanA(withTarget(plan)), [withTarget]);
   const handlePlanBLoaded = useCallback((plan: SessionPlan) => setPlanB(withTarget(plan)), [withTarget]);
@@ -373,7 +380,9 @@ export default function ComparePlans() {
                         (m) => m.beamNumber === selectedBeams.beamB.beamNumber
                       )?.controlPointMetrics ?? []
                     }
+                    machineParams={deliveryParams}
                   />
+
                   </div>
                 </>
               )}

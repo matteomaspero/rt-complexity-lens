@@ -406,7 +406,30 @@ def _get_leaf_widths(beam_ds: Dataset) -> Tuple[List[float], List[float], int]:
     return (widths, boundaries, 60)
 
 
-def _generate_energy_label(radiation_type: str, energy: Optional[float], beam_name: str) -> Optional[str]:
+def _parse_fluence_mode(beam_ds: Dataset) -> Tuple[Optional[str], Optional[str], bool]:
+    """
+    Read Primary Fluence Mode Sequence (3002,0050).
+
+    NON_STANDARD + FluenceModeID containing 'FFF' (3002,0052) marks an
+    unflattened beam. Returns (fluence_mode, fluence_mode_id, is_fff).
+    """
+    seq = getattr(beam_ds, "PrimaryFluenceModeSequence", None)
+    if not seq:
+        return (None, None, False)
+
+    item = seq[0]
+    mode = (_get_string(item, "FluenceMode") or "").strip().upper() or None
+    mode_id = (_get_string(item, "FluenceModeID") or "").strip().upper() or None
+    is_fff = mode == "NON_STANDARD" and bool(mode_id) and "FFF" in mode_id
+    return (mode, mode_id, is_fff)
+
+
+def _generate_energy_label(
+    radiation_type: str,
+    energy: Optional[float],
+    beam_name: str,
+    is_fff_from_tag: Optional[bool] = None,
+) -> Optional[str]:
     """
     Generate clinical energy label from radiation type and energy value.
     Per DICOM standard nomenclature:
@@ -420,9 +443,14 @@ def _generate_energy_label(radiation_type: str, energy: Optional[float], beam_na
     upper_rad_type = radiation_type.upper()
     
     if upper_rad_type == "PHOTON":
-        # Check for FFF (Flattening Filter Free) - detected from beam name
+        # FFF comes from the Primary Fluence Mode tags; the beam name is only
+        # a fallback for exports that omit (3002,0050).
         import re
-        is_fff = bool(re.search(r'FFF|SRS|SBRT', beam_name, re.IGNORECASE))
+        is_fff = (
+            is_fff_from_tag
+            if is_fff_from_tag is not None
+            else bool(re.search(r'FFF', beam_name, re.IGNORECASE))
+        )
         return f"{round(energy)}FFF" if is_fff else f"{round(energy)}X"
     
     if upper_rad_type == "ELECTRON":
@@ -465,8 +493,25 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
             cp = _parse_control_point(cp_item, beam_ds, i, previous_cp)
             control_points.append(cp)
     
+    # Fluence mode (3002,0050) — authoritative FFF flag
+    fluence_mode, fluence_mode_id, is_fff = _parse_fluence_mode(beam_ds)
+
+    # Planned dose rate (300A,0115), taken from the first control point that has it
+    dose_rate_set: Optional[float] = None
+    if cp_seq:
+        for cp_item in cp_seq:
+            dr = _get_float(cp_item, "DoseRateSet")
+            if dr and dr > 0:
+                dose_rate_set = dr
+                break
+
     # Generate clinical energy label
-    energy_label = _generate_energy_label(radiation_type, nominal_beam_energy, beam_name)
+    energy_label = _generate_energy_label(
+        radiation_type,
+        nominal_beam_energy,
+        beam_name,
+        is_fff if fluence_mode else None,
+    )
     
     # Determine gantry angles
     gantry_angles = [cp.gantry_angle for cp in control_points]
@@ -510,6 +555,10 @@ def _parse_beam(beam_ds: Dataset) -> Beam:
         number_of_leaves=num_leaves,
         nominal_beam_energy=nominal_beam_energy,
         energy_label=energy_label,
+        fluence_mode=fluence_mode,
+        fluence_mode_id=fluence_mode_id,
+        is_fff=is_fff,
+        dose_rate_set=dose_rate_set,
         treatment_machine_name=beam_machine_name,
         source_axis_distance=_get_float(beam_ds, "SourceAxisDistance") or None,
     )

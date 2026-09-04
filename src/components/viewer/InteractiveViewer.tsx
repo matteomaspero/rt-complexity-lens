@@ -48,7 +48,17 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   const [loadedStructures, setLoadedStructures] = useState<Structure[] | null>(null);
   const [selectedStructureIndex, setSelectedStructureIndex] = useState<number | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const { setPreset, setEnabled, userPresets, getPresetName: _getPresetName } = useThresholdConfig();
+  const {
+    setPreset,
+    setEnabled,
+    userPresets,
+    getPresetName: _getPresetName,
+    getCurrentDeliveryParams,
+  } = useThresholdConfig();
+
+  // Machine delivery parameters of the selected preset (dose rates per energy, speeds)
+  const deliveryParams = useMemo(() => getCurrentDeliveryParams(), [getCurrentDeliveryParams]);
+
 
   // Get current beam and control point
   const currentBeam: Beam | null = sessionPlan?.plan.beams[selectedBeamIndex] ?? null;
@@ -151,20 +161,22 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
   }, [currentCP, currentBeam, loadedStructures, selectedStructureIndex]);
 
 
-  // Recalculate metrics when structure is selected
+  // Recalculate metrics when the target structure or the machine preset changes
   useEffect(() => {
-    if (sessionPlan && selectedStructureIndex !== null && loadedStructures) {
-      const selectedStructure = loadedStructures[selectedStructureIndex];
-      const updatedMetrics = calculatePlanMetrics(
-        sessionPlan.plan,
-        undefined,
-        selectedStructure
-      );
-      setSessionPlan((prev) =>
-        prev ? { ...prev, metrics: updatedMetrics } : null
-      );
-    }
-  }, [selectedStructureIndex, loadedStructures]);
+    if (!sessionPlan) return;
+    const selectedStructure =
+      selectedStructureIndex !== null && loadedStructures
+        ? loadedStructures[selectedStructureIndex]
+        : undefined;
+    const updatedMetrics = calculatePlanMetrics(
+      sessionPlan.plan,
+      deliveryParams,
+      selectedStructure
+    );
+    setSessionPlan((prev) => (prev ? { ...prev, metrics: updatedMetrics } : null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStructureIndex, loadedStructures, deliveryParams, sessionPlan?.id]);
+
 
   // No plan loaded - show upload zone
   if (!sessionPlan) {
@@ -403,7 +415,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   beam={currentBeam}
                   controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
                   beamMU={beamMU}
+                  machineParams={deliveryParams}
                 />
+
 
                 {/* Control Point Navigator */}
                 <ControlPointNavigator
@@ -494,7 +508,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                       beam={currentBeam}
                       controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
                       currentIndex={currentCPIndex}
+                      machineParams={deliveryParams}
                     />
+
                   </CollapsibleContent>
                 </Collapsible>
 
@@ -512,7 +528,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                       beam={currentBeam}
                       controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
                       currentIndex={currentCPIndex}
+                      machineParams={deliveryParams}
                     />
+
                   </CollapsibleContent>
                 </Collapsible>
 

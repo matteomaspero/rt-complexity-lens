@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
 import type { RTPlan, PlanMetrics, Structure } from '@/lib/dicom/types';
+import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 import { 
   generateClusters,
   generateMultiDimensionalClusters,
@@ -141,6 +142,11 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
   const [secondaryDimension, setSecondaryDimension] = useState<ClusterDimension>('complexity');
   const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
   const targetStructureRef = useRef<Structure | null>(null);
+  // Machine delivery parameters of the active preset (energy-specific dose rates)
+  const { getCurrentDeliveryParams } = useThresholdConfig();
+  const deliveryParamsRef = useRef(getCurrentDeliveryParams());
+  deliveryParamsRef.current = getCurrentDeliveryParams();
+
 
   // Get only successful plans
   const successfulPlans = useMemo(() => 
@@ -224,7 +230,7 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const plan = parseRTPlan(arrayBuffer, file.name);
-        const metrics = calculatePlanMetrics(plan, undefined, targetStructureRef.current ?? undefined);
+        const metrics = calculatePlanMetrics(plan, deliveryParamsRef.current, targetStructureRef.current ?? undefined);
 
         setPlans(prev => prev.map(p => 
           p.id === planId 
@@ -265,7 +271,7 @@ export function CohortProvider({ children }: { children: React.ReactNode }) {
     setPlans(prev =>
       prev.map(p =>
         p.status === 'success'
-          ? { ...p, metrics: calculatePlanMetrics(p.plan, undefined, structure ?? undefined) }
+          ? { ...p, metrics: calculatePlanMetrics(p.plan, deliveryParamsRef.current, structure ?? undefined) }
           : p
       )
     );

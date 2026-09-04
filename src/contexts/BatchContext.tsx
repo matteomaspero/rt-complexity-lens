@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { parseRTPlan, calculatePlanMetrics } from '@/lib/dicom';
 import type { RTPlan, PlanMetrics, Structure } from '@/lib/dicom/types';
+import { useThresholdConfig } from '@/contexts/ThresholdConfigContext';
 
 
 export interface BatchPlan {
@@ -42,6 +43,11 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<BatchProgress>({ current: 0, total: 0 });
   const targetStructureRef = useRef<Structure | null>(null);
+  // Machine delivery parameters of the active preset (energy-specific dose rates)
+  const { getCurrentDeliveryParams } = useThresholdConfig();
+  const deliveryParamsRef = useRef(getCurrentDeliveryParams());
+  deliveryParamsRef.current = getCurrentDeliveryParams();
+
 
   const addPlans = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
@@ -75,7 +81,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const plan = parseRTPlan(arrayBuffer, file.name);
-        const metrics = calculatePlanMetrics(plan, undefined, targetStructureRef.current ?? undefined);
+        const metrics = calculatePlanMetrics(plan, deliveryParamsRef.current, targetStructureRef.current ?? undefined);
 
         setPlans(prev => prev.map(p => 
           p.id === planId 
@@ -138,7 +144,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
     setPlans(prev =>
       prev.map(p =>
         p.status === 'success'
-          ? { ...p, metrics: calculatePlanMetrics(p.plan, undefined, structure ?? undefined) }
+          ? { ...p, metrics: calculatePlanMetrics(p.plan, deliveryParamsRef.current, structure ?? undefined) }
           : p
       )
     );

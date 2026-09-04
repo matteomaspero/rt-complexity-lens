@@ -22,6 +22,8 @@ import {
   projectPatientPointToBEV,
   type BeamConformality,
 } from './conformality';
+import { resolveBeamDoseRate } from './dose-rate';
+
 
 
 // ===================================================================
@@ -578,7 +580,8 @@ function computeCumulativeArcSpan(beam: Beam): number {
 function estimateBeamDeliveryTime(
   beam: Beam,
   controlPointMetrics: ControlPointMetrics[],
-  machineParams: MachineDeliveryParams
+  machineParams: MachineDeliveryParams,
+  effectiveMaxDoseRate?: number
 ): {
   deliveryTime: number;
   limitingFactor: 'doseRate' | 'gantrySpeed' | 'mlcSpeed';
@@ -587,13 +590,17 @@ function estimateBeamDeliveryTime(
   MUperDegree?: number;
 } {
   const beamMU = beam.beamDose || 100;
+  const maxDoseRate = effectiveMaxDoseRate && effectiveMaxDoseRate > 0
+    ? effectiveMaxDoseRate
+    : machineParams.maxDoseRate;
   
   // Calculate total delivery dose time (MU / dose rate for entire beam)
-  const totalDoseTime = beamMU / (machineParams.maxDoseRate / 60); // seconds
+  const totalDoseTime = beamMU / (maxDoseRate / 60); // seconds
   
   // Calculate cumulative arc span (handles 270°, 358°, full-arc correctly)
   const arcLength = beam.isArc ? computeCumulativeArcSpan(beam) : 0;
   const totalGantryTime = arcLength > 0 ? arcLength / machineParams.maxGantrySpeed : 0;
+
   
   // Calculate total MLC travel time. We sum the per-segment MAX leaf travel
   // (slowest leaf gates each segment), NOT the cumulative LT used elsewhere.
@@ -924,8 +931,17 @@ function calculateBeamMetrics(
   }
   const arcLength = beam.isArc && totalGantryTravel > 0 ? totalGantryTravel : undefined;
   
+  // Beam-specific dose rate: plan DoseRateSet first, then energy/FFF-aware preset value
+  const resolvedDoseRate = resolveBeamDoseRate(beam, machineParams);
+
   // Estimate delivery time
-  const deliveryEstimate = estimateBeamDeliveryTime(beam, controlPointMetrics, machineParams);
+  const deliveryEstimate = estimateBeamDeliveryTime(
+    beam,
+    controlPointMetrics,
+    machineParams,
+    resolvedDoseRate.maxDoseRate
+  );
+
   
   if (deliveryEstimate.deliveryTime > 0) {
     averageGantrySpeed = arcLength ? arcLength / deliveryEstimate.deliveryTime : undefined;
@@ -1089,6 +1105,10 @@ function calculateBeamMetrics(
     radiationType: beam.radiationType,
     nominalBeamEnergy: beam.nominalBeamEnergy,
     energyLabel: beam.energyLabel,
+    fluenceMode: beam.fluenceMode,
+    fluenceModeID: beam.fluenceModeID,
+    isFFF: beam.isFFF,
+
     // Deliverability metrics
     MUCA,
     LTMU,
@@ -1120,6 +1140,9 @@ function calculateBeamMetrics(
     avgDoseRate: deliveryEstimate.avgDoseRate,
     avgMLCSpeed: deliveryEstimate.avgMLCSpeed,
     limitingFactor: deliveryEstimate.limitingFactor,
+    maxDoseRateUsed: resolvedDoseRate.maxDoseRate,
+    doseRateSource: resolvedDoseRate.source,
+
     collimatorAngleStart,
     collimatorAngleEnd,
     gantryAngleStart: beam.gantryAngleStart,

@@ -38,8 +38,13 @@ const TAGS = {
   TreatmentDeliveryType: 'x300a00ce',
   NumberOfControlPoints: 'x300a0110',
   NominalBeamEnergy: 'x300a0114',
+  DoseRateSet: 'x300a0115',
+  PrimaryFluenceModeSequence: 'x30020050',
+  FluenceMode: 'x30020051',
+  FluenceModeID: 'x30020052',
   TreatmentMachineName: 'x300a00b2',
   FinalCumulativeMetersetWeight: 'x300a010e',
+
   
   // Control Point attributes
   ControlPointIndex: 'x300a0112',
@@ -422,22 +427,50 @@ function getLeafWidths(beamDataSet: dicomParser.DataSet): { widths: number[]; bo
 }
 
 /**
+ * Read Primary Fluence Mode Sequence (3002,0050).
+ * NON_STANDARD + FluenceModeID (e.g. 'FFF', 'SRS') marks an unflattened beam.
+ */
+function parseFluenceMode(beamDataSet: dicomParser.DataSet): {
+  fluenceMode?: string;
+  fluenceModeID?: string;
+  isFFF: boolean;
+} {
+  const seq = beamDataSet.elements[TAGS.PrimaryFluenceModeSequence];
+  const item = seq?.items?.[0]?.dataSet;
+  if (!item) return { isFFF: false };
+
+  const fluenceMode = getString(item, TAGS.FluenceMode)?.trim().toUpperCase() || undefined;
+  const fluenceModeID = getString(item, TAGS.FluenceModeID)?.trim().toUpperCase() || undefined;
+  const isFFF = fluenceMode === 'NON_STANDARD' && !!fluenceModeID && /FFF/.test(fluenceModeID);
+
+  return { fluenceMode, fluenceModeID, isFFF };
+}
+
+/**
  * Generate clinical energy label from radiation type and energy value
  * Per DICOM standard nomenclature:
  * - Photons: 6X, 10X, 15X, 6FFF, 10FFF (X = MV, FFF = Flattening Filter Free)
  * - Electrons: 6E, 9E, 12E, 15E, 18E (E = MeV)
  * - Protons/Ions: Numeric MeV value
+ *
+ * FFF is taken from the Primary Fluence Mode tags; the beam name is only a
+ * fallback for exports that omit (3002,0050).
  */
-function generateEnergyLabel(radiationType: string, energy: number | undefined, beamName: string): string | undefined {
+function generateEnergyLabel(
+  radiationType: string,
+  energy: number | undefined,
+  beamName: string,
+  isFFFFromTag?: boolean
+): string | undefined {
   if (energy === undefined || energy === 0) return undefined;
   
   const upperRadType = radiationType.toUpperCase();
   
   if (upperRadType === 'PHOTON') {
-    // Check for FFF (Flattening Filter Free) - detected from beam name
-    const isFFF = /FFF|SRS|SBRT/i.test(beamName);
+    const isFFF = isFFFFromTag ?? /FFF/i.test(beamName);
     return isFFF ? `${Math.round(energy)}FFF` : `${Math.round(energy)}X`;
   }
+
   
   if (upperRadType === 'ELECTRON') {
     return `${Math.round(energy)}E`;
@@ -468,6 +501,8 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
   
   // Extract nominal beam energy from first control point (per DICOM standard)
   let nominalBeamEnergy: number | undefined;
+  // Planned dose rate (300A,0115): first non-zero value across control points
+  let doseRateSet: number | undefined;
   
   if (cpSeq && cpSeq.items) {
     for (let i = 0; i < cpSeq.items.length; i++) {
@@ -480,6 +515,11 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
             nominalBeamEnergy = energy;
           }
         }
+
+        if (doseRateSet === undefined) {
+          const dr = getFloat(cpItem.dataSet, TAGS.DoseRateSet);
+          if (dr > 0) doseRateSet = dr;
+        }
         
         const previousCP = i > 0 ? controlPoints[i - 1] : undefined;
         const cp = parseControlPoint(cpItem.dataSet, beamDataSet, i, previousCP);
@@ -488,8 +528,17 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     }
   }
   
+  // Fluence mode (3002,0050) — authoritative FFF flag
+  const { fluenceMode, fluenceModeID, isFFF } = parseFluenceMode(beamDataSet);
+
   // Generate clinical energy label
-  const energyLabel = generateEnergyLabel(radiationType, nominalBeamEnergy, beamName);
+  const energyLabel = generateEnergyLabel(
+    radiationType,
+    nominalBeamEnergy,
+    beamName,
+    fluenceMode ? isFFF : undefined
+  );
+
   
   // Determine if arc based on gantry rotation direction and angle span
   const gantryAngles = controlPoints.map(cp => cp.gantryAngle);
@@ -535,8 +584,12 @@ function parseBeam(beamDataSet: dicomParser.DataSet): Beam {
     sourceAxisDistance: getFloat(beamDataSet, TAGS.SourceAxisDistance) || undefined,
     nominalBeamEnergy,
     energyLabel,
-
+    fluenceMode,
+    fluenceModeID,
+    isFFF,
+    doseRateSet,
     treatmentMachineName,
+
   };
 }
 

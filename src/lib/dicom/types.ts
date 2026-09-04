@@ -66,7 +66,13 @@ export interface Beam {
   // Energy fields (DICOM 300A,0114)
   nominalBeamEnergy?: number; // Energy in MeV (e.g., 6, 10, 15 for photons)
   energyLabel?: string; // Clinical label (e.g., '6X', '10FFF', '9E')
+  // Primary Fluence Mode Sequence (3002,0050): FluenceMode (3002,0051) / FluenceModeID (3002,0052)
+  fluenceMode?: string; // 'STANDARD' | 'NON_STANDARD'
+  fluenceModeID?: string; // e.g. 'FFF', 'SRS' (only when fluenceMode === 'NON_STANDARD')
+  isFFF?: boolean; // Flattening-filter-free beam, derived from the fluence mode tags
+  doseRateSet?: number; // Planned dose rate from the plan file (DICOM 300A,0115), MU/min
   treatmentMachineName?: string; // Treatment machine name per beam (DICOM 300A,00B2)
+
 }
 
 export interface FractionGroup {
@@ -182,6 +188,10 @@ export interface BeamMetrics {
   radiationType?: string; // 'PHOTON', 'ELECTRON', 'PROTON', 'NEUTRON', 'ION'
   nominalBeamEnergy?: number; // Energy in MeV
   energyLabel?: string; // Clinical label (e.g., '6X', '10FFF', '9E')
+  fluenceMode?: string; // 'STANDARD' | 'NON_STANDARD' (3002,0051)
+  fluenceModeID?: string; // e.g. 'FFF' (3002,0052)
+  isFFF?: boolean; // Flattening-filter-free beam
+
   
   // UCoMX Deliverability Metrics
   MUCA?: number; // MU per Control Arc (MU/CP)
@@ -211,9 +221,12 @@ export interface BeamMetrics {
   avgDoseRate?: number; // MU/min
   avgMLCSpeed?: number; // mm/s
   limitingFactor?: 'doseRate' | 'gantrySpeed' | 'mlcSpeed';
-  
+  maxDoseRateUsed?: number; // MU/min actually used for the delivery-time estimate
+  doseRateSource?: 'plan' | 'preset'; // Where maxDoseRateUsed came from
+
   // Collimator info
   collimatorAngleStart?: number;
+
   collimatorAngleEnd?: number;
   
   // Beam geometry (from first control point)
@@ -314,15 +327,24 @@ export interface PlanMetrics {
   calculationDate: Date;
 }
 
+// Energy-specific dose rate configuration
+export interface EnergyDoseRate {
+  energy: string; // e.g., '6X', '10X', '6FFF', '10FFF', '6e'
+  maxDoseRate: number; // MU/min for this energy
+  isDefault?: boolean; // Used when the beam energy is unknown
+}
+
 // Machine delivery parameters for time estimation
 export interface MachineDeliveryParams {
   maxDoseRate: number; // MU/min
-  maxDoseRateFFF?: number; // MU/min for FFF beams
+  maxDoseRateFFF?: number; // MU/min for FFF beams (legacy fallback)
+  energyDoseRates?: EnergyDoseRate[]; // Energy-specific rates (includes FFF entries)
   maxGantrySpeed: number; // deg/s
   maxMLCSpeed: number; // mm/s
   mlcType: 'MLCX' | 'MLCY' | 'DUAL';
   mlcModel?: string; // Human-readable MLC model name
 }
+
 
 // Parsing status
 export type ParseStatus = 'pending' | 'parsing' | 'success' | 'error';

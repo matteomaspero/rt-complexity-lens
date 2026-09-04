@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { RotateCw, RotateCcw, Minus } from 'lucide-react';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
 import { calculateControlPointSegments } from '@/lib/dicom/angular-binning';
+import { resolveBeamDoseRate } from '@/lib/dicom/dose-rate';
 import { DEFAULT_MACHINE_PARAMS } from '@/lib/threshold-definitions';
 
 interface BeamSummaryCardProps {
@@ -27,6 +28,12 @@ export function BeamSummaryCard({
     () => calculateControlPointSegments(beam, controlPointMetrics, machineParams),
     [beam, controlPointMetrics, machineParams]
   );
+
+  const resolvedRate = useMemo(
+    () => resolveBeamDoseRate(beam, machineParams),
+    [beam, machineParams]
+  );
+
 
   // Calculate statistics from segments
   const stats = useMemo(() => {
@@ -98,11 +105,22 @@ export function BeamSummaryCard({
           <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium">
             {beam.isArc ? 'VMAT Arc' : beam.beamType === 'DYNAMIC' ? 'IMRT' : 'Static'}
           </span>
+          {beam.isFFF && (
+            <span
+              className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+              title={`Unflattened beam — Primary Fluence Mode ${beam.fluenceMode ?? 'NON_STANDARD'}${
+                beam.fluenceModeID ? ` / ${beam.fluenceModeID}` : ''
+              } (DICOM 3002,0050)`}
+            >
+              FFF
+            </span>
+          )}
           {beam.treatmentMachineName && (
             <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {beam.treatmentMachineName}
             </span>
           )}
+
         </div>
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <RotationIcon className="h-4 w-4" />
@@ -144,11 +162,25 @@ export function BeamSummaryCard({
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Dose Rate</span>
-          <p className="font-mono font-semibold">
+          <p
+            className="font-mono font-semibold"
+            title={
+              resolvedRate.source === 'plan'
+                ? `Max ${resolvedRate.maxDoseRate.toFixed(0)} MU/min from the plan file (DICOM 300A,0115)`
+                : `Max ${resolvedRate.maxDoseRate.toFixed(0)} MU/min from the machine preset${
+                    beam.energyLabel ? ` for ${beam.energyLabel}` : ''
+                  }`
+            }
+          >
             {stats.doseRateMin.toFixed(0)} – {stats.doseRateMax.toFixed(0)}{' '}
             <span className="text-xs text-muted-foreground">MU/min</span>
           </p>
+          <span className="text-[10px] text-muted-foreground">
+            max {resolvedRate.maxDoseRate.toFixed(0)} ·{' '}
+            {resolvedRate.source === 'plan' ? 'from plan' : 'from preset'}
+          </span>
         </div>
+
         <div>
           <span className="text-xs text-muted-foreground">Avg Gantry</span>
           <p className="font-mono font-semibold">

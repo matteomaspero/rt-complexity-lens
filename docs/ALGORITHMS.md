@@ -567,6 +567,32 @@ Machine parameters used:
 | Halcyon | 800 MU/min | 4.0 °/s | 50 mm/s |
 | Versa HD | 600 MU/min | 6.0 °/s | 35 mm/s |
 
+### Beam energy, fluence mode (FFF) and dose rate resolution
+
+FFF (flattening-filter-free) beams are identified from the DICOM
+**Primary Fluence Mode Sequence (3002,0050)**: `FluenceMode (3002,0051) =
+NON_STANDARD` together with `FluenceModeID (3002,0052)` containing `FFF`.
+The energy label is then formed as `<energy>FFF` (e.g. `6FFF`), otherwise
+`<energy>X`. The beam name is used only as a fallback when a TPS export omits
+(3002,0050); name patterns such as `SRS`/`SBRT` are no longer treated as FFF
+because they describe the technique, not the fluence.
+
+`max_dose_rate` is resolved **per beam**, not per plan, in this order:
+
+1. `DoseRateSet (300A,0115)` from the plan's control points (reported as
+   source `plan`)
+2. Energy-specific rate of the active machine preset, matched on the energy
+   label (`6FFF`, `10X`, …)
+3. Legacy `maxDoseRateFFF` of the preset when the beam is flagged FFF
+4. Preset default `maxDoseRate`
+
+The resolved value drives `MU_time`, the per-control-point segment durations,
+`mDRV` and the delivery-time limiting factor, and is exported per beam as
+`Max Dose Rate Used (MU/min)` with its `Dose Rate Source`. TypeScript
+(`src/lib/dicom/dose-rate.ts`) and Python
+(`rtplan_complexity.metrics.resolve_beam_dose_rate`) implement identical logic.
+
+
 ---
 
 ## Threshold Evaluation

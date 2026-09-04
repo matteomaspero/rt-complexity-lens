@@ -571,10 +571,39 @@ def _cumulative_arc_span(beam: Beam) -> float:
     return total
 
 
+def resolve_beam_dose_rate(
+    beam: Beam,
+    machine_params: MachineDeliveryParams,
+) -> Tuple[float, str]:
+    """
+    Resolve the maximum dose rate that applies to a single beam.
+
+    Priority: DoseRateSet (300A,0115) from the plan, then the energy-specific
+    preset rate (matched on the energy label, e.g. '6FFF'), then the legacy FFF
+    rate, then the preset default. Returns (MU/min, 'plan' | 'preset').
+    """
+    if beam.dose_rate_set and beam.dose_rate_set > 0:
+        return (beam.dose_rate_set, "plan")
+
+    energy = beam.energy_label.upper() if beam.energy_label else None
+    rates = machine_params.energy_dose_rates
+    if rates:
+        normalized = {k.upper(): v for k, v in rates.items()}
+        if energy and normalized.get(energy):
+            return (normalized[energy], "preset")
+
+    is_fff = beam.is_fff or (bool(energy) and "FFF" in energy)
+    if is_fff and machine_params.max_dose_rate_fff:
+        return (machine_params.max_dose_rate_fff, "preset")
+
+    return (machine_params.max_dose_rate, "preset")
+
+
 def _estimate_beam_delivery_time(
     beam: Beam,
     control_point_metrics: List[ControlPointMetrics],
-    machine_params: MachineDeliveryParams
+    machine_params: MachineDeliveryParams,
+    effective_max_dose_rate: Optional[float] = None,
 ) -> Tuple[float, str, float, float, Optional[float]]:
     """
     Estimate delivery time for a beam.
@@ -594,7 +623,12 @@ def _estimate_beam_delivery_time(
     """
     beam_mu = beam.beam_dose or 100.0
 
-    total_dose_time = beam_mu / (machine_params.max_dose_rate / 60)
+    max_dose_rate = (
+        effective_max_dose_rate
+        if effective_max_dose_rate and effective_max_dose_rate > 0
+        else machine_params.max_dose_rate
+    )
+    total_dose_time = beam_mu / (max_dose_rate / 60)
 
     arc_length = _cumulative_arc_span(beam) if beam.is_arc else 0.0
     total_gantry_time = arc_length / machine_params.max_gantry_speed if arc_length > 0 else 0.0
@@ -976,8 +1010,13 @@ def calculate_beam_metrics(
     arc_length = total_gantry_travel if beam.is_arc and total_gantry_travel > 0 else None
     
     # Estimate delivery time
+    # Beam-specific dose rate: plan DoseRateSet first, then energy/FFF-aware preset value
+    resolved_max_dose_rate, dose_rate_source = resolve_beam_dose_rate(beam, machine_params)
+
     delivery_time, limiting_factor, avg_dose_rate, avg_mlc_speed, mu_per_degree = \
-        _estimate_beam_delivery_time(beam, control_point_metrics, machine_params)
+        _estimate_beam_delivery_time(
+            beam, control_point_metrics, machine_params, resolved_max_dose_rate
+        )
     
     average_gantry_speed = arc_length / delivery_time if arc_length and delivery_time > 0 else None
     
@@ -1091,6 +1130,11 @@ def calculate_beam_metrics(
         radiation_type=beam.radiation_type,
         nominal_beam_energy=beam.nominal_beam_energy,
         energy_label=beam.energy_label,
+        fluence_mode=beam.fluence_mode,
+        fluence_mode_id=beam.fluence_mode_id,
+        is_fff=beam.is_fff,
+        max_dose_rate_used=resolved_max_dose_rate,
+        dose_rate_source=dose_rate_source,
         LG=LG,
         MAD=MAD_val,
         EFS=EFS,
