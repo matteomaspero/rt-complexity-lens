@@ -38,8 +38,13 @@ const TAGS = {
   TreatmentDeliveryType: 'x300a00ce',
   NumberOfControlPoints: 'x300a0110',
   NominalBeamEnergy: 'x300a0114',
+  DoseRateSet: 'x300a0115',
+  PrimaryFluenceModeSequence: 'x30020050',
+  FluenceMode: 'x30020051',
+  FluenceModeID: 'x30020052',
   TreatmentMachineName: 'x300a00b2',
   FinalCumulativeMetersetWeight: 'x300a010e',
+
   
   // Control Point attributes
   ControlPointIndex: 'x300a0112',
