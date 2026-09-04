@@ -1105,6 +1105,10 @@ function calculateBeamMetrics(
     radiationType: beam.radiationType,
     nominalBeamEnergy: beam.nominalBeamEnergy,
     energyLabel: beam.energyLabel,
+    fluenceMode: beam.fluenceMode,
+    fluenceModeID: beam.fluenceModeID,
+    isFFF: beam.isFFF,
+
     // Deliverability metrics
     MUCA,
     LTMU,
@@ -1136,6 +1140,9 @@ function calculateBeamMetrics(
     avgDoseRate: deliveryEstimate.avgDoseRate,
     avgMLCSpeed: deliveryEstimate.avgMLCSpeed,
     limitingFactor: deliveryEstimate.limitingFactor,
+    maxDoseRateUsed: resolvedDoseRate.maxDoseRate,
+    doseRateSource: resolvedDoseRate.source,
+
     collimatorAngleStart,
     collimatorAngleEnd,
     gantryAngleStart: beam.gantryAngleStart,
