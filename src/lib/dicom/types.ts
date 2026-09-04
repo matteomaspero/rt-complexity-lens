@@ -327,15 +327,24 @@ export interface PlanMetrics {
   calculationDate: Date;
 }
 
+// Energy-specific dose rate configuration
+export interface EnergyDoseRate {
+  energy: string; // e.g., '6X', '10X', '6FFF', '10FFF', '6e'
+  maxDoseRate: number; // MU/min for this energy
+  isDefault?: boolean; // Used when the beam energy is unknown
+}
+
 // Machine delivery parameters for time estimation
 export interface MachineDeliveryParams {
   maxDoseRate: number; // MU/min
-  maxDoseRateFFF?: number; // MU/min for FFF beams
+  maxDoseRateFFF?: number; // MU/min for FFF beams (legacy fallback)
+  energyDoseRates?: EnergyDoseRate[]; // Energy-specific rates (includes FFF entries)
   maxGantrySpeed: number; // deg/s
   maxMLCSpeed: number; // mm/s
   mlcType: 'MLCX' | 'MLCY' | 'DUAL';
   mlcModel?: string; // Human-readable MLC model name
 }
+
 
 // Parsing status
 export type ParseStatus = 'pending' | 'parsing' | 'success' | 'error';
