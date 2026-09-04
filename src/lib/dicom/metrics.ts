@@ -578,7 +578,8 @@ function computeCumulativeArcSpan(beam: Beam): number {
 function estimateBeamDeliveryTime(
   beam: Beam,
   controlPointMetrics: ControlPointMetrics[],
-  machineParams: MachineDeliveryParams
+  machineParams: MachineDeliveryParams,
+  effectiveMaxDoseRate?: number
 ): {
   deliveryTime: number;
   limitingFactor: 'doseRate' | 'gantrySpeed' | 'mlcSpeed';
@@ -587,13 +588,17 @@ function estimateBeamDeliveryTime(
   MUperDegree?: number;
 } {
   const beamMU = beam.beamDose || 100;
+  const maxDoseRate = effectiveMaxDoseRate && effectiveMaxDoseRate > 0
+    ? effectiveMaxDoseRate
+    : machineParams.maxDoseRate;
   
   // Calculate total delivery dose time (MU / dose rate for entire beam)
-  const totalDoseTime = beamMU / (machineParams.maxDoseRate / 60); // seconds
+  const totalDoseTime = beamMU / (maxDoseRate / 60); // seconds
   
   // Calculate cumulative arc span (handles 270°, 358°, full-arc correctly)
   const arcLength = beam.isArc ? computeCumulativeArcSpan(beam) : 0;
   const totalGantryTime = arcLength > 0 ? arcLength / machineParams.maxGantrySpeed : 0;
+
   
   // Calculate total MLC travel time. We sum the per-segment MAX leaf travel
   // (slowest leaf gates each segment), NOT the cumulative LT used elsewhere.
