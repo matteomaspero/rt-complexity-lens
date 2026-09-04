@@ -44,7 +44,11 @@ export default function ComparePlans() {
   const [targetStructure, setTargetStructure] = useState<Structure | null>(null);
   const compareContentRef = useRef<HTMLDivElement>(null);
   
-  const { selectedPreset, setPreset, userPresets, getPresetName } = useThresholdConfig();
+  const { selectedPreset, setPreset, userPresets, getPresetName, getCurrentDeliveryParams } =
+    useThresholdConfig();
+  // Machine delivery parameters of the active preset (energy-specific dose rates)
+  const deliveryParams = useMemo(() => getCurrentDeliveryParams(), [getCurrentDeliveryParams]);
+
 
   const bothLoaded = planA && planB;
 
