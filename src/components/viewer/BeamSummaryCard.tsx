@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { RotateCw, RotateCcw, Minus } from 'lucide-react';
 import type { Beam, ControlPointMetrics, MachineDeliveryParams } from '@/lib/dicom/types';
 import { calculateControlPointSegments } from '@/lib/dicom/angular-binning';
+import { resolveBeamDoseRate } from '@/lib/dicom/dose-rate';
 import { DEFAULT_MACHINE_PARAMS } from '@/lib/threshold-definitions';
 
 interface BeamSummaryCardProps {
@@ -27,6 +28,12 @@ export function BeamSummaryCard({
     () => calculateControlPointSegments(beam, controlPointMetrics, machineParams),
     [beam, controlPointMetrics, machineParams]
   );
+
+  const resolvedRate = useMemo(
+    () => resolveBeamDoseRate(beam, machineParams),
+    [beam, machineParams]
+  );
+
 
   // Calculate statistics from segments
   const stats = useMemo(() => {
