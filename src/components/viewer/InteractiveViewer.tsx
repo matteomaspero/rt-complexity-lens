@@ -415,7 +415,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                   beam={currentBeam}
                   controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
                   beamMU={beamMU}
+                  machineParams={deliveryParams}
                 />
+
 
                 {/* Control Point Navigator */}
                 <ControlPointNavigator
@@ -506,7 +508,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                       beam={currentBeam}
                       controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
                       currentIndex={currentCPIndex}
+                      machineParams={deliveryParams}
                     />
+
                   </CollapsibleContent>
                 </Collapsible>
 
@@ -524,7 +528,9 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                       beam={currentBeam}
                       controlPointMetrics={sessionPlan.metrics.beamMetrics[selectedBeamIndex]?.controlPointMetrics || []}
                       currentIndex={currentCPIndex}
+                      machineParams={deliveryParams}
                     />
+
                   </CollapsibleContent>
                 </Collapsible>
 
