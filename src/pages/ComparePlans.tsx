@@ -150,7 +150,7 @@ export default function ComparePlans() {
     setTargetStructure(structure);
     const recompute = (plan: SessionPlan | null): SessionPlan | null =>
       plan
-        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, undefined, structure ?? undefined) }
+        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, deliveryParams, structure ?? undefined) }
         : null;
     setPlanA((prev) => recompute(prev));
     setPlanB((prev) => recompute(prev));
@@ -159,7 +159,7 @@ export default function ComparePlans() {
   const withTarget = useCallback(
     (plan: SessionPlan): SessionPlan =>
       targetStructure
-        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, undefined, targetStructure) }
+        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, deliveryParams, targetStructure) }
         : plan,
     [targetStructure]
   );
