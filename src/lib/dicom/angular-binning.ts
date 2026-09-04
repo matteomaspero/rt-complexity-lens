@@ -1,6 +1,8 @@
 // Angular binning calculations for distribution visualizations
 
 import type { Beam, ControlPoint, ControlPointMetrics, MachineDeliveryParams } from './types';
+import { resolveBeamDoseRate } from './dose-rate';
+
 
 export interface AngularBin {
   angleStart: number;      // Bin start angle
