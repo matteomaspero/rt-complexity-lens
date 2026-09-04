@@ -380,7 +380,9 @@ export default function ComparePlans() {
                         (m) => m.beamNumber === selectedBeams.beamB.beamNumber
                       )?.controlPointMetrics ?? []
                     }
+                    machineParams={deliveryParams}
                   />
+
                   </div>
                 </>
               )}
