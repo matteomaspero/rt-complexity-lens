@@ -105,11 +105,22 @@ export function BeamSummaryCard({
           <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium">
             {beam.isArc ? 'VMAT Arc' : beam.beamType === 'DYNAMIC' ? 'IMRT' : 'Static'}
           </span>
+          {beam.isFFF && (
+            <span
+              className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+              title={`Unflattened beam — Primary Fluence Mode ${beam.fluenceMode ?? 'NON_STANDARD'}${
+                beam.fluenceModeID ? ` / ${beam.fluenceModeID}` : ''
+              } (DICOM 3002,0050)`}
+            >
+              FFF
+            </span>
+          )}
           {beam.treatmentMachineName && (
             <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {beam.treatmentMachineName}
             </span>
           )}
+
         </div>
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <RotationIcon className="h-4 w-4" />
