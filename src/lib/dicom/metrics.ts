@@ -22,6 +22,8 @@ import {
   projectPatientPointToBEV,
   type BeamConformality,
 } from './conformality';
+import { resolveBeamDoseRate } from './dose-rate';
+
 
 
 // ===================================================================

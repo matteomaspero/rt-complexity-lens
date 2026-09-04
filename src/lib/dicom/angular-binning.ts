@@ -120,6 +120,8 @@ export function calculateControlPointSegments(
 ): ControlPointSegment[] {
   const baseSegments: ControlPointSegment[] = [];
   const beamMU = beam.beamDose || 100;
+  // Beam-specific dose rate (plan DoseRateSet, else energy/FFF-aware preset value)
+  const { maxDoseRate } = resolveBeamDoseRate(beam, machineParams);
   
   for (let i = 1; i < beam.controlPoints.length; i++) {
     const cp = beam.controlPoints[i];
@@ -131,7 +133,8 @@ export function calculateControlPointSegments(
     const segmentMU = cpm.metersetWeight * beamMU;
     
     // Calculate times for each limiting factor
-    const doseRateTime = segmentMU / (machineParams.maxDoseRate / 60);
+    const doseRateTime = segmentMU / (maxDoseRate / 60);
+
     const gantryAngleDiff = Math.abs(cp.gantryAngle - prevCP.gantryAngle);
     const gantryTime = beam.isArc ? gantryAngleDiff / machineParams.maxGantrySpeed : 0;
     const maxLeafTravel = getMaxLeafTravel(prevCP.mlcPositions, cp.mlcPositions);
