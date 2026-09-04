@@ -154,15 +154,18 @@ export default function ComparePlans() {
         : null;
     setPlanA((prev) => recompute(prev));
     setPlanB((prev) => recompute(prev));
-  }, []);
+  }, [deliveryParams]);
 
+  // Always recompute with the active machine preset so energy-specific (FFF)
+  // dose rates apply to plans parsed with default parameters.
   const withTarget = useCallback(
-    (plan: SessionPlan): SessionPlan =>
-      targetStructure
-        ? { ...plan, metrics: calculatePlanMetrics(plan.plan, deliveryParams, targetStructure) }
-        : plan,
-    [targetStructure]
+    (plan: SessionPlan): SessionPlan => ({
+      ...plan,
+      metrics: calculatePlanMetrics(plan.plan, deliveryParams, targetStructure ?? undefined),
+    }),
+    [targetStructure, deliveryParams]
   );
+
 
   const handlePlanALoaded = useCallback((plan: SessionPlan) => setPlanA(withTarget(plan)), [withTarget]);
   const handlePlanBLoaded = useCallback((plan: SessionPlan) => setPlanB(withTarget(plan)), [withTarget]);
