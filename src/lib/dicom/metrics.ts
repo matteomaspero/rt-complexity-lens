@@ -931,8 +931,17 @@ function calculateBeamMetrics(
   }
   const arcLength = beam.isArc && totalGantryTravel > 0 ? totalGantryTravel : undefined;
   
+  // Beam-specific dose rate: plan DoseRateSet first, then energy/FFF-aware preset value
+  const resolvedDoseRate = resolveBeamDoseRate(beam, machineParams);
+
   // Estimate delivery time
-  const deliveryEstimate = estimateBeamDeliveryTime(beam, controlPointMetrics, machineParams);
+  const deliveryEstimate = estimateBeamDeliveryTime(
+    beam,
+    controlPointMetrics,
+    machineParams,
+    resolvedDoseRate.maxDoseRate
+  );
+
   
   if (deliveryEstimate.deliveryTime > 0) {
     averageGantrySpeed = arcLength ? arcLength / deliveryEstimate.deliveryTime : undefined;
