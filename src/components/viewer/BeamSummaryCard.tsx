@@ -162,11 +162,25 @@ export function BeamSummaryCard({
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Dose Rate</span>
-          <p className="font-mono font-semibold">
+          <p
+            className="font-mono font-semibold"
+            title={
+              resolvedRate.source === 'plan'
+                ? `Max ${resolvedRate.maxDoseRate.toFixed(0)} MU/min from the plan file (DICOM 300A,0115)`
+                : `Max ${resolvedRate.maxDoseRate.toFixed(0)} MU/min from the machine preset${
+                    beam.energyLabel ? ` for ${beam.energyLabel}` : ''
+                  }`
+            }
+          >
             {stats.doseRateMin.toFixed(0)} – {stats.doseRateMax.toFixed(0)}{' '}
             <span className="text-xs text-muted-foreground">MU/min</span>
           </p>
+          <span className="text-[10px] text-muted-foreground">
+            max {resolvedRate.maxDoseRate.toFixed(0)} ·{' '}
+            {resolvedRate.source === 'plan' ? 'from plan' : 'from preset'}
+          </span>
         </div>
+
         <div>
           <span className="text-xs text-muted-foreground">Avg Gantry</span>
           <p className="font-mono font-semibold">
