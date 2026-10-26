@@ -1,4 +1,6 @@
-import { useState, useCallback, useEffect, useRef, forwardRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, forwardRef, useMemo, lazy, Suspense } from 'react';
+
+const LinacRoom3D = lazy(() => import('./linac3d/LinacRoom3D'));
 import { Link } from 'react-router-dom';
 import type { SessionPlan, Beam, ControlPoint, Structure } from '@/lib/dicom/types';
 import {
@@ -477,6 +479,26 @@ export const InteractiveViewer = forwardRef<HTMLDivElement, object>(
                     )}
                   </FocusPanel>
                 </div>
+
+                {/* 3D treatment room */}
+                <FocusPanel title="3D Treatment Room" size={{ width: 720, height: 400 }}>
+                  {(size) => (
+                    <Suspense
+                      fallback={
+                        <div className="flex items-center justify-center text-sm text-muted-foreground" style={size}>
+                          Loading 3D room…
+                        </div>
+                      }
+                    >
+                      <LinacRoom3D
+                        beam={currentBeam}
+                        currentIndex={currentCPIndex}
+                        width={size.width}
+                        height={size.height}
+                      />
+                    </Suspense>
+                  )}
+                </FocusPanel>
 
 
                 {/* Charts */}
