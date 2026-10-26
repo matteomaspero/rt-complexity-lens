@@ -1,4 +1,6 @@
-import { useState, useCallback, useEffect, useRef, forwardRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, forwardRef, useMemo, lazy, Suspense } from 'react';
+
+const LinacRoom3D = lazy(() => import('./linac3d/LinacRoom3D'));
 import { Link } from 'react-router-dom';
 import type { SessionPlan, Beam, ControlPoint, Structure } from '@/lib/dicom/types';
 import {
