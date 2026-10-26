@@ -419,3 +419,7 @@ When using RTp-lens in academic work, please cite:
 > Maspero Matteo. RTplan Complexity Lens. (2026). A browser-based DICOM-RT Plan complexity analysis tool. Available at: https://rt-complexity-lens.lovable.app
 
 See [LICENSE](LICENSE) for full details.
+
+## 3D Treatment Room
+
+The Viewer includes an educational 3D linac room (gantry limited to ±185°, per-leaf MLC, keyboard shortcuts). See [docs/LOVABLE_CONTEXT.md](docs/LOVABLE_CONTEXT.md).
