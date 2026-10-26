@@ -20,7 +20,7 @@ describe('unwrapGantryPath', () => {
   });
 
   it('flags a path that would exceed the travel limits', () => {
-    const p = unwrapGantryPath([170, 100, 0, 270, 190], ['CCW', 'CCW', 'CCW', 'CCW', 'NONE'].slice(0, 5) as never);
+    const p = unwrapGantryPath([170, 0, 190, 170], ['CCW', 'CCW', 'CCW', 'NONE']);
     expect(p.exceedsLimits).toBe(true);
   });
 
